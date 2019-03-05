@@ -49,7 +49,7 @@
 #define F_ISBULLET			0x00020000
 #define F_NOSTRIP			 0x00040000
 
-#define MAX_ZF_WEAPONS 1024
+#define MAX_ZF_WEAPONS 1512
 static ZF_WEAPON_DATA[MAX_ZF_WEAPONS] = {0, ...};
 
 #define ZFWEAP_SAXXY				423
@@ -535,7 +535,7 @@ stock endRound(winningTeam)
 
 	if(index == -1)
 	{
-		LogError("[ZF] Can't create 'team_control_point_master,' can't end round!");
+		LogError("[SZF] Can't create 'team_control_point_master,' can't end round!");
 	}
 	else
 	{
@@ -597,7 +597,7 @@ stock bool:isWieldingAuto(client)
 	if(weaponId >= 0)
 	{
 		if(weaponId >= MAX_ZF_WEAPONS)
-			LogError("[ZF] - isWieldingAuto() - Invalid weaponId: %d", weaponId);
+			LogError("[SZF] - isWieldingAuto() - Invalid weaponId: %d", weaponId);
 		else
 			return ((ZF_WEAPON_DATA[weaponId] & F_ISAUTO) != 0);
 	}
@@ -610,7 +610,7 @@ stock bool:isWieldingBullet(client)
 	if(weaponId >= 0)
 	{
 		if(weaponId >= MAX_ZF_WEAPONS)
-			LogError("[ZF] - isWieldingBullet() - Invalid weaponId: %d", weaponId);
+			LogError("[SZF] - isWieldingBullet() - Invalid weaponId: %d", weaponId);
 		else
 			return ((ZF_WEAPON_DATA[weaponId] & F_ISBULLET) != 0);
 	}
@@ -645,7 +645,7 @@ stock stripWeapons(client, bool:keepPri = false)
 		{
 			if(weaponId >= MAX_ZF_WEAPONS)
 			{
-				LogError("[ZF] - stripToMelee() - Invalid weaponId: %d", weaponId);
+				LogError("[SZF] - stripToMelee() - Invalid weaponId: %d", weaponId);
 				TF2_RemoveWeaponSlot(client, i);
 			}
 			else
@@ -1209,7 +1209,7 @@ stock maxClipAmmo(client, slot)
 	if(weaponId >= 0)
 	{
 		if(weaponId >= MAX_ZF_WEAPONS)
-			LogError("[ZF] - maxClipAmmo() - Invalid weaponId: %d", weaponId);
+			LogError("[SZF] - maxClipAmmo() - Invalid weaponId: %d", weaponId);
 		else
 			return ((ZF_WEAPON_DATA[weaponId] & M_MAXCLIPAMMO) >> S_MAXCLIPAMMO);
 	}
@@ -1222,7 +1222,7 @@ stock maxResAmmo(client, slot)
 	if(weaponId >= 0)
 	{
 		if(weaponId >= MAX_ZF_WEAPONS)
-			LogError("[ZF] - maxResAmmo() - Invalid weaponId: %d", weaponId);
+			LogError("[SZF] - maxResAmmo() - Invalid weaponId: %d", weaponId);
 		else
 			return ((ZF_WEAPON_DATA[weaponId] & M_MAXRESAMMO) >> S_MAXRESAMMO);
 	}
@@ -1237,7 +1237,7 @@ stock maxResAmmo(client, slot)
 stock spawnClient(client, nextClientTeam)
 {
 //	 // DEBUG
-//	 PrintToChat(client, "[ZF] spawnClient %d %d", client, _:TF2_GetPlayerClass(client));
+//	 PrintToChat(client, "[SZF] spawnClient %d %d", client, _:TF2_GetPlayerClass(client));
 			
 	// 1. Prevent players from spawning if they're on an invalid team.
 	//		Prevent players from spawning as an invalid class.
@@ -1324,7 +1324,7 @@ stock applyDamage(
 	}
 	else
 	{
-		LogError("[ZF] applyDamage (%d, %d) failed.", damage, victim); 
+		LogError("[SZF] applyDamage (%d, %d) failed.", damage, victim); 
 	}	
 	
 	return;
@@ -1387,7 +1387,7 @@ stock applyDamageRadial(
 	}
 	else
 	{
-		LogError("[ZF] applyDamageRadial (%d, %d, [%2.2f,%2.2f,%2.2f], %d) failed.", attacker, damage, pos[0], pos[1], pos[2], radius); 
+		LogError("[SZF] applyDamageRadial (%d, %d, [%2.2f,%2.2f,%2.2f], %d) failed.", attacker, damage, pos[0], pos[1], pos[2], radius); 
 	}
 	
 	return;	
