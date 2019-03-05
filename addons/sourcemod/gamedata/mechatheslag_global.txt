@@ -1,0 +1,25 @@
+"Games"
+{
+	/* Team Fortress 2 */
+	"tf"
+	{
+		"Offsets"
+		{
+			"EquipWearable"
+			{
+				"windows"	"418"
+				"linux"		"419"
+			}
+			"RemoveWearable"
+			{
+				"windows"	"419"
+				"linux"		"420"
+			}
+			"GrenadeDetonate"
+			{
+				"windows"	"213"
+				"linux"		"214"
+			}
+		}
+	}
+}
