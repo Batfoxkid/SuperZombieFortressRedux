@@ -75,7 +75,7 @@ utilPrefInit()
 stock pref_OnClientConnect(client)
 {
 	decl String:steamID[32];	
-	if(GetClientAuthString(client, steamID, sizeof(steamID)))
+	if(GetClientAuthId(client, AuthId_SteamID64, steamID, sizeof(steamID)))
 	{
 		if(GetTrieArray(prefTrie, steamID, prefCache[client], sizeof(DEFAULT_PREFS)))
 		{
@@ -131,7 +131,7 @@ stock pref_OnClientConnect(client)
 stock pref_OnClientDisconnect(client)
 {
 	decl String:steamID[32];
-	if(GetClientAuthString(client, steamID, sizeof(steamID)))
+	if(GetClientAuthId(client, AuthId_SteamID64, steamID, sizeof(steamID)))
 	{
 		//
 		// Update trie with cache data.
