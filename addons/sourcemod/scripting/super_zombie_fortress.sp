@@ -19,7 +19,7 @@
 #include <sdktools>
 #include <sourcemod>
 #include <tf2_stocks>
-#include <colors>
+#include <morecolors>
 #include <tf2items>
 
 
@@ -28,31 +28,31 @@
 #include "zf_util_pref.inc"
 
 //#define FEATURE_GAMEPLAYBAN	 64
-#if defined FEATURE_GAMEPLAYBAN
+#if defined FEATURE_GAMEPLAYBAN 
 #include <slaginventory>
 #endif
 
 //
 // Plugin Information
 //
-#define PLUGIN_VERSION "1.05"
+#define PLUGIN_VERSION "1.05RUS"
 public Plugin:myinfo = 
 {
-	name					= "Super Zombie Fortress",
-	author				= "Mecha the Slag (Advanced), dirtyminuth (Recode), Sirot (Original)",
+	name			= "Super Zombie Fortress",
+	author		= "Mecha the Slag (Advanced), dirtyminuth (Recode), Sirot (Original)",
 	description	 = "Pits a team of survivors aganist an endless onslaught of zombies.",
-	version			 = PLUGIN_VERSION,
-	url					 = "http://forums.alliedmods.net/showthread.php?p=1227078"
+	version		 = PLUGIN_VERSION,
+	url			 = "http://forums.alliedmods.net/showthread.php?p=1227078"
 }
 
 #define PLAYERBUILTOBJECT_ID_DISPENSER	0
-#define PLAYERBUILTOBJECT_ID_TELENT		 1
-#define PLAYERBUILTOBJECT_ID_TELEXIT		2
-#define PLAYERBUILTOBJECT_ID_SENTRY		 3
+#define PLAYERBUILTOBJECT_ID_TELENT	 1
+#define PLAYERBUILTOBJECT_ID_TELEXIT	2
+#define PLAYERBUILTOBJECT_ID_SENTRY	 3
 
-#define GOO_INCREASE_RATE				   3
+#define GOO_INCREASE_RATE		   3
 
-#define SOUND_BONUS						 "ui/trade_ready.wav"
+#define SOUND_BONUS			 "ui/trade_ready.wav"
 
 //
 // State
@@ -133,41 +133,41 @@ new g_iControlPoints = 0;
 new bool:g_bCapturingLastPoint = false;
 new g_iCarryingItem[MAXPLAYERS+1] = -1;
 
-#define GAMEMODE_DEFAULT		0
-#define GAMEMODE_NEW			1
+#define GAMEMODE_DEFAULT	0
+#define GAMEMODE_NEW		1
 new g_iMode = GAMEMODE_DEFAULT;
 
-#define MUSIC_DRUMS			 0
+#define MUSIC_DRUMS		 0
 #define MUSIC_SLAYER_MILD	   1
-#define MUSIC_SLAYER			2
-#define MUSIC_TRUMPET		   3
-#define MUSIC_SNARE			 4
-#define MUSIC_BANJO			 5
-#define MUSIC_HEART_SLOW		6
+#define MUSIC_SLAYER		2
+#define MUSIC_TRUMPET	   3
+#define MUSIC_SNARE		 4
+#define MUSIC_BANJO		 5
+#define MUSIC_HEART_SLOW	6
 #define MUSIC_HEART_MEDIUM	  7
-#define MUSIC_HEART_FAST		8
-#define MUSIC_RABIES			9
-#define MUSIC_DEAD			  10
-#define MUSIC_INCOMING		  11
-#define MUSIC_PREPARE		   12
-#define MUSIC_DROWN			 13
-#define MUSIC_TANK			  14
-#define MUSIC_LASTSTAND		 15
-#define MUSIC_NEARDEATH		 16
-#define MUSIC_NEARDEATH2		17
-#define MUSIC_AWARD			 18
+#define MUSIC_HEART_FAST	8
+#define MUSIC_RABIES		9
+#define MUSIC_DEAD		  10
+#define MUSIC_INCOMING	  11
+#define MUSIC_PREPARE	   12
+#define MUSIC_DROWN		 13
+#define MUSIC_TANK		  14
+#define MUSIC_LASTSTAND	 15
+#define MUSIC_NEARDEATH	 16
+#define MUSIC_NEARDEATH2	17
+#define MUSIC_AWARD		 18
 #define MUSIC_LASTTENSECONDS	19
-#define MUSIC_MAX			   20
+#define MUSIC_MAX		   20
 
-#define MUSIC_NONE				  0
-#define MUSIC_INTENSE			   1
-#define MUSIC_MILD				  2
-#define MUSIC_VERYMILD3			 3
-#define MUSIC_VERYMILD2			 4
-#define MUSIC_VERYMILD1			 5
-#define MUSIC_GOO				   6
-#define MUSIC_TANKMOOD			  7
-#define MUSIC_LASTSTANDMOOD		 8
+#define MUSIC_NONE		  0
+#define MUSIC_INTENSE		   1
+#define MUSIC_MILD		  2
+#define MUSIC_VERYMILD3		 3
+#define MUSIC_VERYMILD2		 4
+#define MUSIC_VERYMILD1		 5
+#define MUSIC_GOO		   6
+#define MUSIC_TANKMOOD		  7
+#define MUSIC_LASTSTANDMOOD	 8
 #define MUSIC_PLAYERNEARDEATH	   9
 #define MUSIC_LASTTENSECONDSMOOD	10
 
@@ -176,11 +176,11 @@ new g_iMode = GAMEMODE_DEFAULT;
 #define CHANNEL_MUSIC_SLAYER	351
 #define CHANNEL_MUSIC_SINGLE	352
 
-#define DISTANCE_GOO			6.0
-#define TIME_GOO				6.0
+#define DISTANCE_GOO		6.0
+#define TIME_GOO		6.0
 
-#define INFECTED_NONE		   0
-#define INFECTED_TANK		   1
+#define INFECTED_NONE	   0
+#define INFECTED_TANK	   1
 
 enum TFClassWeapon
 {
@@ -248,16 +248,16 @@ public OnPluginStart()
 {
 	// Check for necessary extensions
 	if(GetExtensionFileStatus("sdkhooks.ext") < 1)
-		SetFailState("SDK Hooks is not loaded.");
-
+	SetFailState("SDK Hooks is not loaded.");
+	LoadTranslations("superzombie.phrases");
 	// Add server tag.
 	AddServerTag("zf");	
-				
+		
 	// Initialize global state
 	zf_bEnabled = false;
 	zf_bNewRound = true;
 	setRoundState(RoundInit1);
-			
+		
 	// Initialize timer handles
 	zf_tMain = INVALID_HANDLE;
 	zf_tMainSlow = INVALID_HANDLE;
@@ -328,11 +328,11 @@ public OnConfigsExecuted()
 	// + For non-"zf_" prefixed maps, disable ZF unless sm_zf_force_on is set.
 	if(mapIsZF())
 	{
-		zfEnable();
+	zfEnable();
 	}
 	else
 	{
-		GetConVarBool(zf_cvForceOn) ? zfEnable() : zfDisable();
+	GetConVarBool(zf_cvForceOn) ? zfEnable() : zfDisable();
 	} 
 
 	setRoundState(RoundInit1);
@@ -342,30 +342,36 @@ public OnMapEnd()
 {
 	// Close timer handles
 	if(zf_tMain != INVALID_HANDLE)
-	{			
-		CloseHandle(zf_tMain);
-		zf_tMain = INVALID_HANDLE;
+	{		
+	CloseHandle_2(zf_tMain);
+	zf_tMain = INVALID_HANDLE;
 	}
 	if(zf_tMainSlow != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainSlow);
-		zf_tMainSlow = INVALID_HANDLE;
+	CloseHandle_2(zf_tMainSlow);
+	zf_tMainSlow = INVALID_HANDLE;
 	}
 	
 	if(zf_tMainFast != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainFast);
-		zf_tMainFast = INVALID_HANDLE;
+	CloseHandle_2(zf_tMainFast);
+	zf_tMainFast = INVALID_HANDLE;
 	}
 	if(zf_tHoarde != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tHoarde);
-		zf_tHoarde = INVALID_HANDLE;		
+	CloseHandle_2(zf_tHoarde);
+	zf_tHoarde = INVALID_HANDLE;	
 	}
 	setRoundState(RoundPost);
 	g_bRoundActive = false;
 }
-		
+
+stock CloseHandle_2(Handle:hndl)
+{
+	if(IsValidHandle(hndl))
+		CloseHandle(hndl);
+}
+	
 public OnClientPostAdminCheck(client)
 {
 	if(!zf_bEnabled) return;
@@ -402,7 +408,7 @@ public OnGameFrame()
 ////////////////////////////////////////////////////////////
 public Action:OnGetGameDescription(String:gameDesc[64])
 {
-	if(!zf_bEnabled) return Plugin_Continue;		
+	if(!zf_bEnabled) return Plugin_Continue;	
 	Format(gameDesc, sizeof(gameDesc), "Super Zombie Fortress (%s)", PLUGIN_VERSION);
 	return Plugin_Changed;
 }
@@ -416,19 +422,19 @@ public OnPreThinkPost(client)
 	//
 	if(validLivingClient(client) && !isSlowed(client) && !isDazed(client) && !isCharging(client))
 	{
-		new Float:speed = clientBaseSpeed(client) + clientBonusSpeed(client);
-		if (g_iSpecialInfected[client] == INFECTED_TANK && g_fDamageDealtLife[client] <= 0.0 && g_fDamageTakenLife[client] <= 0.0)
-		{
-			speed = 450.0;
-		}
-		setClientSpeed(client, speed);
+	new Float:speed = clientBaseSpeed(client) + clientBonusSpeed(client);
+	if (g_iSpecialInfected[client] == INFECTED_TANK && g_fDamageDealtLife[client] <= 0.0 && g_fDamageTakenLife[client] <= 0.0)
+	{
+		speed = 450.0;
+	}
+	setClientSpeed(client, speed);
 	}
 	
 	UpdateClientCarrying(client);
 }
 
-#define DMGTYPE_MELEE					   134221952
-#define DMGTYPE_MELEE_CRIT				  135270528
+#define DMGTYPE_MELEE			   134221952
+#define DMGTYPE_MELEE_CRIT		  135270528
 
 public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iDamagetype, &iWeapon, Float:fForce[3], Float:fForcePos[3])
 {  
@@ -438,91 +444,91 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 	new bool:bChanged = false;
 	if (validClient(iVictim) && validClient(iAttacker))
 	{
-		g_bHitOnce[iVictim] = true;
-		g_bHitOnce[iAttacker] = true;
-		if (GetClientTeam(iVictim) != GetClientTeam(iAttacker))
-		{
-			EndGracePeriod();
-		}
+	g_bHitOnce[iVictim] = true;
+	g_bHitOnce[iAttacker] = true;
+	if (GetClientTeam(iVictim) != GetClientTeam(iAttacker))
+	{
+		EndGracePeriod();
+	}
 	}
 
 	if (validClient(iVictim) && g_iSuperHealth[iVictim] > 0)
 	{
-		g_iSuperHealth[iVictim] -= RoundFloat(fDamage);
-		if (g_iSuperHealth[iVictim] < 0) g_iSuperHealth[iVictim] = 0;
-		bChanged = true;
-		
-		new iMaxHealth = RoundFloat(float(GetClientMaxHealth(iVictim))*1.5);
-		SetEntityHealth(iVictim, iMaxHealth);
+	g_iSuperHealth[iVictim] -= RoundFloat(fDamage);
+	if (g_iSuperHealth[iVictim] < 0) g_iSuperHealth[iVictim] = 0;
+	bChanged = true;
+	
+	new iMaxHealth = RoundFloat(float(GetClientMaxHealth(iVictim))*1.5);
+	SetEntityHealth(iVictim, iMaxHealth);
 	}
 	if (iVictim != iAttacker)
 	{
-		if(validLivingClient(iAttacker) && fDamage < 300.0)
-		{ 
-			if (validZom(iAttacker)) fDamage = fDamage * g_fZombieDamageScale * 0.7;
-			if (validSur(iAttacker)) fDamage = fDamage / g_fZombieDamageScale * 1.1;
-			if (fDamage > 200.0) fDamage = 200.0;
+	if(validLivingClient(iAttacker) && fDamage < 300.0)
+	{ 
+		if (validZom(iAttacker)) fDamage = fDamage * g_fZombieDamageScale * 0.7;
+		if (validSur(iAttacker)) fDamage = fDamage / g_fZombieDamageScale * 1.1;
+		if (fDamage > 200.0) fDamage = 200.0;
+		bChanged = true;
+	}
+	if (validSur(iVictim) && validZom(iAttacker))
+	{
+		if ((TF2_GetPlayerClass(iAttacker) == TFClass_Spy && !HasRazorback(iVictim) && iDamagetype== DMGTYPE_MELEE_CRIT) || fDamage >= 200.0)
+		{
+		if (!g_bBackstabbed[iVictim])
+		{
+			fDamage = 1.0;
+			SetEntityHealth(iVictim, 10);
+			TF2_StunPlayer(iVictim, 7.0, 1.0, TF_STUNFLAGS_BIGBONK|TF_STUNFLAG_NOSOUNDOREFFECT, iAttacker);
+			g_bBackstabbed[iVictim] = true;
+			CreateTimer(7.0, RemoveBackstab, iVictim);
+			MusicHandleClient(iVictim);
+			bChanged = true;
+			
+			new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_NEARDEATH2]-1);
+			decl String:strPath[PLATFORM_MAX_PATH];
+			MusicGetPath(MUSIC_NEARDEATH2, iRandom, strPath, sizeof(strPath));
+			for (new i = 1; i <= MaxClients; i++)
+			{
+			if (validClient(i) && ShouldHearEventSounds(i) && i != iVictim)
+			{
+				EmitSoundToClient(i, strPath, iVictim, SNDLEVEL_AIRCRAFT);
+			}
+			}
+		} else {
+			fDamage = 0.0;
 			bChanged = true;
 		}
-		if (validSur(iVictim) && validZom(iAttacker))
-		{
-			if ((TF2_GetPlayerClass(iAttacker) == TFClass_Spy && !HasRazorback(iVictim) && iDamagetype== DMGTYPE_MELEE_CRIT) || fDamage >= 200.0)
-			{
-				if (!g_bBackstabbed[iVictim])
-				{
-					fDamage = 1.0;
-					SetEntityHealth(iVictim, 10);
-					TF2_StunPlayer(iVictim, 7.0, 1.0, TF_STUNFLAGS_BIGBONK|TF_STUNFLAG_NOSOUNDOREFFECT, iAttacker);
-					g_bBackstabbed[iVictim] = true;
-					CreateTimer(7.0, RemoveBackstab, iVictim);
-					MusicHandleClient(iVictim);
-					bChanged = true;
-					
-					new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_NEARDEATH2]-1);
-					decl String:strPath[PLATFORM_MAX_PATH];
-					MusicGetPath(MUSIC_NEARDEATH2, iRandom, strPath, sizeof(strPath));
-					for (new i = 1; i <= MaxClients; i++)
-					{
-						if (validClient(i) && ShouldHearEventSounds(i) && i != iVictim)
-						{
-							EmitSoundToClient(i, strPath, iVictim, SNDLEVEL_AIRCRAFT);
-						}
-					}
-				} else {
-					fDamage = 0.0;
-					bChanged = true;
-				}
-			}
 		}
-		if (validZom(iVictim) && TF2_GetPlayerClass(iVictim) == TFClass_Heavy)
-		{
-			fForce[0] = 0.0;
-			fForce[1] = 0.0;
-			fForce[2] = 0.0;
-			fDamage *= 0.7;
-			if (fDamage > 100.0) fDamage = 100.0;
-			bChanged = true; 
-		}
-		if (validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
-		{
-			new iDamage = RoundFloat(fDamage);
-			if (iDamage > 300) iDamage = 300;
-			g_iDamage[iAttacker] += iDamage;
-			new iPitch = g_iHitBonusCombo[iAttacker] * 10 + 50;
-			if (iPitch > 250) iPitch = 250;
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
-			g_iHitBonusCombo[iAttacker]++;
-		}
-		if (validClient(iVictim) && validClient(iAttacker) && iAttacker != iVictim)
-		{
-			g_fDamageTakenLife[iVictim] += fDamage;
-			g_fDamageDealtLife[iAttacker] += fDamage;
-		}
+	}
+	if (validZom(iVictim) && TF2_GetPlayerClass(iVictim) == TFClass_Heavy)
+	{
+		fForce[0] = 0.0;
+		fForce[1] = 0.0;
+		fForce[2] = 0.0;
+		fDamage *= 0.7;
+		if (fDamage > 100.0) fDamage = 100.0;
+		bChanged = true; 
+	}
+	if (validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
+	{
+		new iDamage = RoundFloat(fDamage);
+		if (iDamage > 300) iDamage = 300;
+		g_iDamage[iAttacker] += iDamage;
+		new iPitch = g_iHitBonusCombo[iAttacker] * 10 + 50;
+		if (iPitch > 250) iPitch = 250;
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
+		g_iHitBonusCombo[iAttacker]++;
+	}
+	if (validClient(iVictim) && validClient(iAttacker) && iAttacker != iVictim)
+	{
+		g_fDamageTakenLife[iVictim] += fDamage;
+		g_fDamageDealtLife[iAttacker] += fDamage;
+	}
 	}
 	if (bChanged) return Plugin_Changed;
 	return Plugin_Continue;
@@ -539,7 +545,7 @@ public Action:command_zfEnable(client, args)
 
 	zfEnable();
 	ServerCommand("mp_restartgame 10");
-	PrintToChatAll("\x05[ZF]\x01 ZF Enabled. Restarting Round...");
+	PrintToChatAll("\x05[ZF]\x01 %t", "ZF Enabled. Restarting Round...");
 
 	return Plugin_Continue;
 }
@@ -550,7 +556,7 @@ public Action:command_zfDisable (client, args)
 	
 	zfDisable();
 	ServerCommand("mp_restartgame 10");	
-	PrintToChatAll("\x05[ZF]\x01 ZF Disabled. Restarting Round...");
+	PrintToChatAll("\x05[ZF]\x01 %t", "ZF Disabled. Restarting Round...");
 	
 	return Plugin_Continue;
 }
@@ -561,11 +567,11 @@ public Action:command_zfSwapTeams(client, args)
 
 	zfSwapTeams();
 	ServerCommand("mp_restartgame 10");
-	PrintToChatAll("\x05[ZF]\x01 Team roles swapped. Restarting Round...");
+	PrintToChatAll("\x05[ZF]\x01 %t", "Team roles swapped. Restarting Round...");
 
-	zf_bNewRound = true;			
+	zf_bNewRound = true;		
 	setRoundState(RoundInit2);
-			
+		
 	return Plugin_Continue;
 }
 
@@ -588,40 +594,40 @@ public Action:hook_JoinTeam(client, const String:command[], argc)
 	
 	if(roundState() >= RoundGrace)
 	{
-		// Assign team-specific strings
-		if(zomTeam() == _:TFTeam_Blue)
-		{
-			sSurTeam = "red";
-			sZomTeam = "blue";
-			sZomVgui = "class_blue";
-		}
-		else
-		{
-			sSurTeam = "blue";
-			sZomTeam = "red";
-			sZomVgui = "class_red";			
-		}
-			
-		// If client tries to join the survivor team or a random team
-		// during grace period or active round, place them on the zombie
-		// team and present them with the zombie class select screen.
-		if(StrEqual(cmd1, sSurTeam, false) || StrEqual(cmd1, "auto", false))
-		{
-			ChangeClientTeam(client, zomTeam());
-			ShowVGUIPanel(client, sZomVgui);
-			return Plugin_Handled;
-		}
-		// If client tries to join the zombie team or spectator
-		// during grace period or active round, let them do so.
-		else if(StrEqual(cmd1, sZomTeam, false) || StrEqual(cmd1, "spectate", false))
-		{
-			return Plugin_Continue;
-		}
-		// Prevent joining any other team.
-		else
-		{
-			return Plugin_Handled;
-		}
+	// Assign team-specific strings
+	if(zomTeam() == _:TFTeam_Blue)
+	{
+		sSurTeam = "red";
+		sZomTeam = "blue";
+		sZomVgui = "class_blue";
+	}
+	else
+	{
+		sSurTeam = "blue";
+		sZomTeam = "red";
+		sZomVgui = "class_red";		
+	}
+		
+	// If client tries to join the survivor team or a random team
+	// during grace period or active round, place them on the zombie
+	// team and present them with the zombie class select screen.
+	if(StrEqual(cmd1, sSurTeam, false) || StrEqual(cmd1, "auto", false))
+	{
+		ChangeClientTeam(client, zomTeam());
+		ShowVGUIPanel(client, sZomVgui);
+		return Plugin_Handled;
+	}
+	// If client tries to join the zombie team or spectator
+	// during grace period or active round, let them do so.
+	else if(StrEqual(cmd1, sZomTeam, false) || StrEqual(cmd1, "spectate", false))
+	{
+		return Plugin_Continue;
+	}
+	// Prevent joining any other team.
+	else
+	{
+		return Plugin_Handled;
+	}
 	}
 
 	return Plugin_Continue;
@@ -638,39 +644,39 @@ public Action:hook_JoinClass(client, const String:command[], argc)
 	
 	if(isZom(client))	 
 	{
-		// If an invalid zombie class is selected, print a message and
-		// accept joinclass command. ZF spawn logic will correct this
-		// issue when the player spawns.
-		if(!(StrEqual(cmd1, "scout", false) ||
-				 StrEqual(cmd1, "spy", false)	|| 
-				 StrEqual(cmd1, "heavyweapons", false)))
-		{
-			PrintToChat(client, "\x05[ZF]\x01 Valid zombies: Scout, Heavy, Spy.");
-		}
+	// If an invalid zombie class is selected, print a message and
+	// accept joinclass command. ZF spawn logic will correct this
+	// issue when the player spawns.
+	if(!(StrEqual(cmd1, "scout", false) ||
+		 StrEqual(cmd1, "spy", false)	|| 
+		 StrEqual(cmd1, "heavyweapons", false)))
+	{
+		PrintToChat(client, "\x05[ZF]\x01 %t", "Valid zombies: Scout, Heavy, Spy.");
+	}
 	}
 
 	else if(isSur(client))
 	{
-		// Prevent survivors from switching classes during the round.
-		if(roundState() == RoundActive)
-		{
-			PrintToChat(client, "\x05[ZF]\x01 Survivors can't change classes during a round!");
-			return Plugin_Handled;					
-		}
-		// If an invalid survivor class is selected, print a message
-		// and accept the joincalss command. ZF spawn logic will
-		// correct this issue when the player spawns.
-		else if(!(StrEqual(cmd1, "soldier", false) || 
-							StrEqual(cmd1, "pyro", false) || 
-							StrEqual(cmd1, "demoman", false) || 
-							StrEqual(cmd1, "engineer", false) || 
-							StrEqual(cmd1, "medic", false) || 
-							StrEqual(cmd1, "sniper", false)))
-		{
-			PrintToChat(client, "\x05[ZF]\x01 Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper.");
-		}			 
+	// Prevent survivors from switching classes during the round.
+	if(roundState() == RoundActive)
+	{
+		PrintToChat(client, "\x05[ZF]\x01 %t", "Survivors can't change classes during a round!");
+		return Plugin_Handled;			
 	}
-		
+	// If an invalid survivor class is selected, print a message
+	// and accept the joincalss command. ZF spawn logic will
+	// correct this issue when the player spawns.
+	else if(!(StrEqual(cmd1, "soldier", false) || 
+				StrEqual(cmd1, "pyro", false) || 
+				StrEqual(cmd1, "demoman", false) || 
+				StrEqual(cmd1, "engineer", false) || 
+				StrEqual(cmd1, "medic", false) || 
+				StrEqual(cmd1, "sniper", false)))
+	{
+		PrintToChat(client, "\x05[ZF]\x01 %t", "Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper.");
+	}		 
+	}
+	
 	return Plugin_Continue;
 }
 
@@ -690,33 +696,33 @@ public Action:hook_VoiceMenu(client, const String:command[], argc)
 	// Rage recharges after 30 seconds.
 	if(StrEqual(cmd1, "0") && StrEqual(cmd2, "0") && IsPlayerAlive(client))
 	{
-		if(isZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
-		{		
-			new curH = GetClientHealth(client);
-			new maxH = GetEntProp(client, Prop_Data, "m_iMaxHealth");			 
+	if(isZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
+	{	
+		new curH = GetClientHealth(client);
+		new maxH = GetEntProp(client, Prop_Data, "m_iMaxHealth");		 
 	
-			if((zf_rageTimer[client] == 0) && (curH >= maxH))
-			{
-				zf_rageTimer[client] = 30;
-				
-				SetEntityHealth(client, RoundToCeil(maxH * 1.5));
-									
-				ClientCommand(client, "voicemenu 2 1");
-				PrintHintText(client, "Rage Activated!");	
-			}
-			else
-			{
-				ClientCommand(client, "voicemenu 2 5");
-				PrintHintText(client, "Can't Activate Rage!"); 
-			}
-					
-			return Plugin_Handled;
-		}
-		else if (isSur(client))
+		if((zf_rageTimer[client] == 0) && (curH >= maxH))
 		{
-			if (AttemptCarryItem(client)) return Plugin_Handled;
-			if (AttemptGrabItem(client)) return Plugin_Handled;
+		zf_rageTimer[client] = 30;
+		
+		SetEntityHealth(client, RoundToCeil(maxH * 1.5));
+					
+		ClientCommand(client, "voicemenu 2 1");
+		PrintHintText(client, "%t", "Rage Activated!");	
 		}
+		else
+		{
+		ClientCommand(client, "voicemenu 2 5");
+		PrintHintText(client, "%t", "Can't Activate Rage!"); 
+		}
+			
+		return Plugin_Handled;
+	}
+	else if (isSur(client))
+	{
+		if (AttemptCarryItem(client)) return Plugin_Handled;
+		if (AttemptGrabItem(client)) return Plugin_Handled;
+	}
 	}
 	
 	return Plugin_Continue;
@@ -731,29 +737,29 @@ public Action:hook_zfTeamPref(client, const String:command[], argc)
 	// Get team preference
 	if(argc == 0)
 	{
-		if(prefGet(client, TeamPref) == ZF_TEAMPREF_SUR)
-			ReplyToCommand(client, "Survivors");
-		else if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
-			ReplyToCommand(client, "Zombies");
-		else if(prefGet(client, TeamPref) == ZF_TEAMPREF_NONE)
-			ReplyToCommand(client, "None");
-		return Plugin_Handled;
+	if(prefGet(client, TeamPref) == ZF_TEAMPREF_SUR)
+		ReplyToCommand(client, "%t", "Survivors");
+	else if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
+		ReplyToCommand(client, "%t", "Zombies");
+	else if(prefGet(client, TeamPref) == ZF_TEAMPREF_NONE)
+		ReplyToCommand(client, "%t", "None");
+	return Plugin_Handled;
 	}
 
 	GetCmdArg(1, cmd, sizeof(cmd));
 	
 	// Set team preference
 	if(StrEqual(cmd, "sur", false))
-		prefSet(client, TeamPref, ZF_TEAMPREF_SUR);
+	prefSet(client, TeamPref, ZF_TEAMPREF_SUR);
 	else if(StrEqual(cmd, "zom", false))
-		prefSet(client, TeamPref, ZF_TEAMPREF_ZOM);
+	prefSet(client, TeamPref, ZF_TEAMPREF_ZOM);
 	else if(StrEqual(cmd, "none", false))
-		prefSet(client, TeamPref, ZF_TEAMPREF_NONE);
+	prefSet(client, TeamPref, ZF_TEAMPREF_NONE);
 	else
 	{
-		// Error in command format, display usage
-		GetCmdArg(0, cmd, sizeof(cmd));
-		ReplyToCommand(client, "Usage: %s [sur|zom|none]", cmd);		
+	// Error in command format, display usage
+	GetCmdArg(0, cmd, sizeof(cmd));
+	ReplyToCommand(client, "%t", "Usage: {1} [sur|zom|none]", cmd);	
 	}
 	
 	return Plugin_Handled;
@@ -764,7 +770,7 @@ public Action:cmd_zfMenu(client, args)
 	if(!zf_bEnabled) return Plugin_Continue; 
 	panel_PrintMain(client);
 	
-	return Plugin_Handled;		
+	return Plugin_Handled;	
 }
 
 ////////////////////////////////////////////////////////////
@@ -775,27 +781,27 @@ public Action:cmd_zfMenu(client, args)
 public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
 {	
 	if(!zf_bEnabled) return Plugin_Continue;
-				
+		
 	// Handle special cases.
 	// + Being kritzed overrides other crit calculations.
 	if(isKritzed(client))
-		return Plugin_Continue;
+	return Plugin_Continue;
 
 	// Handle crit bonuses.
 	// + Survivors: Crit result is combination of bonus and standard crit calulations.
 	// + Zombies: Crit result is based solely on bonus calculation. 
 	if(isSur(client))
 	{
-		if(zf_critBonus[client] > GetRandomInt(0,99))
-		{
-			result = true;
-			return Plugin_Changed;
-		}
+	if(zf_critBonus[client] > GetRandomInt(0,99))
+	{
+		result = true;
+		return Plugin_Changed;
+	}
 	}
 	else
 	{
-		result = (zf_critBonus[client] > GetRandomInt(0,99));
-		return Plugin_Changed;
+	result = (zf_critBonus[client] > GetRandomInt(0,99));
+	return Plugin_Changed;
 	}
 	
 	return Plugin_Continue;
@@ -821,11 +827,11 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	new i;
 	for(i = 1; i <= MaxClients; i++)
 	{
-		g_iDamage[i] = 0;
-		g_iKillsThisLife[i] = 0;
-		g_iSpecialInfected[i] = INFECTED_NONE;
-		g_iSuperHealth[i] = 0;
-		g_iSuperHealthSubtract[i] = 0;
+	g_iDamage[i] = 0;
+	g_iKillsThisLife[i] = 0;
+	g_iSpecialInfected[i] = INFECTED_NONE;
+	g_iSuperHealth[i] = 0;
+	g_iSuperHealthSubtract[i] = 0;
 	}
 	
 	g_iZombieTank = 0;
@@ -838,13 +844,13 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	//
 	if(roundState() == RoundInit1) 
 	{
-		setRoundState(RoundInit2);
-		return Plugin_Continue;
+	setRoundState(RoundInit2);
+	return Plugin_Continue;
 	}
 	else
 	{
-		setRoundState(RoundGrace);
-		PrintToChatAll("\x05[ZF]\x01 Grace period begun. Survivors can change classes.");	
+	setRoundState(RoundGrace);
+	PrintToChatAll("\x05[ZF]\x01 %t", "Grace period begun. Survivors can change classes.");	
 	}
 	
 	//
@@ -852,83 +858,83 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	//
 	if(zf_bNewRound)
 	{
-		// Find all active players.
-		playerCount = 0;
-		for(i = 1; i <= MaxClients; i++)
+	// Find all active players.
+	playerCount = 0;
+	for(i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientInGame(i) && (GetClientTeam(i) > 1))
 		{
-			if(IsClientInGame(i) && (GetClientTeam(i) > 1))
-			{
-				players[playerCount] = i;
-				playerCount++;
-			}
+		players[playerCount] = i;
+		playerCount++;
 		}
-				
-		// Randomize, sort players 
-		SortIntegers(players, playerCount, Sort_Random);
-		// NOTE: As of SM 1.3.1, SortIntegers w/ Sort_Random doesn't 
-		//			 sort the first element of the array. Temp fix below.	
-		new idx = GetRandomInt(0,playerCount-1);
-		new temp = players[idx];
-		players[idx] = players[0];
-		players[0] = temp;		
+	}
 		
-		// Sort players using team preference criteria
-		if(GetConVarBool(zf_cvAllowTeamPref)) 
+	// Randomize, sort players 
+	SortIntegers(players, playerCount, Sort_Random);
+	// NOTE: As of SM 1.3.1, SortIntegers w/ Sort_Random doesn't 
+	//		 sort the first element of the array. Temp fix below.	
+	new idx = GetRandomInt(0,playerCount-1);
+	new temp = players[idx];
+	players[idx] = players[0];
+	players[0] = temp;	
+	
+	// Sort players using team preference criteria
+	if(GetConVarBool(zf_cvAllowTeamPref)) 
+	{
+		SortCustom1D(players, playerCount, SortFunc1D:Sort_Preference);
+	}
+	
+	// Calculate team counts. At least one survivor must exist.	 
+	surCount = RoundToFloor(playerCount*GetConVarFloat(zf_cvRatio));
+	if((surCount == 0) && (playerCount > 0))
+	{
+		surCount = 1;
+	}	
+		
+	// Assign active players to survivor and zombie teams.
+	g_iStartSurvivors = 0;
+	new bool:bSurvivors[MAXPLAYERS+1] = false;
+	i = 1;
+	while (surCount > 0 && i <= playerCount)
+	{
+		new iClient = players[i];
+		if (validClient(iClient))
 		{
-			SortCustom1D(players, playerCount, SortFunc1D:Sort_Preference);
+		new bool:bGood = true;
+		#if defined FEATURE_GAMEPLAYBAN
+		if (SlagInv_GetItemId(iClient, FEATURE_GAMEPLAYBAN) != INVALID_HANDLE)
+		{
+			CPrintToChat(iClient, "{red}You are gameplay banned and as such, cannot be a survivor\nYou can buy your way out in the {olive}/shop");
+			bGood = false;
 		}
-		
-		// Calculate team counts. At least one survivor must exist.	 
-		surCount = RoundToFloor(playerCount*GetConVarFloat(zf_cvRatio));
-		if((surCount == 0) && (playerCount > 0))
+		#endif
+		if (bGood)
 		{
-			surCount = 1;
-		}	
-			
-		// Assign active players to survivor and zombie teams.
-		g_iStartSurvivors = 0;
-		new bool:bSurvivors[MAXPLAYERS+1] = false;
-		i = 1;
-		while (surCount > 0 && i <= playerCount)
-		{
-			new iClient = players[i];
-			if (validClient(iClient))
-			{
-				new bool:bGood = true;
-				#if defined FEATURE_GAMEPLAYBAN
-				if (SlagInv_GetItemId(iClient, FEATURE_GAMEPLAYBAN) != INVALID_HANDLE)
-				{
-					CPrintToChat(iClient, "{red}You are gameplay banned and as such, cannot be a survivor\nYou can buy your way out in the {olive}/shop");
-					bGood = false;
-				}
-				#endif
-				if (bGood)
-				{
-					spawnClient(iClient, surTeam());
-					bSurvivors[iClient] = true;
-					g_iStartSurvivors++;
-					surCount--;
-				}
-			}
-			i++;
-		}			
-		for(i = 1; i <= playerCount; i++)
-		{
-			if (validClient(players[i]) && !bSurvivors[players[i]]) spawnClient(players[i], zomTeam());
+			spawnClient(iClient, surTeam());
+			bSurvivors[iClient] = true;
+			g_iStartSurvivors++;
+			surCount--;
 		}
-		
+		}
+		i++;
+	}		
+	for(i = 1; i <= playerCount; i++)
+	{
+		if (validClient(players[i]) && !bSurvivors[players[i]]) spawnClient(players[i], zomTeam());
+	}
+	
 	}
 
 	// Handle zombie spawn state.	
 	zf_spawnSurvivorsKilledCounter = 1;
-				 
+		 
 	// Handle grace period timers.
 	CreateTimer(0.5, timer_graceStartPost, TIMER_FLAG_NO_MAPCHANGE);	 
 	CreateTimer(45.0, timer_graceEnd, TIMER_FLAG_NO_MAPCHANGE);	
-		
+	
 	SetGlow();
 	UpdateZombieDamageScale();
-		
+	
 	return Plugin_Continue;
 }
 
@@ -938,7 +944,7 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 public Action:event_SetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue;
-		 
+	 
 	EndGracePeriod();
 	
 	g_StartTime = GetTime();
@@ -951,12 +957,12 @@ public Action:event_SetupEnd(Handle:event, const String:name[], bool:dontBroadca
 EndGracePeriod()
 {
 	if(!zf_bEnabled) return;
-		 
+	 
 	if(roundState() == RoundActive) return;
 	if(roundState() == RoundPost) return;
 	
 	setRoundState(RoundActive);
-	PrintToChatAll("\x05[ZF]\x01 Grace period complete. Survivors can no longer change classes.");
+	PrintToChatAll("\x05[ZF]\x01 %t", "Grace period complete. Survivors can no longer change classes.");
 	ZombieRage(true);
 }
 
@@ -988,7 +994,7 @@ public Action:event_RoundEnd(Handle:event, const String:name[], bool:dontBroadca
 public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {	 
 	if(!zf_bEnabled) return Plugin_Continue;	
-			
+		
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	//StartSoundSystem(client, MUSIC_NONE);
 	
@@ -1009,50 +1015,50 @@ public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 	
 	if (roundState() == RoundActive)
 	{
-		if (g_iZombieTank > 0 && g_iZombieTank == client && g_iSpecialInfected[client] == INFECTED_NONE)
+	if (g_iZombieTank > 0 && g_iZombieTank == client && g_iSpecialInfected[client] == INFECTED_NONE)
+	{
+		if (TF2_GetPlayerClass(client) != TFClass_Heavy)
 		{
-			if (TF2_GetPlayerClass(client) != TFClass_Heavy)
-			{
-				TF2_SetPlayerClass(client, TFClass_Heavy, true, true);
-				TF2_RespawnPlayer(client);
-				CreateTimer(0.1, timer_postSpawn, client, TIMER_FLAG_NO_MAPCHANGE);
-				return Plugin_Stop;
-			}
-			else
-			{
-				g_iZombieTank = 0;
-				g_iSpecialInfected[client] = INFECTED_TANK;
-				
-				new iSurvivors = GetSurvivorCount();
-				new iHealth = GetConVarInt(zf_cvTankHealth) * iSurvivors;
-				if (iHealth < GetConVarInt(zf_cvTankHealthMin)) iHealth = GetConVarInt(zf_cvTankHealthMin);
-				if (iHealth > GetConVarInt(zf_cvTankHealthMax)) iHealth = GetConVarInt(zf_cvTankHealthMax);
-				g_iSuperHealth[client] = iHealth;
-				
-				new iSubtract = 0;
-				if (GetConVarFloat(zf_cvTankTime) > 0.0) {
-					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(zf_cvTankTime));
-					if (iSubtract < 3) iSubtract = 3;
-				}
-				g_iSuperHealthSubtract[client] = iSubtract;
-				TF2_AddCondition(client, TFCond_Kritzkrieged, 999.0);
-				SetEntityHealth(client, 450);
-				
-				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(client, 0, 255, 0, 255);
-				PerformFastRespawn2(client);
-				
-				//SetEntityGravity(client, 10.0);
-				
-				MusicHandleAll();
-				
-				for (new i = 1; i <= MaxClients; i++)
-				{
-					if (validClient(i)) CPrintToChat(i, "{olive}[ZF] {red}Incoming Taaaank!");
-				}
-			}
-			
+		TF2_SetPlayerClass(client, TFClass_Heavy, true, true);
+		TF2_RespawnPlayer(client);
+		CreateTimer(0.1, timer_postSpawn, client, TIMER_FLAG_NO_MAPCHANGE);
+		return Plugin_Stop;
 		}
+		else
+		{
+		g_iZombieTank = 0;
+		g_iSpecialInfected[client] = INFECTED_TANK;
+		
+		new iSurvivors = GetSurvivorCount();
+		new iHealth = GetConVarInt(zf_cvTankHealth) * iSurvivors;
+		if (iHealth < GetConVarInt(zf_cvTankHealthMin)) iHealth = GetConVarInt(zf_cvTankHealthMin);
+		if (iHealth > GetConVarInt(zf_cvTankHealthMax)) iHealth = GetConVarInt(zf_cvTankHealthMax);
+		g_iSuperHealth[client] = iHealth;
+		
+		new iSubtract = 0;
+		if (GetConVarFloat(zf_cvTankTime) > 0.0) {
+			iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(zf_cvTankTime));
+			if (iSubtract < 3) iSubtract = 3;
+		}
+		g_iSuperHealthSubtract[client] = iSubtract;
+		TF2_AddCondition(client, TFCond_Kritzkrieged, 999.0);
+		SetEntityHealth(client, 450);
+		
+		SetEntityRenderMode(client, RENDER_TRANSCOLOR);
+		SetEntityRenderColor(client, 0, 255, 0, 255);
+		PerformFastRespawn2(client);
+		
+		//SetEntityGravity(client, 10.0);
+		
+		MusicHandleAll();
+		
+		for (new i = 1; i <= MaxClients; i++)
+		{
+			if (validClient(i)) CPrintToChat(i, "%t", "[ZF] Incoming Taaaank!");
+		}
+		}
+		
+	}
 	}
 	
 	new TFClassType:clientClass = TF2_GetPlayerClass(client);
@@ -1060,33 +1066,33 @@ public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 
 	resetClientState(client);
 	CreateZombieSkin(client);
-				
+		
 	// 1. Prevent players spawning on survivors if round has started.
-	//		Prevent players spawning on survivors as an invalid class.
-	//		Prevent players spawning on zombies as an invalid class.
+	//	Prevent players spawning on survivors as an invalid class.
+	//	Prevent players spawning on zombies as an invalid class.
 	if(isSur(client))
 	{
-		if(roundState() == RoundActive)
-		{
-			spawnClient(client, zomTeam());
-			return Plugin_Continue;
-		}
-		if(!validSurvivor(clientClass))
-		{
-			spawnClient(client, surTeam()); 
-			return Plugin_Continue;
-		}			
+	if(roundState() == RoundActive)
+	{
+		spawnClient(client, zomTeam());
+		return Plugin_Continue;
+	}
+	if(!validSurvivor(clientClass))
+	{
+		spawnClient(client, surTeam()); 
+		return Plugin_Continue;
+	}		
 	}
 	else if(isZom(client))
 	{
-		if(!validZombie(clientClass))
-		{
-			spawnClient(client, zomTeam()); 
-			return Plugin_Continue;
-		}
-		if (roundState() == RoundActive) {
-			if (g_iSpecialInfected[client] != INFECTED_TANK && !PerformFastRespawn(client)) TF2_AddCondition(client, TFCond_Ubercharged, 2.0);
-		}
+	if(!validZombie(clientClass))
+	{
+		spawnClient(client, zomTeam()); 
+		return Plugin_Continue;
+	}
+	if (roundState() == RoundActive) {
+		if (g_iSpecialInfected[client] != INFECTED_TANK && !PerformFastRespawn(client)) TF2_AddCondition(client, TFCond_Ubercharged, 2.0);
+	}
 	}	 
 
 	// 2. Handle valid, post spawn logic
@@ -1097,7 +1103,7 @@ public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 	TankCanReplace(client);
 	CheckStartWeapons();
 	//HandleClientInventory(client);
-			
+		
 	return Plugin_Continue; 
 }
 
@@ -1120,23 +1126,23 @@ public Action:event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 	// handle bonuses
 	if(validZom(killers[0]) && killers[0] != victim)
 	{
-		g_iKillsThisLife[killers[0]]++;
-		if (g_iKillsThisLife[killers[0]] <= 1) GiveBonus(killers[0], "zombie_kill");
-		if (g_iKillsThisLife[killers[0]] == 2) GiveBonus(killers[0], "zombie_kill_2");
-		if (g_iKillsThisLife[killers[0]] > 2) GiveBonus(killers[0], "zombie_kill_lot");
-		if (g_bBackstabbed[victim])
-		{
-			GiveBonus(killers[0], "zombie_stab_death");
-		}
+	g_iKillsThisLife[killers[0]]++;
+	if (g_iKillsThisLife[killers[0]] <= 1) GiveBonus(killers[0], "zombie_kill");
+	if (g_iKillsThisLife[killers[0]] == 2) GiveBonus(killers[0], "zombie_kill_2");
+	if (g_iKillsThisLife[killers[0]] > 2) GiveBonus(killers[0], "zombie_kill_lot");
+	if (g_bBackstabbed[victim])
+	{
+		GiveBonus(killers[0], "zombie_stab_death");
+	}
 	}
 	if(validZom(killers[1]) && killers[1] != victim)
 	{
-		GiveBonus(killers[1], "zombie_assist");
+	GiveBonus(killers[1], "zombie_assist");
 	}
 	
 	if (g_iSpecialInfected[victim] == INFECTED_TANK)
 	{
-		g_iDamage[victim] = GetAverageDamage();
+	g_iDamage[victim] = GetAverageDamage();
 	}
 
 	g_iSpecialInfected[victim] = INFECTED_NONE;
@@ -1145,80 +1151,80 @@ public Action:event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 	// Handle zombie death logic, all round states.
 	if(validZom(victim))
 	{
-		// Remove dropped ammopacks from zombies.
-		new index = -1; 
-		while ((index = FindEntityByClassname(index, "tf_ammo_pack")) != -1)
-		{
-			if(GetEntPropEnt(index, Prop_Send, "m_hOwnerEntity") == victim)
-				AcceptEntityInput(index, "Kill");
-		}
-		if (g_bZombieRage && roundState() == RoundActive) CreateTimer(0.1, RespawnPlayer, victim);
+	// Remove dropped ammopacks from zombies.
+	new index = -1; 
+	while ((index = FindEntityByClassname(index, "tf_ammo_pack")) != -1)
+	{
+		if(GetEntPropEnt(index, Prop_Send, "m_hOwnerEntity") == victim)
+		AcceptEntityInput(index, "Kill");
+	}
+	if (g_bZombieRage && roundState() == RoundActive) CreateTimer(0.1, RespawnPlayer, victim);
 	} 
 
 	if( roundState() != RoundActive && roundState() != RoundPost) {
-		CreateTimer(0.1, RespawnPlayer, victim);
-		return Plugin_Continue;
+	CreateTimer(0.1, RespawnPlayer, victim);
+	return Plugin_Continue;
 	}
 
 	// Handle survivor death logic, active round only.
 	if(validSur(victim))
 	{
-		if(validZom(killers[0])) zf_spawnSurvivorsKilledCounter--;
+	if(validZom(killers[0])) zf_spawnSurvivorsKilledCounter--;
 
-		// Transfer player to zombie team.
-		CreateTimer(6.0, timer_zombify, victim, TIMER_FLAG_NO_MAPCHANGE);
-		// check if he's the last
-		CreateTimer(0.1, CheckLastPlayer);
-		
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
-		decl String:strPath[PLATFORM_MAX_PATH];
-		MusicGetPath(MUSIC_DEAD, iRandom, strPath, sizeof(strPath));
-		EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
-		EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
-		StartSoundSystem(victim, MUSIC_NONE);
+	// Transfer player to zombie team.
+	CreateTimer(6.0, timer_zombify, victim, TIMER_FLAG_NO_MAPCHANGE);
+	// check if he's the last
+	CreateTimer(0.1, CheckLastPlayer);
+	
+	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
+	decl String:strPath[PLATFORM_MAX_PATH];
+	MusicGetPath(MUSIC_DEAD, iRandom, strPath, sizeof(strPath));
+	EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
+	EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
+	StartSoundSystem(victim, MUSIC_NONE);
 	}
 
 	// Handle zombie death logic, active round only.
 	else if(validZom(victim))
 	{
-		if(validSur(killers[0])) zf_spawnZombiesKilledCounter--;
+	if(validSur(killers[0])) zf_spawnZombiesKilledCounter--;
 
-		for(new i = 0; i < 2; i++)
-		{								 
-			if(validLivingClient(killers[i]))
+	for(new i = 0; i < 2; i++)
+	{				 
+		if(validLivingClient(killers[i]))
+		{
+		// Handle ammo kill bonuses.
+		// + Soldiers receive 2 rockets per kill.
+		// + Demomen receive 2 pipes per kill.
+		// + Snipers receive 5 rifle / 2 arrows per kill.
+		new TFClassType:killerClass = TF2_GetPlayerClass(killers[i]);		
+		switch(killerClass)
+		{
+			case TFClass_Soldier: addResAmmo(killers[i], 0, 2);
+			case TFClass_DemoMan: addResAmmo(killers[i], 0, 2);
+			case TFClass_Sniper:
 			{
-				// Handle ammo kill bonuses.
-				// + Soldiers receive 2 rockets per kill.
-				// + Demomen receive 2 pipes per kill.
-				// + Snipers receive 5 rifle / 2 arrows per kill.
-				new TFClassType:killerClass = TF2_GetPlayerClass(killers[i]);				
-				switch(killerClass)
-				{
-					case TFClass_Soldier: addResAmmo(killers[i], 0, 2);
-					case TFClass_DemoMan: addResAmmo(killers[i], 0, 2);
-					case TFClass_Sniper:
-					{
-						if(isEquipped(killers[i], ZFWEAP_SNIPERRIFLE) || isEquipped(killers[i], ZFWEAP_SYDNEYSLEEPER))
-							addResAmmo(killers[i], 0, 5);
-						else if(isEquipped(killers[i], ZFWEAP_HUNTSMAN))
-							addResAmmo(killers[i], 0, 2);
-					}
-				}
+			if(isEquipped(killers[i], ZFWEAP_SNIPERRIFLE) || isEquipped(killers[i], ZFWEAP_SYDNEYSLEEPER))
+				addResAmmo(killers[i], 0, 5);
+			else if(isEquipped(killers[i], ZFWEAP_HUNTSMAN))
+				addResAmmo(killers[i], 0, 2);
+			}
+		}
 
-				// Handle morale bonuses.
-				// + Each kill grants a small health bonus and increases current crit bonus.
-				new curH = GetClientHealth(killers[i]);
-				new maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
-				if(curH < maxH)
-				{
-					curH += (zf_critBonus[killers[i]] * 2);
-					curH = min(curH, maxH);				
-					//SetEntityHealth(killers[i], curH);
-				}
-				//zf_critBonus[killers[i]] = min(100, zf_critBonus[killers[i]] + 5); 
-									 
-			} // if				 
-		} // for 
+		// Handle morale bonuses.
+		// + Each kill grants a small health bonus and increases current crit bonus.
+		new curH = GetClientHealth(killers[i]);
+		new maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
+		if(curH < maxH)
+		{
+			curH += (zf_critBonus[killers[i]] * 2);
+			curH = min(curH, maxH);		
+			//SetEntityHealth(killers[i], curH);
+		}
+		//zf_critBonus[killers[i]] = min(100, zf_critBonus[killers[i]] + 5); 
+					 
+		} // if		 
+	} // for 
 	} // if 
 	
 	SetGlow();
@@ -1239,15 +1245,15 @@ public Action:event_PlayerBuiltObject(Handle:event, const String:name[], bool:do
 	new object = GetEventInt(event, "object");
 
 	// 1. Handle dispenser rules.
-	//		Disable dispensers when they begin construction.
-	//		Increase max health to 250 (default level 1 is 150).			
+	//	Disable dispensers when they begin construction.
+	//	Increase max health to 250 (default level 1 is 150).		
 	if(object == PLAYERBUILTOBJECT_ID_DISPENSER)
 	{
-		SetEntProp(index, Prop_Send, "m_bDisabled", 1);
-		SetEntProp(index, Prop_Send, "m_iMaxHealth", 250);
+	SetEntProp(index, Prop_Send, "m_bDisabled", 1);
+	SetEntProp(index, Prop_Send, "m_iMaxHealth", 250);
 	}
 
-	return Plugin_Continue;		 
+	return Plugin_Continue;	 
 }
 
 ////////////////////////////////////////////////////////////
@@ -1256,7 +1262,7 @@ public Action:event_PlayerBuiltObject(Handle:event, const String:name[], bool:do
 //
 ////////////////////////////////////////////////////////////
 public Action:timer_main(Handle:timer) // 1Hz
-{		 
+{	 
 	if(!zf_bEnabled) return Plugin_Continue;
 	
 	handle_survivorAbilities();
@@ -1264,42 +1270,42 @@ public Action:timer_main(Handle:timer) // 1Hz
 	if (g_bZombieRage) setTeamRespawnTime(zomTeam(), 0.0);
 	else
 	{
-		new Float:fDelay = 0.0;
-		if (g_fZombieDamageScale < 1.0)
-		{
-			fDelay = 1.0 - g_fZombieDamageScale;
-			// 0.90 = 0.1 * 15.0 = 1.5 seconds;
-			fDelay *= 15.0;
-		}
-		setTeamRespawnTime(zomTeam(), 5.0 + fDelay);
+	new Float:fDelay = 0.0;
+	if (g_fZombieDamageScale < 1.0)
+	{
+		fDelay = 1.0 - g_fZombieDamageScale;
+		// 0.90 = 0.1 * 15.0 = 1.5 seconds;
+		fDelay *= 15.0;
+	}
+	setTeamRespawnTime(zomTeam(), 5.0 + fDelay);
 	}
 	
 	MusicHandleAll();
 
 	if(roundState() == RoundActive)
 	{
-		handle_winCondition();
-		
-		for (new i = 1; i <= MaxClients; i++)
+	handle_winCondition();
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
 		{
-			if (validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
+		if (g_iSuperHealth[i] > 0)
+		{
+			g_iSuperHealth[i] -= g_iSuperHealthSubtract[i];
+		} else {
+			new iHealth = GetClientHealth(i);
+			if (iHealth > 1)
 			{
-				if (g_iSuperHealth[i] > 0)
-				{
-					g_iSuperHealth[i] -= g_iSuperHealthSubtract[i];
-				} else {
-					new iHealth = GetClientHealth(i);
-					if (iHealth > 1)
-					{
-						iHealth -= g_iSuperHealthSubtract[i];
-						if (iHealth < 1) iHealth = 1;
-						SetEntityHealth(i, iHealth);
-					} else {
-						ForcePlayerSuicide(i);
-					}
-				}
+			iHealth -= g_iSuperHealthSubtract[i];
+			if (iHealth < 1) iHealth = 1;
+			SetEntityHealth(i, iHealth);
+			} else {
+			ForcePlayerSuicide(i);
 			}
 		}
+		}
+	}
 	}
 
 	return Plugin_Continue;
@@ -1347,36 +1353,36 @@ public Action:timer_graceStartPost(Handle:timer)
 	// Disable all resupply cabinets.
 	new index = -1;
 	while((index = FindEntityByClassname(index, "func_regenerate")) != -1)
-		AcceptEntityInput(index, "Disable");
-		
+	AcceptEntityInput(index, "Disable");
+	
 	// Remove all dropped ammopacks.
 	index = -1;
 	while ((index = FindEntityByClassname(index, "tf_ammo_pack")) != -1)
-			AcceptEntityInput(index, "Kill");
+		AcceptEntityInput(index, "Kill");
 	
 	// Remove all ragdolls.
 	index = -1;
 	while ((index = FindEntityByClassname(index, "tf_ragdoll")) != -1)
-			AcceptEntityInput(index, "Kill");
+		AcceptEntityInput(index, "Kill");
 
 	// Disable all payload cart dispensers.
 	index = -1;
 	while((index = FindEntityByClassname(index, "mapobj_cart_dispenser")) != -1)
-		SetEntProp(index, Prop_Send, "m_bDisabled", 1);	
+	SetEntProp(index, Prop_Send, "m_bDisabled", 1);	
 	
 	// Disable all respawn room visualizers (non-ZF maps only)
 	if(!mapIsZF())
 	{
-		decl String:strParent[255];
-		index = -1;
-		while((index = FindEntityByClassname(index, "func_respawnroomvisualizer")) != -1)
+	decl String:strParent[255];
+	index = -1;
+	while((index = FindEntityByClassname(index, "func_respawnroomvisualizer")) != -1)
+	{
+		GetEntPropString(index, Prop_Data, "respawnroomname", strParent, sizeof(strParent));
+		if (!StrEqual(strParent, "ZombieSpawn", false))
 		{
-			GetEntPropString(index, Prop_Data, "respawnroomname", strParent, sizeof(strParent));
-			if (!StrEqual(strParent, "ZombieSpawn", false))
-			{
-				AcceptEntityInput(index, "Disable");
-			}
+		AcceptEntityInput(index, "Disable");
 		}
+	}
 	}
 	
 	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_PREPARE]-1);
@@ -1384,10 +1390,10 @@ public Action:timer_graceStartPost(Handle:timer)
 	MusicGetPath(MUSIC_PREPARE, iRandom, strPath, sizeof(strPath));
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && IsPlayerAlive(i) && !isZom(i) && ShouldHearEventSounds(i))
-		{
-			EmitSoundToClient(i, strPath);
-		}
+	if (IsClientInGame(i) && IsPlayerAlive(i) && !isZom(i) && ShouldHearEventSounds(i))
+	{
+		EmitSoundToClient(i, strPath);
+	}
 	}	
 	
 	return Plugin_Continue; 
@@ -1401,28 +1407,28 @@ public Action:timer_graceEnd(Handle:timer)
 }
 
 public Action:timer_initialHelp(Handle:timer, any:client)
-{		
+{	
 	// Wait until client is in game before printing initial help text.
 	if(IsClientInGame(client))
 	{
-		help_printZFInfoChat(client);
+	help_printZFInfoChat(client);
 	}
 	else
 	{
-		CreateTimer(10.0, timer_initialHelp, client, TIMER_FLAG_NO_MAPCHANGE);	
+	CreateTimer(10.0, timer_initialHelp, client, TIMER_FLAG_NO_MAPCHANGE);	
 	}
 	
 	return Plugin_Continue; 
 }
 
 public Action:timer_postSpawn(Handle:timer, any:client)
-{				 
+{		 
 	if(validClient(client) && IsPlayerAlive(client))
 	{
-		HandleClientInventory(client);
-		// Handle zombie spawn logic.
-		if(isZom(client))
-			stripWeapons(client);
+	HandleClientInventory(client);
+	// Handle zombie spawn logic.
+	if(isZom(client))
+		stripWeapons(client);
 	}
 
 	return Plugin_Continue; 
@@ -1433,8 +1439,8 @@ public Action:timer_zombify(Handle:timer, any:client)
 	if (roundState() != RoundActive) return Plugin_Continue;
 	if(validClient(client))
 	{
-		PrintToChat(client, "\x05[ZF]\x01 You have perished, zombifying....");
-		spawnClient(client, zomTeam());
+	PrintToChat(client, "\x05[ZF]\x01 %t", "You have perished, zombifying....");
+	spawnClient(client, zomTeam());
 	}
 	
 	return Plugin_Continue; 
@@ -1451,25 +1457,25 @@ handle_gameFrameLogic()
 	// 1. Limit spy cloak to 80% of max.
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
+	if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
+	{
+		if(getCloak(i) > 80.0) 
+		setCloak(i, 80.0);
+	}
+	if (roundState() == RoundActive)
+	{
+		if(validClient(i) && IsPlayerAlive(i) && isSur(i) && iCount == 1)
 		{
-			if(getCloak(i) > 80.0) 
-				setCloak(i, 80.0);
-		}
-		if (roundState() == RoundActive)
+		if (GetActivePlayerCount() >= 10 && !TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
 		{
-			if(validClient(i) && IsPlayerAlive(i) && isSur(i) && iCount == 1)
-			{
-				if (GetActivePlayerCount() >= 10 && !TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
-				{
-					TF2_AddCondition(i, TFCond_Kritzkrieged, 999.0);
-				}
-				if (GetActivePlayerCount() < 10 && TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
-				{
-					TF2_RemoveCondition(i, TFCond_Kritzkrieged);
-				}
-			}
+			TF2_AddCondition(i, TFCond_Kritzkrieged, 999.0);
 		}
+		if (GetActivePlayerCount() < 10 && TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
+		{
+			TF2_RemoveCondition(i, TFCond_Kritzkrieged);
+		}
+		}
+	}
 	}
 }
 	
@@ -1479,18 +1485,18 @@ handle_winCondition()
 	new bool:anySurvivorAlive = false;
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
-		{
-			anySurvivorAlive = true;
-			break;
-		}
+	if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
+	{
+		anySurvivorAlive = true;
+		break;
+	}
 	}
 	 
 	// 2. If no survivors are alive and at least 1 zombie is playing,
-	//		end round with zombie win.
+	//	end round with zombie win.
 	if(!anySurvivorAlive && (GetTeamClientCount(zomTeam()) > 0))
 	{
-		endRound(zomTeam());
+	endRound(zomTeam());
 	}
 }
 
@@ -1499,100 +1505,100 @@ handle_survivorAbilities()
 	decl clipAmmo;
 	decl resAmmo;
 	decl ammoAdj;
-		
+	
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
+	if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
+	{
+		// 1. Handle survivor weapon rules.
+		//	SMG doesn't have to reload. 
+		//	Syringe gun / blutsauger don't have to reload. 
+		//	Flamethrower / backburner ammo limited to 125.
+		switch(TF2_GetPlayerClass(i))
 		{
-			// 1. Handle survivor weapon rules.
-			//		SMG doesn't have to reload. 
-			//		Syringe gun / blutsauger don't have to reload. 
-			//		Flamethrower / backburner ammo limited to 125.
-			switch(TF2_GetPlayerClass(i))
+		case TFClass_Sniper:
+		{
+			if(isEquipped(i, ZFWEAP_SMG))
 			{
-				case TFClass_Sniper:
-				{
-					if(isEquipped(i, ZFWEAP_SMG))
-					{
-						clipAmmo = getClipAmmo(i, 1);
-						resAmmo = getResAmmo(i, 1);						
-						ammoAdj = min((25 - clipAmmo), resAmmo);
-						if(ammoAdj > 0)
-						{
-							setClipAmmo(i, 1, (clipAmmo + ammoAdj));
-							setResAmmo(i, 1, (resAmmo - ammoAdj));
-						}
-					}
-				}
-				
-				case TFClass_Medic: 
-				{
-					if(isEquipped(i, ZFWEAP_SYRINGEGUN) || isEquipped(i, ZFWEAP_BLUTSAUGER))
-					{
-						clipAmmo = getClipAmmo(i, 0);
-						resAmmo = getResAmmo(i, 0);
-						ammoAdj = min((40 - clipAmmo), resAmmo);
-						if(ammoAdj > 0)
-						{
-							setClipAmmo(i, 0, (clipAmmo + ammoAdj));
-							setResAmmo(i, 0, (resAmmo - ammoAdj));
-						}
-					}					 
-				}
-				
-				case TFClass_Pyro:
-				{
-					resAmmo = getResAmmo(i, 0);
-					if(resAmmo > 125)
-					{
-						ammoAdj = max((resAmmo - 10),125);
-						setResAmmo(i, 0, ammoAdj);
-					}		
-				}					
-			} //switch
-			
-			// 2. Handle survivor crit bonus rules.
-			//		Decrement morale bonus.
-			zf_critBonus[i] = max(0, zf_critBonus[i] - 1);
-			
-		} //if
+			clipAmmo = getClipAmmo(i, 1);
+			resAmmo = getResAmmo(i, 1);			
+			ammoAdj = min((25 - clipAmmo), resAmmo);
+			if(ammoAdj > 0)
+			{
+				setClipAmmo(i, 1, (clipAmmo + ammoAdj));
+				setResAmmo(i, 1, (resAmmo - ammoAdj));
+			}
+			}
+		}
+		
+		case TFClass_Medic: 
+		{
+			if(isEquipped(i, ZFWEAP_SYRINGEGUN) || isEquipped(i, ZFWEAP_BLUTSAUGER))
+			{
+			clipAmmo = getClipAmmo(i, 0);
+			resAmmo = getResAmmo(i, 0);
+			ammoAdj = min((40 - clipAmmo), resAmmo);
+			if(ammoAdj > 0)
+			{
+				setClipAmmo(i, 0, (clipAmmo + ammoAdj));
+				setResAmmo(i, 0, (resAmmo - ammoAdj));
+			}
+			}			 
+		}
+		
+		case TFClass_Pyro:
+		{
+			resAmmo = getResAmmo(i, 0);
+			if(resAmmo > 125)
+			{
+			ammoAdj = max((resAmmo - 10),125);
+			setResAmmo(i, 0, ammoAdj);
+			}	
+		}			
+		} //switch
+		
+		// 2. Handle survivor crit bonus rules.
+		//	Decrement morale bonus.
+		zf_critBonus[i] = max(0, zf_critBonus[i] - 1);
+		
+	} //if
 	} //for
 	
 	// 3. Handle sentry rules.
-	//		+ Norm sentry starts with 60 ammo and decays to 10.
-	//		+ Mini sentry starts with 60 ammo and decays to 0, then self destructs.
-	//		+ No sentry can be upgraded.
+	//	+ Norm sentry starts with 60 ammo and decays to 10.
+	//	+ Mini sentry starts with 60 ammo and decays to 0, then self destructs.
+	//	+ No sentry can be upgraded.
 	new index = -1;
 	while ((index = FindEntityByClassname(index, "obj_sentrygun")) != -1)
-	{		
-		new bool:sentBuilding = GetEntProp(index, Prop_Send, "m_bBuilding") == 1;
-		new bool:sentPlacing = GetEntProp(index, Prop_Send, "m_bPlacing") == 1;
-		new bool:sentCarried = GetEntProp(index, Prop_Send, "m_bCarried") == 1;
-		new bool:sentIsMini = GetEntProp(index, Prop_Send, "m_bMiniBuilding") == 1;
-		if(!sentBuilding && !sentPlacing && !sentCarried)
-		{	
-			new sentAmmo = GetEntProp(index, Prop_Send, "m_iAmmoShells");
-			if(sentAmmo > 0)
-			{
-				if(sentIsMini || (sentAmmo > 10))
-				{
-					sentAmmo = min(60, (sentAmmo - 1));
-					SetEntProp(index, Prop_Send, "m_iAmmoShells", sentAmmo);					
-				}
-			}
-			else
-			{
-				SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
-				AcceptEntityInput(index, "RemoveHealth");
-			}
-		}
-		
-		new sentLevel = GetEntProp(index, Prop_Send, "m_iHighestUpgradeLevel");
-		if(sentLevel > 1)
+	{	
+	new bool:sentBuilding = GetEntProp(index, Prop_Send, "m_bBuilding") == 1;
+	new bool:sentPlacing = GetEntProp(index, Prop_Send, "m_bPlacing") == 1;
+	new bool:sentCarried = GetEntProp(index, Prop_Send, "m_bCarried") == 1;
+	new bool:sentIsMini = GetEntProp(index, Prop_Send, "m_bMiniBuilding") == 1;
+	if(!sentBuilding && !sentPlacing && !sentCarried)
+	{	
+		new sentAmmo = GetEntProp(index, Prop_Send, "m_iAmmoShells");
+		if(sentAmmo > 0)
 		{
-			SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
-			AcceptEntityInput(index, "RemoveHealth");		
+		if(sentIsMini || (sentAmmo > 10))
+		{
+			sentAmmo = min(60, (sentAmmo - 1));
+			SetEntProp(index, Prop_Send, "m_iAmmoShells", sentAmmo);			
 		}
+		}
+		else
+		{
+		SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
+		AcceptEntityInput(index, "RemoveHealth");
+		}
+	}
+	
+	new sentLevel = GetEntProp(index, Prop_Send, "m_iHighestUpgradeLevel");
+	if(sentLevel > 1)
+	{
+		SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
+		AcceptEntityInput(index, "RemoveHealth");	
+	}
 	}
 }
 
@@ -1605,68 +1611,68 @@ handle_zombieAbilities()
 	
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i) && g_iSpecialInfected[i] != INFECTED_TANK)
-		{	 
-			clientClass = TF2_GetPlayerClass(i);
-			curH = GetClientHealth(i);
-			maxH = GetEntProp(i, Prop_Data, "m_iMaxHealth");
-							
-			// 1. Handle zombie regeneration.
-			//		Zombies regenerate health based on class and number of nearby
-			//		zombies (hoarde bonus). Zombies decay health when overhealed.
-			bonus = 0;
-			if(curH < maxH)
-			{
-				switch(clientClass)
-				{
-					case TFClass_Scout: bonus = 2 + (1 * zf_hoardeBonus[i]);
-					case TFClass_Heavy: bonus = 4 + (3 * zf_hoardeBonus[i]);
-					case TFClass_Spy:	 bonus = 2 + (1 * zf_hoardeBonus[i]);
-				}				
-				curH += bonus;
-				curH = min(curH, maxH);
-				SetEntityHealth(i, curH);
-			}
-			else if(curH > maxH)
-			{
-				switch(clientClass)
-				{
-					case TFClass_Scout: bonus = -3;
-					case TFClass_Heavy: bonus = -7;
-					case TFClass_Spy:	 bonus = -3;
-				}					
-				curH += bonus;
-				curH = max(curH, maxH); 
-				SetEntityHealth(i, curH);
-			}
+	if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i) && g_iSpecialInfected[i] != INFECTED_TANK)
+	{	 
+		clientClass = TF2_GetPlayerClass(i);
+		curH = GetClientHealth(i);
+		maxH = GetEntProp(i, Prop_Data, "m_iMaxHealth");
+				
+		// 1. Handle zombie regeneration.
+		//	Zombies regenerate health based on class and number of nearby
+		//	zombies (hoarde bonus). Zombies decay health when overhealed.
+		bonus = 0;
+		if(curH < maxH)
+		{
+		switch(clientClass)
+		{
+			case TFClass_Scout: bonus = 2 + (1 * zf_hoardeBonus[i]);
+			case TFClass_Heavy: bonus = 4 + (3 * zf_hoardeBonus[i]);
+			case TFClass_Spy:	 bonus = 2 + (1 * zf_hoardeBonus[i]);
+		}		
+		curH += bonus;
+		curH = min(curH, maxH);
+		SetEntityHealth(i, curH);
+		}
+		else if(curH > maxH)
+		{
+		switch(clientClass)
+		{
+			case TFClass_Scout: bonus = -3;
+			case TFClass_Heavy: bonus = -7;
+			case TFClass_Spy:	 bonus = -3;
+		}			
+		curH += bonus;
+		curH = max(curH, maxH); 
+		SetEntityHealth(i, curH);
+		}
 
-			// 2. Handle zombie crit rate bonus.
-			//		Zombies receive crit bonus based on number of nearby zombies
-			//		(hoarde bonus). Zombies only receive this bonus at full health
-			//		or greater.
-			bonus = 0;
-			if(curH >= maxH)
-			{
-				switch(clientClass)
-				{
-					case TFClass_Scout: bonus = 5 + (1 * zf_hoardeBonus[i]);
-					case TFClass_Heavy: bonus = 10 + (5 * zf_hoardeBonus[i]);
-					case TFClass_Spy:	 bonus = 5 + (1 * zf_hoardeBonus[i]);
-				}
-			}	 
-			zf_critBonus[i] = bonus;
-			
-			// 3. Handle zombie rage timer
-			//		Rage recharges every 30s.
-			if(zf_rageTimer[i] > 0)
-			{
-				if(zf_rageTimer[i] == 1)
-				{
-					PrintHintText(i, "Rage is ready!");
-				}
-				zf_rageTimer[i]--;
-			}			
-		} //if
+		// 2. Handle zombie crit rate bonus.
+		//	Zombies receive crit bonus based on number of nearby zombies
+		//	(hoarde bonus). Zombies only receive this bonus at full health
+		//	or greater.
+		bonus = 0;
+		if(curH >= maxH)
+		{
+		switch(clientClass)
+		{
+			case TFClass_Scout: bonus = 5 + (1 * zf_hoardeBonus[i]);
+			case TFClass_Heavy: bonus = 10 + (5 * zf_hoardeBonus[i]);
+			case TFClass_Spy:	 bonus = 5 + (1 * zf_hoardeBonus[i]);
+		}
+		}	 
+		zf_critBonus[i] = bonus;
+		
+		// 3. Handle zombie rage timer
+		//	Rage recharges every 30s.
+		if(zf_rageTimer[i] > 0)
+		{
+		if(zf_rageTimer[i] == 1)
+		{
+			PrintHintText(i, "Rage is ready!");
+		}
+		zf_rageTimer[i]--;
+		}		
+	} //if
 	} //for
 }
 
@@ -1687,58 +1693,58 @@ handle_hoardeBonus()
 	playerCount = 0;
 	for(new i = 1; i <= MaxClients; i++)
 	{	
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
-		{							
-			player[playerCount] = i;
-			playerHoardeId[playerCount] = -1;
-			GetClientAbsOrigin(i, playerPos[playerCount]);
-			playerCount++; 
-		}
+	if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
+	{				
+		player[playerCount] = i;
+		playerHoardeId[playerCount] = -1;
+		GetClientAbsOrigin(i, playerPos[playerCount]);
+		playerCount++; 
+	}
 	}
 	
 	// 2. Calculate hoarde groups.
-	//		A hoarde is defined as a single, contiguous group of valid zombie
-	//		players. Distance calculation between zombie players serves as
-	//		primary decision criteria.
+	//	A hoarde is defined as a single, contiguous group of valid zombie
+	//	players. Distance calculation between zombie players serves as
+	//	primary decision criteria.
 	curHoarde = 0;
 	hStack = CreateStack();	
 	for(new i = 0; i < playerCount; i++)
 	{
-		// 2a. Create new hoarde group.
-		if(playerHoardeId[i] == -1)
+	// 2a. Create new hoarde group.
+	if(playerHoardeId[i] == -1)
+	{
+		PushStackCell(hStack, i);	 
+		playerHoardeId[i] = curHoarde;
+		hoardeSize[curHoarde] = 1;
+	}
+	
+	// 2b. Build current hoarde created in step 2a.
+	//	 Use a depth-first adjacency search.
+	while(PopStackCell(hStack, curPlayer))
+	{			
+		for(new j = i+1; j < playerCount; j++)
 		{
-			PushStackCell(hStack, i);	 
-			playerHoardeId[i] = curHoarde;
-			hoardeSize[curHoarde] = 1;
-		}
-		
-		// 2b. Build current hoarde created in step 2a.
-		//		 Use a depth-first adjacency search.
-		while(PopStackCell(hStack, curPlayer))
-		{						
-			for(new j = i+1; j < playerCount; j++)
+		if(playerHoardeId[j] == -1)
+		{
+			if(GetVectorDistance(playerPos[j], playerPos[curPlayer], true) <= 200000)
 			{
-				if(playerHoardeId[j] == -1)
-				{
-					if(GetVectorDistance(playerPos[j], playerPos[curPlayer], true) <= 200000)
-					{
-						PushStackCell(hStack, j);
-						playerHoardeId[j] = curHoarde;
-						hoardeSize[curHoarde]++;
-					}
-				}
-			} 
+			PushStackCell(hStack, j);
+			playerHoardeId[j] = curHoarde;
+			hoardeSize[curHoarde]++;
+			}
 		}
-		curHoarde++;
+		} 
+	}
+	curHoarde++;
 	}
 	
 	// 3. Set hoarde bonuses.
 	for(new i = 1; i <= MaxClients; i++)
-		zf_hoardeBonus[i] = 0;		
+	zf_hoardeBonus[i] = 0;	
 	for(new i = 0; i < playerCount; i++)
-		zf_hoardeBonus[player[i]] = hoardeSize[playerHoardeId[i]] - 1;
-		
-	CloseHandle(hStack);		
+	zf_hoardeBonus[player[i]] = hoardeSize[playerHoardeId[i]] - 1;
+	
+	CloseHandle_2(hStack);	
 }
 
 ////////////////////////////////////////////////////////////
@@ -1747,16 +1753,16 @@ handle_hoardeBonus()
 //
 ////////////////////////////////////////////////////////////
 zfEnable()
-{		 
+{	 
 	zf_bEnabled = true;
 	zf_bNewRound = true;
 	setRoundState(RoundInit2);
 	
 	zfSetTeams();
-		
+	
 	for(new i = 0; i <= MAXPLAYERS; i++)
-		resetClientState(i);
-		
+	resetClientState(i);
+	
 	// Adjust gameplay CVars.
 	ServerCommand("mp_autoteambalance 0");
 	ServerCommand("mp_teams_unbalance_limit 0");
@@ -1772,26 +1778,26 @@ zfEnable()
 	ServerCommand("sm_cvar tf_spy_invis_time 0.5"); // Locked 
 	ServerCommand("sm_cvar tf_spy_invis_unstealth_time 0.75"); // Locked 
 	ServerCommand("sm_cvar tf_spy_cloak_no_attack_time 1.0"); // Locked 
-		
+	
 	// [Re]Enable periodic timers.
-	if(zf_tMain != INVALID_HANDLE)		
-		CloseHandle(zf_tMain);
+	if(zf_tMain != INVALID_HANDLE)	
+	CloseHandle_2(zf_tMain);
 	zf_tMain = CreateTimer(1.0, timer_main, _, TIMER_REPEAT); 
 	
 	if(zf_tMainSlow != INVALID_HANDLE)
-		CloseHandle(zf_tMainSlow);		
+	CloseHandle_2(zf_tMainSlow);	
 	zf_tMainSlow = CreateTimer(240.0, timer_mainSlow, _, TIMER_REPEAT);
 	
 	if(zf_tMainFast != INVALID_HANDLE)
-		CloseHandle(zf_tMainFast);		
+	CloseHandle_2(zf_tMainFast);	
 	zf_tMainFast = CreateTimer(0.5, timer_mainFast, _, TIMER_REPEAT);
 	
 	if(zf_tHoarde != INVALID_HANDLE)
-		CloseHandle(zf_tHoarde);
+	CloseHandle_2(zf_tHoarde);
 	zf_tHoarde = CreateTimer(5.0, timer_hoarde, _, TIMER_REPEAT); 
 	
 	if(zf_tDataCollect != INVALID_HANDLE)
-		CloseHandle(zf_tDataCollect);
+	CloseHandle_2(zf_tDataCollect);
 	zf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT); 
 }
 
@@ -1802,8 +1808,8 @@ zfDisable()
 	setRoundState(RoundInit2);
 	
 	for(new i = 0; i <= MAXPLAYERS; i++)
-		resetClientState(i);
-		
+	resetClientState(i);
+	
 	// Adjust gameplay CVars.
 	ServerCommand("mp_autoteambalance 1");
 	ServerCommand("mp_teams_unbalance_limit 1");
@@ -1819,34 +1825,34 @@ zfDisable()
 	ServerCommand("sm_cvar tf_spy_invis_time 1.0"); // Locked 
 	ServerCommand("sm_cvar tf_spy_invis_unstealth_time 2.0"); // Locked 
 	ServerCommand("sm_cvar tf_spy_cloak_no_attack_time 2.0"); // Locked 
-			
+		
 	// Disable periodic timers.
 	if(zf_tMain != INVALID_HANDLE)
-	{			
-		CloseHandle(zf_tMain);
-		zf_tMain = INVALID_HANDLE;
+	{		
+	CloseHandle_2(zf_tMain);
+	zf_tMain = INVALID_HANDLE;
 	}
 	if(zf_tMainSlow != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainSlow);
-		zf_tMainSlow = INVALID_HANDLE;
+	CloseHandle_2(zf_tMainSlow);
+	zf_tMainSlow = INVALID_HANDLE;
 	}
 	if(zf_tHoarde != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tHoarde);
-		zf_tHoarde = INVALID_HANDLE;
+	CloseHandle_2(zf_tHoarde);
+	zf_tHoarde = INVALID_HANDLE;
 	}
 	
 	if(zf_tDataCollect != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tDataCollect);
-		zf_tDataCollect = INVALID_HANDLE;
+	CloseHandle_2(zf_tDataCollect);
+	zf_tDataCollect = INVALID_HANDLE;
 	}
 
 	// Enable resupply lockers.
 	new index = -1;
 	while((index = FindEntityByClassname(index, "func_regenerate")) != -1)
-		AcceptEntityInput(index, "Enable");
+	AcceptEntityInput(index, "Enable");
 }
 
 zfSetTeams()
@@ -1864,11 +1870,11 @@ zfSetTeams()
 	//
 	if(mapIsPL())
 	{
-		if(GetConVarBool(zf_cvSwapOnPayload)) 
-		{			
-			survivorTeam = _:TFTeam_Blue;
-			zombieTeam = _:TFTeam_Red;
-		}
+	if(GetConVarBool(zf_cvSwapOnPayload)) 
+	{		
+		survivorTeam = _:TFTeam_Blue;
+		zombieTeam = _:TFTeam_Red;
+	}
 	}
 	
 	//
@@ -1877,25 +1883,25 @@ zfSetTeams()
 	//
 	if(mapIsCP())
 	{
-		if(GetConVarBool(zf_cvSwapOnAttdef))
+	if(GetConVarBool(zf_cvSwapOnAttdef))
+	{
+		new bool:isAttdef = true;
+		new index = -1;
+		while((index = FindEntityByClassname(index, "team_control_point")) != -1)
 		{
-			new bool:isAttdef = true;
-			new index = -1;
-			while((index = FindEntityByClassname(index, "team_control_point")) != -1)
-			{
-				if(GetEntProp(index, Prop_Send, "m_iTeamNum") != _:TFTeam_Red)
-				{
-					isAttdef = false;
-					break;
-				}
-			}
-			
-			if(isAttdef)
-			{
-				survivorTeam = _:TFTeam_Blue;
-				zombieTeam = _:TFTeam_Red;
-			}
+		if(GetEntProp(index, Prop_Send, "m_iTeamNum") != _:TFTeam_Red)
+		{
+			isAttdef = false;
+			break;
 		}
+		}
+		
+		if(isAttdef)
+		{
+		survivorTeam = _:TFTeam_Blue;
+		zombieTeam = _:TFTeam_Red;
+		}
+	}
 	}
 	
 	// Set team roles.
@@ -1942,13 +1948,13 @@ public help_printZFInfoChat(client)
 {
 	if(client == 0)
 	{
-		PrintToChatAll("\x05[ZF]\x01 This server is running Super Zombie Fortress (%s)", PLUGIN_VERSION);
-		PrintToChatAll("\x05[ZF]\x01 Type \"/zf\" for info!");		
+	PrintToChatAll("\x05[ZF]\x01 %t", "This server is running Super Zombie Fortress {1}", PLUGIN_VERSION);
+	PrintToChatAll("\x05[ZF]\x01 %t", "Type \"/zf\" for info!");	
 	}
 	else
 	{
-		PrintToChat(client, "\x05[ZF]\x01 This server is running Super Zombie Fortress (%s)", PLUGIN_VERSION);
-		PrintToChat(client, "\x05[ZF]\x01 Type \"/zf\" for info!");
+	PrintToChat(client, "\x05[ZF]\x01 %t", "This server is running Super Zombie Fortress {1}", PLUGIN_VERSION);
+	PrintToChat(client, "\x05[ZF]\x01 %t", "Type \"/zf\" for info!");
 	}
 }
 
@@ -1960,25 +1966,32 @@ public help_printZFInfoChat(client)
 public panel_PrintMain(client)
 {
 	new Handle:panel = CreatePanel();
-	
-	SetPanelTitle(panel, "ZF Main Menu");
-	DrawPanelItem(panel, "Help");	
-	if(GetConVarBool(zf_cvAllowTeamPref)) DrawPanelItem(panel, "Preferences");
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string21[256];
+	Format(temp_string21, sizeof(temp_string21),"%T", "ZF Main Menu", client);
+	SetPanelTitle(panel, temp_string21);
+	Format(temp_string21, sizeof(temp_string21),"%T", "Help", client);
+	DrawPanelItem(panel, temp_string21);	
+	if(GetConVarBool(zf_cvAllowTeamPref)) 
+	{
+		Format(temp_string21, sizeof(temp_string21),"%T", "Preferences", client);
+		DrawPanelItem(panel, temp_string21);
+	}
+	Format(temp_string21, sizeof(temp_string21),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string21);
 	SendPanelToClient(panel, client, panel_HandleMain, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleMain(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintHelp(param1);			 
-			case 2: panel_PrintPrefs(param1);	 
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintHelp(param1);		 
+		case 2: panel_PrintPrefs(param1);	 
+		default: return;	 
+	} 
 	} 
 }
 
@@ -1988,62 +2001,88 @@ public panel_HandleMain(Handle:menu, MenuAction:action, param1, param2)
 public panel_PrintPrefs(client)
 {
 	new Handle:panel = CreatePanel();
-	
-	SetPanelTitle(panel, "ZF Preferences");
-	if(GetConVarBool(zf_cvAllowTeamPref)) DrawPanelItem(panel, "Team Preference");
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string1[256];
+	Format(temp_string1, sizeof(temp_string1),"%T", "ZF Preferences", client);
+	SetPanelTitle(panel, temp_string1);
+	if(GetConVarBool(zf_cvAllowTeamPref)) 
+	{
+		Format(temp_string1, sizeof(temp_string1),"%T", "Team Preference", client);
+		DrawPanelItem(panel, temp_string1);	
+	}
+	Format(temp_string1, sizeof(temp_string1),"%T", "Close Menu", client);
+   DrawPanelItem(panel, temp_string1);
 	SendPanelToClient(panel, client, panel_HandlePrefs, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandlePrefs(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintPrefs00(param1);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintPrefs00(param1);
+		default: return;	 
+	} 
 	}
 }
 
 public panel_PrintPrefs00(client)
 {
 	new Handle:panel = CreatePanel();
-	SetPanelTitle(panel, "ZF Team Preference");
+	decl String:temp_string2[512];
+	Format(temp_string2, sizeof(temp_string2),"%T", "ZF Team Preference", client);
+	SetPanelTitle(panel, temp_string2);
 	
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_NONE)
-		DrawPanelItem(panel, "(Current) None", ITEMDRAW_DISABLED);
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) None", client);
+	DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+	}
 	else
-		DrawPanelItem(panel, "None");
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "None", client);
+	DrawPanelItem(panel, temp_string2);
+	}
 
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_SUR)
-		DrawPanelItem(panel, "(Current) Survivors", ITEMDRAW_DISABLED);
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Survivors", client);
+	DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+	}
 	else
-		DrawPanelItem(panel, "Survivors");
-			   
-	if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
-		DrawPanelItem(panel, "(Current) Zombies", ITEMDRAW_DISABLED);
-	else
-		DrawPanelItem(panel, "Zombies");
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "Survivors", client);
+	DrawPanelItem(panel, temp_string2);
+	}
 		
-	DrawPanelItem(panel, "Close Menu");
+	if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Zombies", client);
+	DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+	}
+	else
+	{
+		Format(temp_string2, sizeof(temp_string2),"%T", "Zombies", client);
+	DrawPanelItem(panel, temp_string2);
+	}  
+	Format(temp_string2, sizeof(temp_string2),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string2);
 	SendPanelToClient(panel, client, panel_HandlePrefTeam, 30);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandlePrefTeam(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: prefSet(param1, TeamPref, ZF_TEAMPREF_NONE);
-			case 2: prefSet(param1, TeamPref, ZF_TEAMPREF_SUR);
-			case 3: prefSet(param1, TeamPref, ZF_TEAMPREF_ZOM);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: prefSet(param1, TeamPref, ZF_TEAMPREF_NONE);
+		case 2: prefSet(param1, TeamPref, ZF_TEAMPREF_SUR);
+		case 3: prefSet(param1, TeamPref, ZF_TEAMPREF_ZOM);
+		default: return;	 
+	} 
 	}
 }
 
@@ -2054,30 +2093,38 @@ public panel_PrintHelp(client)
 {
 	new Handle:panel = CreatePanel();
 	
-	SetPanelTitle(panel, "ZF Help");
-	DrawPanelItem(panel, "ZF Overview");
-	DrawPanelItem(panel, "Team: Survivors");
-	DrawPanelItem(panel, "Team: Zombies");
-	DrawPanelItem(panel, "Classes: Survivors");
-	DrawPanelItem(panel, "Classes: Zombies");
-	DrawPanelItem(panel, "Close Menu");
-	SendPanelToClient(panel, client, panel_HandleHelp, 10);
-	CloseHandle(panel);
+	decl String:temp_string3[1024];
+	Format(temp_string3, sizeof(temp_string3),"%T", "ZF Help", client);
+	SetPanelTitle(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "ZF Overview", client);
+	DrawPanelItem(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "Team: Survivors", client);
+	DrawPanelItem(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "Team: Zombies", client);
+	DrawPanelItem(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "Classes: Survivors", client);
+	DrawPanelItem(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "Classes: Zombies", client);
+	DrawPanelItem(panel, temp_string3);
+	Format(temp_string3, sizeof(temp_string3),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string3);
+	SendPanelToClient(panel, client, panel_HandleHelp, 30);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleHelp(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintOverview(param1);
-			case 2: panel_PrintTeam(param1, _:surTeam());
-			case 3: panel_PrintTeam(param1, _:zomTeam());
-			case 4: panel_PrintSurClass(param1);
-			case 5: panel_PrintZomClass(param1);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintOverview(param1);
+		case 2: panel_PrintTeam(param1, _:surTeam());
+		case 3: panel_PrintTeam(param1, _:zomTeam());
+		case 4: panel_PrintSurClass(param1);
+		case 5: panel_PrintZomClass(param1);
+		default: return;	 
+	} 
 	} 
 }
  
@@ -2088,26 +2135,33 @@ public panel_PrintOverview(client)
 {
 	new Handle:panel = CreatePanel();
 	
-	SetPanelTitle(panel, "ZF Overview");
-	DrawPanelText(panel, "----------------------------------------");
-	DrawPanelText(panel, "Humans must survive the endless hoarde.");
-	DrawPanelText(panel, "When a human dies, they become a zombie.");
-	DrawPanelText(panel, "----------------------------------------");
-	DrawPanelItem(panel, "Return to Help Menu");	
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string4[1024];
+	Format(temp_string4, sizeof(temp_string4),"%T", "ZF Overview", client);
+	SetPanelTitle(panel, temp_string4);
+	DrawPanelText(panel, "-------------------------------------------");
+	Format(temp_string4, sizeof(temp_string4),"%T", "Humans must survive the endless hoarde.", client);
+	DrawPanelText(panel, temp_string4);
+	Format(temp_string4, sizeof(temp_string4),"%T", "When a human dies, they become a zombie.", client);
+	DrawPanelText(panel, temp_string4);
+	Format(temp_string4, sizeof(temp_string4),"%T", "ZF Overview", client);
+	DrawPanelText(panel, "-------------------------------------------");
+	Format(temp_string4, sizeof(temp_string4),"%T", "Return to Help Menu", client);
+	DrawPanelItem(panel, temp_string4); 
+	Format(temp_string4, sizeof(temp_string4),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string4);
 	SendPanelToClient(panel, client, panel_HandleOverview, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleOverview(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintHelp(param1);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintHelp(param1);
+		default: return;	 
+	} 
 	} 
 }
  
@@ -2119,43 +2173,62 @@ public panel_PrintTeam(client, team)
 	new Handle:panel = CreatePanel();
 	if(team == _:surTeam())
 	{
-		SetPanelTitle(panel, "ZF Survivor Team");
-		DrawPanelText(panel, "----------------------------------------");
-		DrawPanelText(panel, "Survivors consist of soldiers, demomen,");
-		DrawPanelText(panel, "pyros, engineers, medics, and snipers.");
-		DrawPanelText(panel, "They receive morale boosts for multiple");
-		DrawPanelText(panel, "kills in a row. Morale boosts grant crit");
-		DrawPanelText(panel, "and health bonuses.");
-		DrawPanelText(panel, "----------------------------------------");
+		decl String:temp_string5[1024];
+		Format(temp_string5, sizeof(temp_string5),"%T", "ZF Survivor Team", client);
+	SetPanelTitle(panel, temp_string5);
+	DrawPanelText(panel, "-------------------------------------------");
+		Format(temp_string5, sizeof(temp_string5),"%T", "Survivors consist of soldiers, demomen,", client);
+	DrawPanelText(panel, temp_string5);
+		Format(temp_string5, sizeof(temp_string5),"%T", "pyros, engineers, medics, and snipers.", client);
+	DrawPanelText(panel, temp_string5);
+		Format(temp_string5, sizeof(temp_string5),"%T", "They receive morale boosts for multiple", client);
+	DrawPanelText(panel, temp_string5);
+		Format(temp_string5, sizeof(temp_string5),"%T", "kills in a row. Morale boosts grant crit", client);
+	DrawPanelText(panel, temp_string5);
+		Format(temp_string5, sizeof(temp_string5),"%T",  "and health bonuses.", client);
+	DrawPanelText(panel, temp_string5);
+	DrawPanelText(panel, "-------------------------------------------");
 	}
 	else if(team == _:zomTeam())
 	{
-		SetPanelTitle(panel, "ZF Zombie Team");
-		DrawPanelText(panel, "----------------------------------------");
-		DrawPanelText(panel, "Zombies consist of scouts, heavies, and");
-		DrawPanelText(panel, "spies. They receive regeneration and crit");
-		DrawPanelText(panel, "bonuses for sticking together as a hoarde.");
-		DrawPanelText(panel, "They also possess the Rage ability, which");
-		DrawPanelText(panel, "gives health and speed bonuses. Rage is");
-		DrawPanelText(panel, "activated by calling for a medic, and");
-		DrawPanelText(panel, "recharges after 30s.");
-		DrawPanelText(panel, "----------------------------------------");
+		decl String:temp_string6[2048];
+		Format(temp_string6, sizeof(temp_string6),"%T", "ZF Zombie Team", client);
+	SetPanelTitle(panel, temp_string6);
+	DrawPanelText(panel, "-------------------------------------------");
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombies consist of scouts, heavies, and", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "spies. They receive regeneration and crit", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "bonuses for sticking together as a hoarde.", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "They also possess the Rage ability, which", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "gives health and speed bonuses. Rage is", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "activated by calling for a medic, and", client);
+	DrawPanelText(panel, temp_string6);
+		Format(temp_string6, sizeof(temp_string6),"%T", "recharges after 30s.", client);
+	DrawPanelText(panel, temp_string6);
+	DrawPanelText(panel, "-------------------------------------------");
 	}
-	DrawPanelItem(panel, "Return to Help Menu");
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string7[512];
+	Format(temp_string7, sizeof(temp_string7),"%T", "Return to Help Menu", client);
+	DrawPanelItem(panel, temp_string7);
+	Format(temp_string7, sizeof(temp_string7),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string7);
 	SendPanelToClient(panel, client, panel_HandleTeam, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleTeam(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintHelp(param1);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintHelp(param1);
+		default: return;	 
+	} 
 	} 
 }
 
@@ -2166,59 +2239,73 @@ public panel_PrintSurClass(client)
 {
 	new Handle:panel = CreatePanel();
 	
-	SetPanelTitle(panel, "ZF Survivor Classes");
-	DrawPanelItem(panel, "Soldier");
-	DrawPanelItem(panel, "Sniper");
-	DrawPanelItem(panel, "Medic");
-	DrawPanelItem(panel, "Demo");
-	DrawPanelItem(panel, "Pyro");
-	DrawPanelItem(panel, "Engineer");
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string8[512];
+	Format(temp_string8, sizeof(temp_string8),"%T", "ZF Survivor Classes", client);
+	SetPanelTitle(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Soldier", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Sniper", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Medic", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Demo", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Pyro", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Engineer", client);
+	DrawPanelItem(panel, temp_string8);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string8);
 	SendPanelToClient(panel, client, panel_HandleSurClass, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleSurClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintClass(param1, TFClass_Soldier);
-			case 2: panel_PrintClass(param1, TFClass_Sniper);
-			case 3: panel_PrintClass(param1, TFClass_Medic);
-			case 4: panel_PrintClass(param1, TFClass_DemoMan);
-			case 5: panel_PrintClass(param1, TFClass_Pyro);
-			case 6: panel_PrintClass(param1, TFClass_Engineer);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintClass(param1, TFClass_Soldier);
+		case 2: panel_PrintClass(param1, TFClass_Sniper);
+		case 3: panel_PrintClass(param1, TFClass_Medic);
+		case 4: panel_PrintClass(param1, TFClass_DemoMan);
+		case 5: panel_PrintClass(param1, TFClass_Pyro);
+		case 6: panel_PrintClass(param1, TFClass_Engineer);
+		default: return;	 
+	} 
 	} 
 }
-			
+		
 public panel_PrintZomClass(client)
 {
 	new Handle:panel = CreatePanel();
-	
-	SetPanelTitle(panel, "ZF Zombie Classes");
-	DrawPanelItem(panel, "Scout");
-	DrawPanelItem(panel, "Heavy");
-	DrawPanelItem(panel, "Spy");
-	DrawPanelItem(panel, "Close Menu");
+	decl String:temp_string9[512];
+	Format(temp_string9, sizeof(temp_string9),"%T", "ZF Zombie Classes", client);
+	SetPanelTitle(panel, temp_string9);
+	Format(temp_string9, sizeof(temp_string9),"%T", "Scout", client);
+	DrawPanelItem(panel, temp_string9);
+	Format(temp_string9, sizeof(temp_string9),"%T", "Heavy", client);
+	DrawPanelItem(panel, temp_string9);
+	Format(temp_string9, sizeof(temp_string9),"%T", "Spy", client);
+	DrawPanelItem(panel, temp_string9);
+	Format(temp_string9, sizeof(temp_string9),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string9);
 	SendPanelToClient(panel, client, panel_HandleZomClass, 10);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleZomClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintClass(param1, TFClass_Scout);
-			case 2: panel_PrintClass(param1, TFClass_Heavy);
-			case 3: panel_PrintClass(param1, TFClass_Spy);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintClass(param1, TFClass_Scout);
+		case 2: panel_PrintClass(param1, TFClass_Heavy);
+		case 3: panel_PrintClass(param1, TFClass_Spy);
+		default: return;	 
+	} 
 	} 
 }
 
@@ -2227,110 +2314,160 @@ public panel_PrintClass(client, TFClassType:class)
 	new Handle:panel = CreatePanel();
 	switch(class)
 	{
-		case TFClass_Soldier:
-		{
-			SetPanelTitle(panel, "Soldier [Survivor/Assault]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Gains 2 rockets per kill.");
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Pyro:
-		{
-			SetPanelTitle(panel, "Pyro [Survivor/Assault]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Flamethrowers limited to 125.");
-			DrawPanelText(panel, "Speed decreased to 240 (from 300).");			
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_DemoMan:
-		{
-			SetPanelTitle(panel, "Demoman [Survivor/Assault]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Gains 2 pipes per kill.");		
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Engineer:
-		{
-			SetPanelTitle(panel, "Engineer [Survivor/Support]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Buildables can't be upgraded, but can be");
-			DrawPanelText(panel, "repaired. Sentry ammo limited to 60 and");
-			DrawPanelText(panel, "slowly decays. More ammo can't be added.");
-			DrawPanelText(panel, "Sentries self destruct when ammo is depleted.");
-			DrawPanelText(panel, "Dispenser health increased to 250 (from 150).");		
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Medic:
-		{
-			SetPanelTitle(panel, "Medic [Survivor/Support]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Syringe Guns don't have to reload. Ueber/");
-			DrawPanelText(panel, "charge faster, but don't last as long.");
-			DrawPanelText(panel, "Overheal limited to 125% of max health");
-			DrawPanelText(panel, "and decays more slowly.");
-
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Sniper:
-		{
-			SetPanelTitle(panel, "Sniper [Survivor/Support]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Gains 5 Rifle/2 Huntman ammo per kill.");
-			DrawPanelText(panel, "SMG doesn't have to reload.");	 
-			DrawPanelText(panel, "----------------------------------------");
-		}		
-		case TFClass_Scout:
-		{
-			SetPanelTitle(panel, "Scout [Zombie]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Bats / Drinks only.");
-			DrawPanelText(panel, "Rage ability: Increase speed and health");
-			DrawPanelText(panel, "by calling for medic. Recharges after 30s.");
-			DrawPanelText(panel, "Speed reduced to 350 (from 400).");		
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Heavy:
-		{
-			SetPanelTitle(panel, "Heavy [Zombie]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Fists / Gloves / Food only.");
-			DrawPanelText(panel, "Rage ability: Increase speed and health");
-			DrawPanelText(panel, "by calling for medic. Recharges after 30s.");
-			DrawPanelText(panel, "----------------------------------------");
-		}
-		case TFClass_Spy:
-		{
-			SetPanelTitle(panel, "Spy [Zombie]");
-			DrawPanelText(panel, "----------------------------------------");
-			DrawPanelText(panel, "Knives / Invis Watch / CnD only.");
-			DrawPanelText(panel, "Rage ability: Increase speed and health");
-			DrawPanelText(panel, "by calling for medic. Recharges after 30s.");
-			DrawPanelText(panel, "Speed reduced to 280 (from 300).");
-			DrawPanelText(panel, "----------------------------------------");
-		}		
-		default:
-		{
-			SetPanelTitle(panel, "Unassigned / Spectator");
-			DrawPanelText(panel, "----------------------------------------");			
-			DrawPanelText(panel, "Honestly, what were you expecting here?");
-			DrawPanelText(panel, "----------------------------------------");
-		}
+	case TFClass_Soldier:
+	{
+			decl String:temp_string10[1024];
+			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier [Survivor/Assault]", client);
+		SetPanelTitle(panel, temp_string10);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string10, sizeof(temp_string10),"%T", "Gains 2 rockets per kill.", client);
+		DrawPanelText(panel, temp_string10);
+		DrawPanelText(panel, "-------------------------------------------");
 	}
-	DrawPanelItem(panel, "Return to Help Menu");
-	DrawPanelItem(panel, "Close Menu");	
+	case TFClass_Pyro:
+	{
+			decl String:temp_string11[512];
+			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro [Survivor/Assault]", client);
+		SetPanelTitle(panel, temp_string11);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string11, sizeof(temp_string11),"%T", "Flamethrowers limited to 125.", client);
+		DrawPanelText(panel, temp_string11);
+			Format(temp_string11, sizeof(temp_string11),"%T", "Speed decreased to 240 (from 300).", client);
+		DrawPanelText(panel, temp_string11);		
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_DemoMan:
+	{
+			decl String:temp_string12[1024];
+			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman [Survivor/Assault]", client);
+		SetPanelTitle(panel, temp_string12);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string12, sizeof(temp_string12),"%T", "Gains 2 pipes per kill.", client);
+		DrawPanelText(panel, temp_string12);	
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_Engineer:
+	{
+			decl String:temp_string13[2048];
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer [Survivor/Support]", client);
+		SetPanelTitle(panel, temp_string13);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string13, sizeof(temp_string13),"%T", "Buildables can't be upgraded, but can be", client);
+		DrawPanelText(panel, temp_string13);
+			Format(temp_string13, sizeof(temp_string13),"%T", "repaired. Sentry ammo limited to 60 and", client);
+		DrawPanelText(panel, temp_string13);
+			Format(temp_string13, sizeof(temp_string13),"%T", "slowly decays. More ammo can't be added.", client);
+		DrawPanelText(panel, temp_string13);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Sentries self destruct when ammo is depleted.", client);
+		DrawPanelText(panel, temp_string13);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Dispenser health increased to 250 (from 150).", client);
+		DrawPanelText(panel, temp_string13);	
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_Medic:
+	{
+			decl String:temp_string14[2048];
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic [Survivor/Support]", client);
+		SetPanelTitle(panel, temp_string14);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string14, sizeof(temp_string14),"%T", "Syringe Guns don't have to reload. Ueber/", client);
+		DrawPanelText(panel, temp_string14);
+			Format(temp_string14, sizeof(temp_string14),"%T", "charge faster, but don't last as long.", client);
+		DrawPanelText(panel, temp_string14);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Overheal limited to 125% of max health", client);
+		DrawPanelText(panel, temp_string14);
+			Format(temp_string14, sizeof(temp_string14),"%T", "and decays more slowly.", client);
+		DrawPanelText(panel, temp_string14);
+
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_Sniper:
+	{
+			decl String:temp_string15[1024];
+			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper [Survivor/Support]", client);
+		SetPanelTitle(panel, temp_string15);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string15, sizeof(temp_string15),"%T", "Gains 5 Rifle/2 Huntman ammo per kill.", client);
+		DrawPanelText(panel, temp_string15);
+			Format(temp_string15, sizeof(temp_string15),"%T", "SMG doesn't have to reload.", client);
+		DrawPanelText(panel, temp_string15);	 
+		DrawPanelText(panel, "-------------------------------------------");
+	}	
+	case TFClass_Scout:
+	{
+			decl String:temp_string16[1024];
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout [Zombie]", client);
+		SetPanelTitle(panel, temp_string16);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string16, sizeof(temp_string16),"%T", "Bats / Drinks only.", client);
+		DrawPanelText(panel, temp_string16);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Rage ability: Increase speed and health", client);
+		DrawPanelText(panel, temp_string16);
+			Format(temp_string16, sizeof(temp_string16),"%T", "by calling for medic. Recharges after 30s.", client);
+		DrawPanelText(panel, temp_string16);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Speed reduced to 350 (from 400).", client);
+		DrawPanelText(panel, temp_string16);	
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_Heavy:
+	{
+			decl String:temp_string17[1024];
+			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy [Zombie]", client);
+		SetPanelTitle(panel, temp_string17);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string17, sizeof(temp_string17),"%T", "Fists / Gloves / Food only.", client);
+		DrawPanelText(panel, temp_string17);
+			Format(temp_string17, sizeof(temp_string17),"%T", "Rage ability: Increase speed and health", client);
+		DrawPanelText(panel, temp_string17);
+			Format(temp_string17, sizeof(temp_string17),"%T", "by calling for medic. Recharges after 30s.", client);
+		DrawPanelText(panel, temp_string17);
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	case TFClass_Spy:
+	{
+			decl String:temp_string18[1024];
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy [Zombie]", client);
+		SetPanelTitle(panel, temp_string18);
+		DrawPanelText(panel, "-------------------------------------------");
+			Format(temp_string18, sizeof(temp_string18),"%T", "Knives / Invis Watch / CnD only.", client);
+		DrawPanelText(panel, temp_string18);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Rage ability: Increase speed and health", client);
+		DrawPanelText(panel, temp_string18);
+			Format(temp_string18, sizeof(temp_string18),"%T", "by calling for medic. Recharges after 30s.", client);
+		DrawPanelText(panel, temp_string18);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Speed reduced to 280 (from 300).", client);
+		DrawPanelText(panel, temp_string18);
+		DrawPanelText(panel, "-------------------------------------------");
+	}	
+	default:
+	{
+			decl String:temp_string19[1024];
+			Format(temp_string19, sizeof(temp_string19),"%T", "Unassigned / Spectator", client);
+		SetPanelTitle(panel, temp_string19);
+		DrawPanelText(panel, "-------------------------------------------"); 
+			Format(temp_string19, sizeof(temp_string19),"%T", "Honestly, what were you expecting here?", client);			
+		DrawPanelText(panel, temp_string19);
+		DrawPanelText(panel, "-------------------------------------------");
+	}
+	}
+	decl String:temp_string20[512];
+	Format(temp_string20, sizeof(temp_string20),"%T", "Return to Help Menu", client);
+	DrawPanelItem(panel, temp_string20);
+	Format(temp_string20, sizeof(temp_string20),"%T", "Close Menu", client);
+	DrawPanelItem(panel, temp_string20);	
 	SendPanelToClient(panel, client, panel_HandleClass, 8);
-	CloseHandle(panel);
+	CloseHandle_2(panel);
 }
 
 public panel_HandleClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		switch(param2)
-		{
-			case 1: panel_PrintHelp(param1);
-			default: return;	 
-		} 
+	switch(param2)
+	{
+		case 1: panel_PrintHelp(param1);
+		default: return;	 
+	} 
 	} 
 }
 
@@ -2345,12 +2482,12 @@ SetGlow() {
 	if (iCount >= 1 && iCount <= 3) iGlow = 1;
 	
 	for(new i = 1; i <= MaxClients; i++) {
-		if(IsClientInGame(i) && IsPlayerAlive(i)) {
-			iGlow2 = iGlow;
-			if (!isSur(i)) iGlow2 = 0;
-			if (isZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) iGlow2 = 1;
-			SetEntProp(i, Prop_Send, "m_bGlowEnabled", iGlow2);
-		}
+	if(IsClientInGame(i) && IsPlayerAlive(i)) {
+		iGlow2 = iGlow;
+		if (!isSur(i)) iGlow2 = 0;
+		if (isZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) iGlow2 = 1;
+		SetEntProp(i, Prop_Send, "m_bGlowEnabled", iGlow2);
+	}
 	}
 }
 
@@ -2358,10 +2495,10 @@ stock GetPlayerCount() {
 	new playerCount = 0;
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && (GetClientTeam(i) > 1))
-		{
-			playerCount++;  
-		}
+	if(IsClientInGame(i) && (GetClientTeam(i) > 1))
+	{
+		playerCount++;  
+	}
 	}
 	return playerCount;
 }
@@ -2369,9 +2506,9 @@ stock GetPlayerCount() {
 stock GetSurvivorCount() {
 	new iCount = 0;
 	for(new i = 1; i <= MaxClients; i++) {
-		if(validLivingSur(i)) {
-			iCount++;
-		}
+	if(validLivingSur(i)) {
+		iCount++;
+	}
 	}
 	return iCount;
 }
@@ -2380,9 +2517,9 @@ public OnSlagChange(iClient, iFeature, bool:bEnabled) {
 	if (!bEnabled) return;
 	
 	if (iFeature == 10) {
-		if(validSur(iClient)) {
-			ForcePlayerSuicide(iClient);
-		}
+	if(validSur(iClient)) {
+		ForcePlayerSuicide(iClient);
+	}
 	}
 }
 
@@ -2410,47 +2547,47 @@ UpdateZombieDamageScale()
 	if (g_fZombieDamageScale > 4.0) g_fZombieDamageScale = 4.0;
 	
 	decl String:strInput[255];
-	Format(strInput, sizeof(strInput), "Time: %.2f\nExpected Survivors: %d\nCurrent Survivors: %d\nSurvivor Performance: %.0f%%", fTime, iExpectedSurvivors, iCurrentSurvivors, g_fZombieDamageScale*100.0);
-	if (g_bCapturingLastPoint) Format(strInput, sizeof(strInput), "%s\nCapturing last point!", strInput);
+	Format(strInput, sizeof(strInput), "%t", "{1} {2} {3} {4} message_1", fTime, iExpectedSurvivors, iCurrentSurvivors, g_fZombieDamageScale*100.0);
+	if (g_bCapturingLastPoint) Format(strInput, sizeof(strInput), "%t", "{1} message_2", strInput);
 	ShowDebug(strInput);
 	
 	if (!g_bZombieRage && g_iZombieTank <= 0 && !ZombiesHaveTank())
 	{
-		if (fTime <= GetConVarFloat(zf_cvTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale >= 1.0) {
-			ZombieTank();
-		}
-		else if (fTime <= 0.05 && fTime >= 0.04) {
-			ZombieRage();
-		}
-		else if (g_fZombieDamageScale >= 1.3 || (GetRandomInt(0, 100) <= GetConVarInt(zf_cvFrenzyChance) && g_fZombieDamageScale >= 1.0))
-		{
-			if (GetRandomInt(0, 100) <= GetConVarInt(zf_cvFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
-			else ZombieRage();
-		}
+	if (fTime <= GetConVarFloat(zf_cvTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale >= 1.0) {
+		ZombieTank();
+	}
+	else if (fTime <= 0.05 && fTime >= 0.04) {
+		ZombieRage();
+	}
+	else if (g_fZombieDamageScale >= 1.3 || (GetRandomInt(0, 100) <= GetConVarInt(zf_cvFrenzyChance) && g_fZombieDamageScale >= 1.0))
+	{
+		if (GetRandomInt(0, 100) <= GetConVarInt(zf_cvFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
+		else ZombieRage();
+	}
 	}
 }
 
 public Action:RespawnPlayer(Handle:hTimer, any:iClient) {
 	if (IsClientInGame(iClient) && !IsPlayerAlive(iClient))
 	{
-		TF2_RespawnPlayer(iClient);
-		CreateTimer(0.1, timer_postSpawn, iClient, TIMER_FLAG_NO_MAPCHANGE);
+	TF2_RespawnPlayer(iClient);
+	CreateTimer(0.1, timer_postSpawn, iClient, TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
 public Action:CheckLastPlayer(Handle:hTimer) {
 	new iCount = GetSurvivorCount();
 	if (iCount == 1) {
-		for (new iLoop = 1; iLoop <= MaxClients; iLoop++) {
-			if (IsClientInGame(iLoop) && IsPlayerAlive(iLoop) && isSur(iLoop)) {
-				TF2_RegeneratePlayer(iLoop);
-				HandleClientInventory(iLoop);
-				SetEntityHealth(iLoop, 500);
-				CPrintToChatAllEx(iLoop, "\x05[ZF]\x01 {teamcolor}%N{default} is the last survivor!", iLoop);
-				MusicHandleClient(iLoop);
-				return;
-			}
+	for (new iLoop = 1; iLoop <= MaxClients; iLoop++) {
+		if (IsClientInGame(iLoop) && IsPlayerAlive(iLoop) && isSur(iLoop)) {
+		TF2_RegeneratePlayer(iLoop);
+		HandleClientInventory(iLoop);
+		SetEntityHealth(iLoop, 500);
+		CPrintToChatAllEx(iLoop, "\x05[ZF]\x01 %t", "{teamcolor}{1}{default} is the last survivor!", iLoop);
+		MusicHandleClient(iLoop);
+		return;
 		}
+	}
 	}
 }
 
@@ -2518,12 +2655,12 @@ CreateZombieSkin(iClient) {
 	//if (g_iSpecialInfected[iClient] == INFECTED_TANK) Format(strModel, sizeof(strModel), "models/infected/hulk.mdl");
 	
 	if (IsClientInGame(iClient) && IsPlayerAlive(iClient)) {
-		SetVariantString(strModel);
-		AcceptEntityInput(iClient, "SetCustomModel");
-		if (!StrEqual(strModel, "")) {
-			SetEntProp(iClient, Prop_Send, "m_bUseClassAnimations",1);
-			SetEntProp(iClient, Prop_Send, "m_nBody", 0);
-		}
+	SetVariantString(strModel);
+	AcceptEntityInput(iClient, "SetCustomModel");
+	if (!StrEqual(strModel, "")) {
+		SetEntProp(iClient, Prop_Send, "m_bUseClassAnimations",1);
+		SetEntProp(iClient, Prop_Send, "m_nBody", 0);
+	}
 	}
 }
 
@@ -2541,12 +2678,12 @@ public OnMapStart() {
 	new i;
 	for (i = 0; i < sizeof(g_strSoundFleshHit); i++)
 	{
-		PrecacheSound2(g_strSoundFleshHit[i]);
+	PrecacheSound2(g_strSoundFleshHit[i]);
 	}
 	
 	for (i = 0; i < sizeof(g_strSoundCritHit); i++)
 	{
-		PrecacheSound2(g_strSoundCritHit[i]);
+	PrecacheSound2(g_strSoundCritHit[i]);
 	}
 	
 	new Handle:hConvar = FindConVar("slag_map_has_music");
@@ -2593,8 +2730,8 @@ ShowDebug(String:strInput[]) {
 	new iClient = GetMecha();
 	if (iClient > 0)
 	{
-		SetHudTextParams(0.04, 0.3, 10.0, 50, 255, 50, 255);
-		ShowHudText(iClient, 1, strInput);
+	SetHudTextParams(0.04, 0.3, 10.0, 50, 255, 50, 255);
+	ShowHudText(iClient, 1, strInput);
 	}
 }
 
@@ -2603,23 +2740,23 @@ stock GetMecha()
 	decl String:strAuth[255];
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i))
-		{
-			GetClientAuthString(i, strAuth, sizeof(strAuth));
-			if (StrEqual(strAuth, "STEAM_0:0:17402999", false)) return i;
-		}
+	if (IsClientInGame(i))
+	{
+		GetClientAuthString(i, strAuth, sizeof(strAuth));
+		if (StrEqual(strAuth, "STEAM_0:0:17402999", false)) return i;
+	}
 	}
 	return -1;
 }
 
 LoadSoundSystem()
 {
-	if (g_hMusicArray != INVALID_HANDLE) CloseHandle(g_hMusicArray);
+	if (g_hMusicArray != INVALID_HANDLE) CloseHandle_2(g_hMusicArray);
 	g_hMusicArray = CreateArray();
 	
 	for (new iLoop = 0; iLoop < sizeof(g_iMusicCount); iLoop++)
 	{
-		g_iMusicCount[iLoop] = 0;
+	g_iMusicCount[iLoop] = 0;
 	}
 	
 	new Handle:hKeyvalue = CreateKeyValues("music");
@@ -2635,34 +2772,34 @@ LoadSoundSystem()
 	KvGotoFirstSubKey(hKeyvalue);
 	do
 	{
-		new Handle:hEntry = CreateArray(PLATFORM_MAX_PATH);
-		KvGetString(hKeyvalue, "path", strValue, sizeof(strValue), "error");
+	new Handle:hEntry = CreateArray(PLATFORM_MAX_PATH);
+	KvGetString(hKeyvalue, "path", strValue, sizeof(strValue), "error");
+	PushArrayString(hEntry, strValue);
+	
+	PrecacheSound2(strValue);
+	
+	//LogMessage("Found: %s", strValue);
+	KvGetString(hKeyvalue, "category", strValue, sizeof(strValue), "error");
+	PushArrayString(hEntry, strValue);
+	
+	new iCategory = MusicCategoryToNumber(strValue);
+	//LogMessage("Category: %s (%d)", strValue, iCategory);
+	if (iCategory < 0)
+	{
+		LogError("Invalid music category %d (%s)", iCategory, strValue);
+	}
+	else
+	{
+		g_iMusicCount[iCategory]++;
+		
+		KvGetString(hKeyvalue, "length", strValue, sizeof(strValue), "error");
 		PushArrayString(hEntry, strValue);
-		
-		PrecacheSound2(strValue);
-		
-		//LogMessage("Found: %s", strValue);
-		KvGetString(hKeyvalue, "category", strValue, sizeof(strValue), "error");
-		PushArrayString(hEntry, strValue);
-		
-		new iCategory = MusicCategoryToNumber(strValue);
-		//LogMessage("Category: %s (%d)", strValue, iCategory);
-		if (iCategory < 0)
-		{
-			LogError("Invalid music category %d (%s)", iCategory, strValue);
-		}
-		else
-		{
-			g_iMusicCount[iCategory]++;
-			
-			KvGetString(hKeyvalue, "length", strValue, sizeof(strValue), "error");
-			PushArrayString(hEntry, strValue);
-			PushArrayCell(g_hMusicArray, hEntry);
-		}
+		PushArrayCell(g_hMusicArray, hEntry);
+	}
 	} while (KvGotoNextKey(hKeyvalue));
 	//LogMessage("Done with the sound system");
 	
-	CloseHandle(hKeyvalue);
+	CloseHandle_2(hKeyvalue);
 }
 
 MusicCategoryToNumber(String:strCategory[])
@@ -2727,19 +2864,19 @@ MusicGetPath(iCategory = MUSIC_DRUMS, iNumber, String:strInput[], iMaxSize)
 	new Handle:hEntry;
 	for (new i = 0; i < GetArraySize(g_hMusicArray); i++)
 	{
-		hEntry = GetArrayCell(g_hMusicArray, i);
-		GetArrayString(hEntry, 1, strValue, sizeof(strValue));
-		iEntryCategory = MusicCategoryToNumber(strValue);
-		//PrintToChatAll("Entry category: %s (%d)", strValue, iEntryCategory);
-		if (iEntryCategory == iCategory)
+	hEntry = GetArrayCell(g_hMusicArray, i);
+	GetArrayString(hEntry, 1, strValue, sizeof(strValue));
+	iEntryCategory = MusicCategoryToNumber(strValue);
+	//PrintToChatAll("Entry category: %s (%d)", strValue, iEntryCategory);
+	if (iEntryCategory == iCategory)
+	{
+		if (iCount == iNumber)
 		{
-			if (iCount == iNumber)
-			{
-				GetArrayString(hEntry, 0, strInput, iMaxSize);
-				return;
-			}
-			iCount++;
+		GetArrayString(hEntry, 0, strInput, iMaxSize);
+		return;
 		}
+		iCount++;
+	}
 	}
 	Format(strInput, iMaxSize, "error");
 	return;
@@ -2749,7 +2886,7 @@ public OnPluginEnd()
 {
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i)) StopSoundSystem(i);
+	if (IsClientInGame(i)) StopSoundSystem(i);
 	}
 }
 
@@ -2757,46 +2894,46 @@ StopSoundSystem(iClient, bool:bLogic = true, bool:bMusic = true, bool:bConsiderF
 {
 	if (bMusic)
 	{
-		StopSound2(iClient, MUSIC_SLAYER_MILD);
-		StopSound2(iClient, MUSIC_SLAYER);
-		StopSound2(iClient, MUSIC_TRUMPET);
-		StopSound2(iClient, MUSIC_HEART_MEDIUM);
-		StopSound2(iClient, MUSIC_HEART_FAST);
-		if ((!bConsiderFull) || (g_iMusicFull[iClient] % 2 == 0))
-		{
-			StopSound2(iClient, MUSIC_DRUMS);
-			StopSound2(iClient, MUSIC_SNARE);
-			StopSound2(iClient, MUSIC_BANJO);
-			StopSound2(iClient, MUSIC_HEART_SLOW);
-		}
-		if ((!bConsiderFull) || (g_iMusicFull[iClient] % 4 == 0))
-		{
-			StopSound2(iClient, MUSIC_DROWN);
-		}
-		if (!bConsiderFull)
-		{
-			StopSound2(iClient, MUSIC_TANK);
-			StopSound2(iClient, MUSIC_LASTSTAND);
-			StopSound2(iClient, MUSIC_LASTTENSECONDS);
-			StopSound2(iClient, MUSIC_NEARDEATH);
-		}
+	StopSound2(iClient, MUSIC_SLAYER_MILD);
+	StopSound2(iClient, MUSIC_SLAYER);
+	StopSound2(iClient, MUSIC_TRUMPET);
+	StopSound2(iClient, MUSIC_HEART_MEDIUM);
+	StopSound2(iClient, MUSIC_HEART_FAST);
+	if ((!bConsiderFull) || (g_iMusicFull[iClient] % 2 == 0))
+	{
+		StopSound2(iClient, MUSIC_DRUMS);
+		StopSound2(iClient, MUSIC_SNARE);
+		StopSound2(iClient, MUSIC_BANJO);
+		StopSound2(iClient, MUSIC_HEART_SLOW);
+	}
+	if ((!bConsiderFull) || (g_iMusicFull[iClient] % 4 == 0))
+	{
+		StopSound2(iClient, MUSIC_DROWN);
+	}
+	if (!bConsiderFull)
+	{
+		StopSound2(iClient, MUSIC_TANK);
+		StopSound2(iClient, MUSIC_LASTSTAND);
+		StopSound2(iClient, MUSIC_LASTTENSECONDS);
+		StopSound2(iClient, MUSIC_NEARDEATH);
+	}
 	}
 	if (bLogic)
 	{
-		//PrintToChatAll("Killed timer");
-		new Handle:hTimer = g_hMusicTimer[iClient];
-		g_hMusicTimer[iClient] = INVALID_HANDLE;
-		g_iMusicLevel[iClient] = MUSIC_NONE;
-		
-		if (MusicCanReset(iLevel))
-		{
-			g_iMusicRandom[iClient][0] = -1;
-			g_iMusicRandom[iClient][1] = -1;
-		}
-		
-		g_iMusicFull[iClient] = 0;
-		
-		if (hTimer != INVALID_HANDLE) KillTimer(hTimer);
+	//PrintToChatAll("Killed timer");
+	new Handle:hTimer = g_hMusicTimer[iClient];
+	g_hMusicTimer[iClient] = INVALID_HANDLE;
+	g_iMusicLevel[iClient] = MUSIC_NONE;
+	
+	if (MusicCanReset(iLevel))
+	{
+		g_iMusicRandom[iClient][0] = -1;
+		g_iMusicRandom[iClient][1] = -1;
+	}
+	
+	g_iMusicFull[iClient] = 0;
+	
+	if (hTimer != INVALID_HANDLE) KillTimer(hTimer);
 	}
 }
 
@@ -2819,64 +2956,64 @@ StartSoundSystem(iClient, iLevel = -1)
 	//PrintToChatAll("Emitting");
 	
 	if (g_iMusicLevel[iClient] != iLevel) {
-		StopSoundSystem(iClient, true, true, _, iLevel);
-		g_iMusicLevel[iClient] = iLevel;
-		if (iLevel != MUSIC_NONE)
-		{
-			g_hMusicTimer[iClient] = CreateTimer(2.8, SoundSystemRepeat, iClient, TIMER_REPEAT);
-		}
+	StopSoundSystem(iClient, true, true, _, iLevel);
+	g_iMusicLevel[iClient] = iLevel;
+	if (iLevel != MUSIC_NONE)
+	{
+		g_hMusicTimer[iClient] = CreateTimer(2.8, SoundSystemRepeat, iClient, TIMER_REPEAT);
+	}
 	}
 	
 	if (iLevel == MUSIC_GOO)
 	{
-		StartSoundSystem2(iClient, MUSIC_DROWN);
+	StartSoundSystem2(iClient, MUSIC_DROWN);
 	}
 	if (iLevel == MUSIC_TANKMOOD)
 	{
-		StartSoundSystem2(iClient, MUSIC_TANK);
+	StartSoundSystem2(iClient, MUSIC_TANK);
 	}
 	if (iLevel == MUSIC_LASTSTANDMOOD)
 	{
-		StartSoundSystem2(iClient, MUSIC_LASTSTAND);
+	StartSoundSystem2(iClient, MUSIC_LASTSTAND);
 	}
 	if (iLevel == MUSIC_LASTTENSECONDSMOOD)
 	{
-		StartSoundSystem2(iClient, MUSIC_LASTTENSECONDS);
+	StartSoundSystem2(iClient, MUSIC_LASTTENSECONDS);
 	}
 	
 	if (iLevel == MUSIC_PLAYERNEARDEATH)
 	{
-		StartSoundSystem2(iClient, MUSIC_NEARDEATH);
+	StartSoundSystem2(iClient, MUSIC_NEARDEATH);
 	}
 	if (iLevel == MUSIC_INTENSE)
 	{
-		new iRandom = GetClientRandom(iClient, 0, 0, 1);
-		StartSoundSystem2(iClient, MUSIC_SLAYER);
-		if (iRandom == 0) StartSoundSystem2(iClient, MUSIC_BANJO);
-		else StartSoundSystem2(iClient, MUSIC_DRUMS);
+	new iRandom = GetClientRandom(iClient, 0, 0, 1);
+	StartSoundSystem2(iClient, MUSIC_SLAYER);
+	if (iRandom == 0) StartSoundSystem2(iClient, MUSIC_BANJO);
+	else StartSoundSystem2(iClient, MUSIC_DRUMS);
 	}
 	if (iLevel == MUSIC_MILD)
 	{
-		new iRandom = GetClientRandom(iClient, 0, 0, 1);
-		new iRandom2 = GetClientRandom(iClient, 1, 0, 1);
-		
-		if (iRandom == 0) StartSoundSystem2(iClient, MUSIC_SLAYER_MILD);
-		else StartSoundSystem2(iClient, MUSIC_TRUMPET);
-		
-		if (iRandom2 == 0) StartSoundSystem2(iClient, MUSIC_DRUMS);
-		else StartSoundSystem2(iClient, MUSIC_SNARE);
+	new iRandom = GetClientRandom(iClient, 0, 0, 1);
+	new iRandom2 = GetClientRandom(iClient, 1, 0, 1);
+	
+	if (iRandom == 0) StartSoundSystem2(iClient, MUSIC_SLAYER_MILD);
+	else StartSoundSystem2(iClient, MUSIC_TRUMPET);
+	
+	if (iRandom2 == 0) StartSoundSystem2(iClient, MUSIC_DRUMS);
+	else StartSoundSystem2(iClient, MUSIC_SNARE);
 	}
 	if (iLevel == MUSIC_VERYMILD1)
 	{
-		StartSoundSystem2(iClient, MUSIC_HEART_SLOW);
+	StartSoundSystem2(iClient, MUSIC_HEART_SLOW);
 	}
 	if (iLevel == MUSIC_VERYMILD2)
 	{
-		StartSoundSystem2(iClient, MUSIC_HEART_MEDIUM);
+	StartSoundSystem2(iClient, MUSIC_HEART_MEDIUM);
 	}
 	if (iLevel == MUSIC_VERYMILD3)
 	{
-		StartSoundSystem2(iClient, MUSIC_HEART_FAST);
+	StartSoundSystem2(iClient, MUSIC_HEART_FAST);
 	}
 	
 	g_iMusicFull[iClient]++;
@@ -2885,8 +3022,8 @@ StartSoundSystem(iClient, iLevel = -1)
 public Action:SoundSystemRepeat(Handle:hTimer, any:iClient)
 {
 	if (!IsClientInGame(iClient)) {
-		g_hMusicTimer[iClient] = INVALID_HANDLE;
-		return Plugin_Stop;
+	g_hMusicTimer[iClient] = INVALID_HANDLE;
+	return Plugin_Stop;
 	}
 	StartSoundSystem(iClient);
 	return Plugin_Continue;
@@ -2896,21 +3033,21 @@ StartSoundSystem2(iClient, iMusic)
 {
 	if (g_iMusicFull[iClient] % 2 != 0)
 	{
-		if (iMusic == MUSIC_DRUMS) return;
-		if (iMusic == MUSIC_SNARE) return;
-		if (iMusic == MUSIC_BANJO) return;
-		if (iMusic == MUSIC_HEART_SLOW) return;
+	if (iMusic == MUSIC_DRUMS) return;
+	if (iMusic == MUSIC_SNARE) return;
+	if (iMusic == MUSIC_BANJO) return;
+	if (iMusic == MUSIC_HEART_SLOW) return;
 	}
 	if (g_iMusicFull[iClient] % 4 != 0)
 	{
-		if (iMusic == MUSIC_DROWN) return;
+	if (iMusic == MUSIC_DROWN) return;
 	}
 	if (g_iMusicFull[iClient] != 0)
 	{
-		if (iMusic == MUSIC_TANK) return;
-		if (iMusic == MUSIC_LASTSTAND) return;
-		if (iMusic == MUSIC_LASTTENSECONDS) return;
-		if (iMusic == MUSIC_NEARDEATH) return;
+	if (iMusic == MUSIC_TANK) return;
+	if (iMusic == MUSIC_LASTSTAND) return;
+	if (iMusic == MUSIC_LASTTENSECONDS) return;
+	if (iMusic == MUSIC_NEARDEATH) return;
 	}
 	
 	new iRandom = GetRandomInt(0, g_iMusicCount[iMusic]-1);
@@ -2961,28 +3098,28 @@ ZombieRage(bool:bBeginning = false)
 	
 	if (!bBeginning)
 	{
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_INCOMING]-1);
-		decl String:strPath[PLATFORM_MAX_PATH];
-		MusicGetPath(MUSIC_INCOMING, iRandom, strPath, sizeof(strPath));
-		for (new i = 1; i <= MaxClients; i++)
+	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_INCOMING]-1);
+	decl String:strPath[PLATFORM_MAX_PATH];
+	MusicGetPath(MUSIC_INCOMING, iRandom, strPath, sizeof(strPath));
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i))
 		{
-			if (IsClientInGame(i))
-			{
-				if (ShouldHearEventSounds(i))
-				{
-					EmitSoundToClient(i, strPath, _, SNDLEVEL_AIRCRAFT);
-				}
-				if (isZom(i))
-				{
-					CPrintToChat(i, "\x05[ZF]\x01 Zombies are frenzied!");
-				}
-				if (isZom(i) && !IsPlayerAlive(i))
-				{
-					TF2_RespawnPlayer(i);
-					CreateTimer(0.1, timer_postSpawn, i, TIMER_FLAG_NO_MAPCHANGE);
-				}
-			}
+		if (ShouldHearEventSounds(i))
+		{
+			EmitSoundToClient(i, strPath, _, SNDLEVEL_AIRCRAFT);
 		}
+		if (isZom(i))
+		{
+			CPrintToChat(i, "\x05[ZF]\x01 %t", "Zombies are frenzied!");
+		}
+		if (isZom(i) && !IsPlayerAlive(i))
+		{
+			TF2_RespawnPlayer(i);
+			CreateTimer(0.1, timer_postSpawn, i, TIMER_FLAG_NO_MAPCHANGE);
+		}
+		}
+	}
 	}
 }
 
@@ -2992,13 +3129,13 @@ public Action:StopZombieRage(Handle:hTimer)
 	UpdateZombieDamageScale();
 	
 	if (roundState() == RoundActive) {
-		for (new i = 1; i <= MaxClients; i++)
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && isZom(i))
 		{
-			if (IsClientInGame(i) && isZom(i))
-			{
-				CPrintToChat(i, "\x05[ZF]\x01 Zombies are resting...");
-			}
+		CPrintToChat(i, "\x05[ZF]\x01 %t", "Zombies are resting...");
 		}
+	}
 	}
 }
 
@@ -3014,16 +3151,16 @@ public Action:SpookySound(Handle:hTimer)
 	new iFail = 0;
 	do
 	{
-		iTarget = GetRandomInt(1, MaxClients);
-		iFail++;
+	iTarget = GetRandomInt(1, MaxClients);
+	iFail++;
 	} while ((!IsClientInGame(iTarget) || !IsPlayerAlive(iTarget) || !ShouldHearEventSounds(iTarget) || !validActivePlayer(iTarget)) && iFail < 100);
 	
 	if (IsClientInGame(iTarget) && IsPlayerAlive(iTarget) && validActivePlayer(iTarget))
 	{
-		for (new i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientInGame(i) && ShouldHearEventSounds(i) && i != iTarget && !isZom(i)) EmitSoundToClient(i, strPath, iTarget);
-		}
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && ShouldHearEventSounds(i) && i != iTarget && !isZom(i)) EmitSoundToClient(i, strPath, iTarget);
+	}
 	}
 }
 
@@ -3040,18 +3177,18 @@ Float:GetZombieNumber(iClient)
 	new Float:fZombieNumber = 0.0;
 	for (new z = 1; z <= MaxClients; z++)
 	{
-		if (IsClientInGame(z) && IsPlayerAlive(z) && isZom(z))
+	if (IsClientInGame(z) && IsPlayerAlive(z) && isZom(z))
+	{
+		GetClientEyePosition(z, fPosZombie);
+		fDistance = GetVectorDistance(fPosClient, fPosZombie);
+		fDistance /= 50.0;
+		if (fDistance <= 20.0)
 		{
-			GetClientEyePosition(z, fPosZombie);
-			fDistance = GetVectorDistance(fPosClient, fPosZombie);
-			fDistance /= 50.0;
-			if (fDistance <= 20.0)
-			{
-				fDistance = 20.0 - fDistance;
-				if (fDistance >= 15.0) fDistance = 15.0;
-				fZombieNumber += fDistance;
-			}
+		fDistance = 20.0 - fDistance;
+		if (fDistance >= 15.0) fDistance = 15.0;
+		fZombieNumber += fDistance;
 		}
+	}
 	}
 	fZombieNumber *= 1.2;
 	return fZombieNumber;
@@ -3061,7 +3198,7 @@ MusicHandleAll()
 {
 	for (new iClient = 1; iClient <= MaxClients; iClient++)
 	{
-		MusicHandleClient(iClient);
+	MusicHandleClient(iClient);
 	}
 }
 
@@ -3071,91 +3208,91 @@ MusicHandleClient(iClient)
 	
 	if (GetClientTeam(iClient) == 1)
 	{
-		new iTarget = GetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget");
-		if (validActivePlayer(iTarget))
-		{
-			StartSoundSystem(iClient, g_iMusicLevel[iTarget]);
-		} else {
-			StartSoundSystem(iClient, MUSIC_NONE);
-		}
+	new iTarget = GetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget");
+	if (validActivePlayer(iTarget))
+	{
+		StartSoundSystem(iClient, g_iMusicLevel[iTarget]);
+	} else {
+		StartSoundSystem(iClient, MUSIC_NONE);
+	}
 	}
 	else
 	{
-		/*
-			Scared need to involve the following:
-			Client health
-			number of zombies surrounding him
-			Zombie Rage
-			
-			NONE			0
-			VERYMILD1   >= 10
-			VERYMILD2   >= 30
-			VERYMILD3   >= 50
-			MILD		>= 70
-			INTENSE	 >= 100
-			
-			Zombie calculation
-			Zombies within 10 meters are counted
-			The total inverted distance of all the zombies. ie 10 for a zombie right up your face.
-			
-			Scared = ZombieNum * 3 / Health% + Rage*20
-		*/
-		new iCurrentHealth = GetClientHealth(iClient);
-		new iMaxHealth = GetClientMaxHealth(iClient);
-		new Float:fHealth = float(iCurrentHealth) / float(iMaxHealth);
-		if (fHealth < 0.5) fHealth = 0.5;
-		if (fHealth > 1.1) fHealth = 1.1;
+	/*
+		Scared need to involve the following:
+		Client health
+		number of zombies surrounding him
+		Zombie Rage
 		
-		new Float:fRage = 0.0;
-		if (g_bZombieRage) fRage = 1.0;
+		NONE		0
+		VERYMILD1   >= 10
+		VERYMILD2   >= 30
+		VERYMILD3   >= 50
+		MILD	>= 70
+		INTENSE	 >= 100
 		
-		new Float:fZombies = GetZombieNumber(iClient);
+		Zombie calculation
+		Zombies within 10 meters are counted
+		The total inverted distance of all the zombies. ie 10 for a zombie right up your face.
 		
-		new Float:fScared = fZombies / fHealth + fRage * 20.0;
-		
-		/*
-		if (IsMecha(iClient))
-		{
-			decl String:strInput[255];
-			Format(strInput, sizeof(strInput), "Zombies: %.1f\nHealth: %.1f\nScared: %.1f", fZombies, fHealth, fScared);
-			SetHudTextParams(0.04, 0.5, 10.0, 50, 255, 50, 255);
-			ShowHudText(iClient, 1, strInput);
-		}
-		*/
-		
-		new iMusic = MUSIC_NONE;
-		if (isSur(iClient))
-		{
-			if (g_bRoundActive)
-			{
-				if (fScared >= 5.0) iMusic = MUSIC_VERYMILD1;
-				if (fScared >= 30.0) iMusic = MUSIC_VERYMILD2;
-				if (fScared >= 50.0) iMusic = MUSIC_VERYMILD3;
-				if (fScared >= 70.0) iMusic = MUSIC_MILD;
-			}
-			
-			if (g_bGooified[iClient]) iMusic = MUSIC_GOO;
-			
-			if (g_bRoundActive)
-			{
-				if (fScared >= 100.0) iMusic = MUSIC_INTENSE;
-			}
-		}
-		
-		// Applies for all
+		Scared = ZombieNum * 3 / Health% + Rage*20
+	*/
+	new iCurrentHealth = GetClientHealth(iClient);
+	new iMaxHealth = GetClientMaxHealth(iClient);
+	new Float:fHealth = float(iCurrentHealth) / float(iMaxHealth);
+	if (fHealth < 0.5) fHealth = 0.5;
+	if (fHealth > 1.1) fHealth = 1.1;
+	
+	new Float:fRage = 0.0;
+	if (g_bZombieRage) fRage = 1.0;
+	
+	new Float:fZombies = GetZombieNumber(iClient);
+	
+	new Float:fScared = fZombies / fHealth + fRage * 20.0;
+	
+	/*
+	if (IsMecha(iClient))
+	{
+		decl String:strInput[255];
+		Format(strInput, sizeof(strInput), "Zombies: %.1f\nHealth: %.1f\nScared: %.1f", fZombies, fHealth, fScared);
+		SetHudTextParams(0.04, 0.5, 10.0, 50, 255, 50, 255);
+		ShowHudText(iClient, 1, strInput);
+	}
+	*/
+	
+	new iMusic = MUSIC_NONE;
+	if (isSur(iClient))
+	{
 		if (g_bRoundActive)
 		{
-			if (ZombiesHaveTank() && iMusic != MUSIC_GOO) iMusic = MUSIC_TANKMOOD;
-			if (GetSurvivorCount() == 1) iMusic = MUSIC_LASTSTANDMOOD;
-			if (g_bCapturingLastPoint) iMusic = MUSIC_LASTSTANDMOOD;
-		}
-		if (g_bBackstabbed[iClient]) iMusic = MUSIC_PLAYERNEARDEATH;
-		if (g_bRoundActive)
-		{
-			if (GetSecondsLeft() <= 9) iMusic = MUSIC_LASTTENSECONDSMOOD;
+		if (fScared >= 5.0) iMusic = MUSIC_VERYMILD1;
+		if (fScared >= 30.0) iMusic = MUSIC_VERYMILD2;
+		if (fScared >= 50.0) iMusic = MUSIC_VERYMILD3;
+		if (fScared >= 70.0) iMusic = MUSIC_MILD;
 		}
 		
-		StartSoundSystem(iClient, iMusic);
+		if (g_bGooified[iClient]) iMusic = MUSIC_GOO;
+		
+		if (g_bRoundActive)
+		{
+		if (fScared >= 100.0) iMusic = MUSIC_INTENSE;
+		}
+	}
+	
+	// Applies for all
+	if (g_bRoundActive)
+	{
+		if (ZombiesHaveTank() && iMusic != MUSIC_GOO) iMusic = MUSIC_TANKMOOD;
+		if (GetSurvivorCount() == 1) iMusic = MUSIC_LASTSTANDMOOD;
+		if (g_bCapturingLastPoint) iMusic = MUSIC_LASTSTANDMOOD;
+	}
+	if (g_bBackstabbed[iClient]) iMusic = MUSIC_PLAYERNEARDEATH;
+	if (g_bRoundActive)
+	{
+		if (GetSecondsLeft() <= 9) iMusic = MUSIC_LASTTENSECONDSMOOD;
+	}
+	
+	StartSoundSystem(iClient, iMusic);
 	}
 }
 
@@ -3169,7 +3306,7 @@ public Action:command_rabies(client, args)
 
 	CreateTimer(0.0, SpookySound);
 	PrintToConsole(client, "Called rabies");
-			
+		
 	return Plugin_Continue;
 }
 
@@ -3178,13 +3315,13 @@ public Action:command_goo(client, args)
 	if(!zf_bEnabled) return Plugin_Continue;
 
 	SpitterGoo(client);
-			
+		
 	return Plugin_Continue;
 }
 
 FastRespawnReset()
 {
-	if (g_hFastRespawnArray != INVALID_HANDLE) CloseHandle(g_hFastRespawnArray);
+	if (g_hFastRespawnArray != INVALID_HANDLE) CloseHandle_2(g_hFastRespawnArray);
 	g_hFastRespawnArray = CreateArray(3);
 }
 
@@ -3201,46 +3338,46 @@ FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
 	GetClientAbsOrigin(iClient, fPosClient);
 	for (new i = 0; i < GetArraySize(g_hFastRespawnArray); i++)
 	{
-		GetArrayArray(g_hFastRespawnArray, i, fPosEntry);
-		fPosEntry2[0] = fPosEntry[0];
-		fPosEntry2[1] = fPosEntry[1];
-		fPosEntry2[2] = fPosEntry[2] += 90.0;
-		
-		new bool:bAllow = true;
-		
-		fEntryDistance = GetVectorDistance(fPosClient, fPosEntry);
-		fEntryDistance /= 50.0;
-		if (fEntryDistance > fDistance) bAllow = false;
-		
-		// check if survivors can see it
-		if (bMustBeInvisible && bAllow)
+	GetArrayArray(g_hFastRespawnArray, i, fPosEntry);
+	fPosEntry2[0] = fPosEntry[0];
+	fPosEntry2[1] = fPosEntry[1];
+	fPosEntry2[2] = fPosEntry[2] += 90.0;
+	
+	new bool:bAllow = true;
+	
+	fEntryDistance = GetVectorDistance(fPosClient, fPosEntry);
+	fEntryDistance /= 50.0;
+	if (fEntryDistance > fDistance) bAllow = false;
+	
+	// check if survivors can see it
+	if (bMustBeInvisible && bAllow)
+	{
+		for (new iSurvivor = 1; iSurvivor <= MaxClients; iSurvivor++)
 		{
-			for (new iSurvivor = 1; iSurvivor <= MaxClients; iSurvivor++)
-			{
-				if (validLivingSur(iSurvivor))
-				{
-					if (PointsAtTarget(fPosEntry, iSurvivor)) bAllow = false;
-					if (PointsAtTarget(fPosEntry2, iSurvivor)) bAllow = false;
-				}
-			}
-		}
-		
-		if (bAllow)
+		if (validLivingSur(iSurvivor))
 		{
-			PushArrayCell(hTombola, i);
+			if (PointsAtTarget(fPosEntry, iSurvivor)) bAllow = false;
+			if (PointsAtTarget(fPosEntry2, iSurvivor)) bAllow = false;
 		}
+		}
+	}
+	
+	if (bAllow)
+	{
+		PushArrayCell(hTombola, i);
+	}
 	}
 	
 	if (GetArraySize(hTombola) > 0)
 	{
-		new iRandom = GetRandomInt(0, GetArraySize(hTombola)-1);
-		new iResult = GetArrayCell(hTombola, iRandom);
-		CloseHandle(hTombola);
-		return iResult;
+	new iRandom = GetRandomInt(0, GetArraySize(hTombola)-1);
+	new iResult = GetArrayCell(hTombola, iRandom);
+	CloseHandle_2(hTombola);
+	return iResult;
 	}
 	else
 	{
-		CloseHandle(hTombola);
+	CloseHandle_2(hTombola);
 	}
 	return -1;
 }
@@ -3259,17 +3396,17 @@ bool:PerformFastRespawn2(iClient)
 	new Handle:hTombola = CreateArray();
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (validLivingSur(i)) PushArrayCell(hTombola, i);
+	if (validLivingSur(i)) PushArrayCell(hTombola, i);
 	}
 	
 	if (GetArraySize(hTombola) <= 0)
 	{
-		CloseHandle(hTombola);
-		return false;
+	CloseHandle_2(hTombola);
+	return false;
 	}
 	
 	new iTarget = GetArrayCell(hTombola, GetRandomInt(0, GetArraySize(hTombola)-1));
-	CloseHandle(hTombola);
+	CloseHandle_2(hTombola);
 	
 	new iResult = FastRespawnNearby(iTarget, 7.0);
 	if (iResult < 0) return false;
@@ -3290,11 +3427,11 @@ FastRespawnDataCollect()
 	decl Float:fPos[3];
 	for (new iClient = 1; iClient <= MaxClients; iClient++)
 	{
-		if (IsClientInGame(iClient) && validActivePlayer(iClient) && FastRespawnNearby(iClient, 1.0, false) < 0 && !(GetEntityFlags(iClient) & FL_DUCKING == FL_DUCKING) && (GetEntityFlags(iClient) & FL_ONGROUND == FL_ONGROUND))
-		{
-			GetClientAbsOrigin(iClient, fPos);
-			PushArrayArray(g_hFastRespawnArray, fPos);
-		}
+	if (IsClientInGame(iClient) && validActivePlayer(iClient) && FastRespawnNearby(iClient, 1.0, false) < 0 && !(GetEntityFlags(iClient) & FL_DUCKING == FL_DUCKING) && (GetEntityFlags(iClient) & FL_ONGROUND == FL_ONGROUND))
+	{
+		GetClientAbsOrigin(iClient, fPos);
+		PushArrayArray(g_hFastRespawnArray, fPos);
+	}
 	}
 }
 
@@ -3315,7 +3452,7 @@ stock bool:PointsAtTarget(Float:fBeginPos[3], any:iTarget) {
 	new iHit = -1;
 	if (TR_DidHit(hTrace)) iHit = TR_GetEntityIndex(hTrace);
 	
-	CloseHandle(hTrace);
+	CloseHandle_2(hTrace);
 	return (iHit == iTarget);
 }
 
@@ -3353,9 +3490,9 @@ stock GetClientPointVisible(iClient) {
 	
 	if (TR_DidHit(hTrace) && iHit != iClient && GetVectorDistance(vOrigin, vEndOrigin) / 50.0 <= 2.0)
 	{
-		iReturn = iHit;
+	iReturn = iHit;
 	}
-	CloseHandle(hTrace);
+	CloseHandle_2(hTrace);
 	
 	return iReturn;
 }
@@ -3372,7 +3509,7 @@ stock bool:ObstancleBetweenEntities(iEntity1, iEntity2) {
 	
 	new bool:bHit = TR_DidHit(hTrace);
 	new iHit = TR_GetEntityIndex(hTrace);
-	CloseHandle(hTrace);
+	CloseHandle_2(hTrace);
 	
 	if (!bHit) return true;
 	if (iHit != iEntity2) return true;
@@ -3388,108 +3525,108 @@ HandleClientInventory(iClient)
 	
 	if (g_iMode == GAMEMODE_NEW)
 	{
-		TF2_RemoveWeaponSlot(iClient, 0);
-		TF2_RemoveWeaponSlot(iClient, 1);
-		RemoveSecondaryWearable(iClient);
+	TF2_RemoveWeaponSlot(iClient, 0);
+	TF2_RemoveWeaponSlot(iClient, 1);
+	RemoveSecondaryWearable(iClient);
 	}
 	
 	new iEntity;
 	if (TF2_GetPlayerClass(iClient) == TFClass_Scout && hWeaponSandman != INVALID_HANDLE) {
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
-		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSandman);
-		EquipPlayerWeapon(iClient, iEntity);
+	iEntity = GetPlayerWeaponSlot(iClient, 2);
+	if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
+	iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSandman);
+	EquipPlayerWeapon(iClient, iEntity);
 	}
 	if (TF2_GetPlayerClass(iClient) == TFClass_Heavy) {
-		if (g_iSpecialInfected[iClient] == INFECTED_TANK && hWeaponSteelFists != INVALID_HANDLE)
-		{
-			iEntity = GetPlayerWeaponSlot(iClient, 2);
-			if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSteelFists);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		else if (hWeaponFists != INVALID_HANDLE)
-		{
-			iEntity = GetPlayerWeaponSlot(iClient, 2);
-			if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponFists);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
+	if (g_iSpecialInfected[iClient] == INFECTED_TANK && hWeaponSteelFists != INVALID_HANDLE)
+	{
+		iEntity = GetPlayerWeaponSlot(iClient, 2);
+		if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSteelFists);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
+	else if (hWeaponFists != INVALID_HANDLE)
+	{
+		iEntity = GetPlayerWeaponSlot(iClient, 2);
+		if (iEntity > 0 && IsValidEdict(iEntity)) TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponFists);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
 	}
 	
 	if (hWeaponStickyLauncher != INVALID_HANDLE) {
-		iEntity = GetPlayerWeaponSlot(iClient, 1);
-		if (iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 265)
-		{
-			TF2_RemoveWeaponSlot(iClient, 1);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponStickyLauncher);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
+	iEntity = GetPlayerWeaponSlot(iClient, 1);
+	if (iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 265)
+	{
+		TF2_RemoveWeaponSlot(iClient, 1);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponStickyLauncher);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
 	}
 	if (hWeaponRocketLauncher != INVALID_HANDLE) {
-		iEntity = GetPlayerWeaponSlot(iClient, 0);
-		if (iEntity > 0 && IsValidEdict(iEntity))
+	iEntity = GetPlayerWeaponSlot(iClient, 0);
+	if (iEntity > 0 && IsValidEdict(iEntity))
+	{
+		new iIndex = GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex");
+		if (iIndex == 237 || iIndex == 228)
 		{
-			new iIndex = GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex");
-			if (iIndex == 237 || iIndex == 228)
-			{
-				TF2_RemoveWeaponSlot(iClient, 0);
-				iEntity = TF2Items_GiveNamedItem(iClient, hWeaponRocketLauncher);
-				EquipPlayerWeapon(iClient, iEntity);
-			}
+		TF2_RemoveWeaponSlot(iClient, 0);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponRocketLauncher);
+		EquipPlayerWeapon(iClient, iEntity);
 		}
 	}
+	}
 	if (TF2_GetPlayerClass(iClient) == TFClass_Medic) {
-		iEntity = GetPlayerWeaponSlot(iClient, 0);
-		if (hWeaponSyringe != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 36)
-		{
-			TF2_RemoveWeaponSlot(iClient, 0);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSyringe);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if (hWeaponBonesaw != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 304)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponBonesaw);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
+	iEntity = GetPlayerWeaponSlot(iClient, 0);
+	if (hWeaponSyringe != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 36)
+	{
+		TF2_RemoveWeaponSlot(iClient, 0);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSyringe);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
+	
+	iEntity = GetPlayerWeaponSlot(iClient, 2);
+	if (hWeaponBonesaw != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 304)
+	{
+		TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponBonesaw);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
 	}
 	
 	iEntity = GetPlayerWeaponSlot(iClient, 2);
 	if (iEntity > 0 && IsValidEdict(iEntity) && (GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 357 || GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 266 || GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 482))
 	{
-		if (TF2_GetPlayerClass(iClient) == TFClass_DemoMan && hWeaponSword != INVALID_HANDLE)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		else if (hWeaponShovel != INVALID_HANDLE)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponShovel);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
+	if (TF2_GetPlayerClass(iClient) == TFClass_DemoMan && hWeaponSword != INVALID_HANDLE)
+	{
+		TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
+	else if (hWeaponShovel != INVALID_HANDLE)
+	{
+		TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponShovel);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
 	}
 	
 	iEntity = GetPlayerWeaponSlot(iClient, 4);
 	if (iEntity > 0 && IsValidEdict(iEntity) && hWeaponWatch != INVALID_HANDLE && TF2_GetPlayerClass(iClient) == TFClass_Spy)
 	{
-		TF2_RemoveWeaponSlot(iClient, 4);
-		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponWatch);
-		EquipPlayerWeapon(iClient, iEntity);
+	TF2_RemoveWeaponSlot(iClient, 4);
+	iEntity = TF2Items_GiveNamedItem(iClient, hWeaponWatch);
+	EquipPlayerWeapon(iClient, iEntity);
 	}
 	
 	if (hWeaponSword != INVALID_HANDLE) {
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if (iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 132)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
+	iEntity = GetPlayerWeaponSlot(iClient, 2);
+	if (iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 132)
+	{
+		TF2_RemoveWeaponSlot(iClient, 2);
+		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
+		EquipPlayerWeapon(iClient, iEntity);
+	}
 	}
 	
 	SetValidSlot(iClient);
@@ -3505,12 +3642,12 @@ SetValidSlot(iClient)
 	new iEntity;
 	for (iSlot = 0; iSlot <= 5; iSlot++)
 	{
-		iEntity = GetPlayerWeaponSlot(iClient, iSlot);
-		if (iEntity > 0 && IsValidEdict(iEntity))
-		{
-			SetEntPropEnt(iClient, Prop_Send, "m_hActiveWeapon", iEntity);
-			return;
-		}
+	iEntity = GetPlayerWeaponSlot(iClient, iSlot);
+	if (iEntity > 0 && IsValidEdict(iEntity))
+	{
+		SetEntPropEnt(iClient, Prop_Send, "m_hActiveWeapon", iEntity);
+		return;
+	}
 	}
 }
 
@@ -3683,77 +3820,77 @@ GooDamageCheck()
 	new iClient;
 	for (iClient = 1; iClient <= MaxClients; iClient++)
 	{
-		bWasGooified[iClient] = g_bGooified[iClient];
-		g_bGooified[iClient] = false;
+	bWasGooified[iClient] = g_bGooified[iClient];
+	g_bGooified[iClient] = false;
 	}
 	
 	if (g_hGoo != INVALID_HANDLE) {
-		for (new i = 0; i < GetArraySize(g_hGoo); i++)
+	for (new i = 0; i < GetArraySize(g_hGoo); i++)
+	{
+		GetArrayArray(g_hGoo, i, iEntry);
+		fPosGoo[0] = float(iEntry[0]);
+		fPosGoo[1] = float(iEntry[1]);
+		fPosGoo[2] = float(iEntry[2]);
+		iAttacker = iEntry[3];
+		
+		for (iClient = 1; iClient <= MaxClients; iClient++)
 		{
-			GetArrayArray(g_hGoo, i, iEntry);
-			fPosGoo[0] = float(iEntry[0]);
-			fPosGoo[1] = float(iEntry[1]);
-			fPosGoo[2] = float(iEntry[2]);
-			iAttacker = iEntry[3];
-			
-			for (iClient = 1; iClient <= MaxClients; iClient++)
+		if (validLivingSur(iClient) && !g_bGooified[iClient] && CanRecieveDamage(iClient) && !g_bBackstabbed[iClient])
+		{
+			GetClientEyePosition(iClient, fPosClient);
+			fDistance = GetVectorDistance(fPosGoo, fPosClient) / 50.0;
+			if (fDistance <= DISTANCE_GOO)
 			{
-				if (validLivingSur(iClient) && !g_bGooified[iClient] && CanRecieveDamage(iClient) && !g_bBackstabbed[iClient])
-				{
-					GetClientEyePosition(iClient, fPosClient);
-					fDistance = GetVectorDistance(fPosGoo, fPosClient) / 50.0;
-					if (fDistance <= DISTANCE_GOO)
-					{
-						// deal damage
-						g_iGooMultiplier[iClient] += GOO_INCREASE_RATE;
-						new Float:fPercentageDistance = (DISTANCE_GOO-fDistance) / DISTANCE_GOO;
-						if (fPercentageDistance < 0.5) fPercentageDistance = 0.5;
-						new Float:fDamage = float(g_iGooMultiplier[iClient])/float(GOO_INCREASE_RATE) * fPercentageDistance;
-						if (fDamage < 1.0) fDamage = 1.0;
-						new iDamage = RoundFloat(fDamage);
-						DealDamage(iClient, iDamage, iAttacker, _, "projectile_stun_ball");
-						g_bGooified[iClient] = true;
-						
-						if (fDamage >= 7.0)
-						{
-							new iRandom = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
-							EmitSoundToClient(iClient, g_strSoundCritHit[iRandom], _, SNDLEVEL_AIRCRAFT);
-						}
-						else
-						{
-							new iRandom = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
-							EmitSoundToClient(iClient, g_strSoundFleshHit[iRandom], _, SNDLEVEL_AIRCRAFT);
-						}
-					}
-				}
-			}  
+			// deal damage
+			g_iGooMultiplier[iClient] += GOO_INCREASE_RATE;
+			new Float:fPercentageDistance = (DISTANCE_GOO-fDistance) / DISTANCE_GOO;
+			if (fPercentageDistance < 0.5) fPercentageDistance = 0.5;
+			new Float:fDamage = float(g_iGooMultiplier[iClient])/float(GOO_INCREASE_RATE) * fPercentageDistance;
+			if (fDamage < 1.0) fDamage = 1.0;
+			new iDamage = RoundFloat(fDamage);
+			DealDamage(iClient, iDamage, iAttacker, _, "projectile_stun_ball");
+			g_bGooified[iClient] = true;
+			
+			if (fDamage >= 7.0)
+			{
+				new iRandom = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
+				EmitSoundToClient(iClient, g_strSoundCritHit[iRandom], _, SNDLEVEL_AIRCRAFT);
+			}
+			else
+			{
+				new iRandom = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
+				EmitSoundToClient(iClient, g_strSoundFleshHit[iRandom], _, SNDLEVEL_AIRCRAFT);
+			}
+			}
 		}
+		}  
+	}
 	}
 	for (iClient = 1; iClient <= MaxClients; iClient++)
 	{
-		if (IsClientInGame(iClient))
+	if (IsClientInGame(iClient))
+	{
+		if (validActivePlayer(iClient) && !g_bGooified[iClient] && g_iGooMultiplier[iClient] > 0)
 		{
-			if (validActivePlayer(iClient) && !g_bGooified[iClient] && g_iGooMultiplier[iClient] > 0)
-			{
-				g_iGooMultiplier[iClient]--;
-			}
-			
-			//ScreenFade(client, red, green, blue, alpha, delay, type)
-			if (!bWasGooified[iClient] && g_bGooified[iClient] && IsPlayerAlive(iClient))
-			{
-				// fade screen slightly green
-				ClientCommand(iClient, "r_screenoverlay\"left4fortress/goo\"");
-				MusicHandleClient(iClient);
-				//PrintToChat(iClient, "You got goo'd!");
-			}
-			if (bWasGooified[iClient] && !g_bGooified[iClient])
-			{
-				// fade screen slightly green
-				ClientCommand(iClient, "r_screenoverlay\"\"");
-				MusicHandleClient(iClient);
-				//PrintToChat(iClient, "You are no longer goo'd!");
-			}
+		g_iGooMultiplier[iClient]--;
 		}
+		
+		//ScreenFade(client, red, green, blue, alpha, delay, type)
+		if (!bWasGooified[iClient] && g_bGooified[iClient] && IsPlayerAlive(iClient))
+		{
+		// fade screen slightly green
+		ClientCommand(iClient, "r_screenoverlay\"left4fortress/goo\"");
+		MusicHandleClient(iClient);
+		//PrintToChat(iClient, "You got goo'd!");
+		}
+		if (bWasGooified[iClient] && !g_bGooified[iClient])
+		{
+		// fade screen slightly green
+		ClientCommand(iClient, "r_screenoverlay\"\"");
+		MusicHandleClient(iClient);
+		//PrintToChat(iClient, "You are no longer goo'd!");
+		}
+	}
 	}
 }
 
@@ -3765,13 +3902,13 @@ public Action:GooExpire(Handle:hTimer, any:iGoo)
 	new iEntryId;
 	for (new i = 0; i < GetArraySize(g_hGoo); i++)
 	{
-		GetArrayArray(g_hGoo, i, iEntry);
-		iEntryId = iEntry[4];
-		if (iEntryId == iGoo)
-		{
-			RemoveFromArray(g_hGoo, i);
-		}
-		return;
+	GetArrayArray(g_hGoo, i, iEntry);
+	iEntryId = iEntry[4];
+	if (iEntryId == iGoo)
+	{
+		RemoveFromArray(g_hGoo, i);
+	}
+	return;
 	}
 }
 
@@ -3790,24 +3927,24 @@ public Action:GooEffect(Handle:hTimer, any:iGoo)
 	new iEntryId;
 	for (new i = 0; i < GetArraySize(g_hGoo); i++)
 	{
-		GetArrayArray(g_hGoo, i, iEntry);
-		iEntryId = iEntry[4];
-		fPos[0] = float(iEntry[0]);
-		fPos[1] = float(iEntry[1]);
-		fPos[2] = float(iEntry[2]);
-		if (iEntryId == iGoo)
-		{
-			ShowParticle("asplode_hoodoo_green", TIME_GOO, fPos);
-			return Plugin_Continue;
-		}
+	GetArrayArray(g_hGoo, i, iEntry);
+	iEntryId = iEntry[4];
+	fPos[0] = float(iEntry[0]);
+	fPos[1] = float(iEntry[1]);
+	fPos[2] = float(iEntry[2]);
+	if (iEntryId == iGoo)
+	{
+		ShowParticle("asplode_hoodoo_green", TIME_GOO, fPos);
+		return Plugin_Continue;
+	}
 	}
 	return Plugin_Stop;
 }
 
 public OnEntityCreated(iEntity, const String:strClassname[]) {
 	if (StrEqual(strClassname, "tf_projectile_stun_ball", false)) {
-		SDKHook(iEntity, SDKHook_StartTouch, BallStartTouch);
-		SDKHook(iEntity, SDKHook_Touch, BallTouch);
+	SDKHook(iEntity, SDKHook_StartTouch, BallStartTouch);
+	SDKHook(iEntity, SDKHook_Touch, BallTouch);
 	}
 }
 
@@ -3817,13 +3954,13 @@ public Action:BallStartTouch(iEntity, iOther) {
 	
 	if (iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
 	{
-		new iOwner = GetEntPropEnt(iEntity, Prop_Data, "m_hOwnerEntity");
-		SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
-		if (!(GetEntityFlags(iEntity) & FL_ONGROUND))
-		{
-			SpitterGoo(iOther, iOwner);
-		}
-		return Plugin_Stop;
+	new iOwner = GetEntPropEnt(iEntity, Prop_Data, "m_hOwnerEntity");
+	SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
+	if (!(GetEntityFlags(iEntity) & FL_ONGROUND))
+	{
+		SpitterGoo(iOther, iOwner);
+	}
+	return Plugin_Stop;
 	}
 	return Plugin_Continue;
 }
@@ -3834,9 +3971,9 @@ public Action:BallTouch(iEntity, iOther) {
 	
 	if (iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
 	{
-		SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
-		SDKUnhook(iEntity, SDKHook_Touch, BallTouch);
-		AcceptEntityInput(iEntity, "kill");
+	SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
+	SDKUnhook(iEntity, SDKHook_Touch, BallTouch);
+	AcceptEntityInput(iEntity, "kill");
 	}
 	
 	return Plugin_Stop;
@@ -3845,72 +3982,72 @@ public Action:BallTouch(iEntity, iOther) {
 stock ShowParticle(String:particlename[], Float:time, Float:pos[3], Float:ang[3]=NULL_VECTOR) {
 	new particle = CreateEntityByName("info_particle_system");
 	if (IsValidEdict(particle)) {
-		TeleportEntity(particle, pos, ang, NULL_VECTOR);
-		DispatchKeyValue(particle, "effect_name", particlename);
-		ActivateEntity(particle);
-		AcceptEntityInput(particle, "start");
-		CreateTimer(time, RemoveParticle, particle);
+	TeleportEntity(particle, pos, ang, NULL_VECTOR);
+	DispatchKeyValue(particle, "effect_name", particlename);
+	ActivateEntity(particle);
+	AcceptEntityInput(particle, "start");
+	CreateTimer(time, RemoveParticle, particle);
 	}
 	else {
-		LogError("ShowParticle: could not create info_particle_system");
-		return -1;
+	LogError("ShowParticle: could not create info_particle_system");
+	return -1;
 	}
 	return particle;
 }
 
 stock PrecacheParticle(String:strName[]) {
 	if(IsValidEntity(0)) {
-		new iParticle = CreateEntityByName("info_particle_system");
-		if (IsValidEdict(iParticle)) {
-			new String:tName[32];
-			GetEntPropString(0, Prop_Data, "m_iName", tName, sizeof(tName));
-			DispatchKeyValue(iParticle, "targetname", "tf2particle");
-			DispatchKeyValue(iParticle, "parentname", tName);
-			DispatchKeyValue(iParticle, "effect_name", strName);
-			DispatchSpawn(iParticle);
-			SetVariantString(tName);
-			AcceptEntityInput(iParticle, "SetParent", 0, iParticle, 0);
-			ActivateEntity(iParticle);
-			AcceptEntityInput(iParticle, "start");
-			CreateTimer(0.01, RemoveParticle, iParticle);
-		}
+	new iParticle = CreateEntityByName("info_particle_system");
+	if (IsValidEdict(iParticle)) {
+		new String:tName[32];
+		GetEntPropString(0, Prop_Data, "m_iName", tName, sizeof(tName));
+		DispatchKeyValue(iParticle, "targetname", "tf2particle");
+		DispatchKeyValue(iParticle, "parentname", tName);
+		DispatchKeyValue(iParticle, "effect_name", strName);
+		DispatchSpawn(iParticle);
+		SetVariantString(tName);
+		AcceptEntityInput(iParticle, "SetParent", 0, iParticle, 0);
+		ActivateEntity(iParticle);
+		AcceptEntityInput(iParticle, "start");
+		CreateTimer(0.01, RemoveParticle, iParticle);
+	}
 	}
 }
 
 public Action:RemoveParticle( Handle:timer, any:particle ) {
 	if ( particle >= 0 && IsValidEntity(particle) ) {
-		new String:classname[32];
-		GetEdictClassname(particle, classname, sizeof(classname));
-		if (StrEqual(classname, "info_particle_system", false)) {
-			AcceptEntityInput(particle, "stop");
-			AcceptEntityInput(particle, "Kill");
-			particle = -1;
-		}
+	new String:classname[32];
+	GetEdictClassname(particle, classname, sizeof(classname));
+	if (StrEqual(classname, "info_particle_system", false)) {
+		AcceptEntityInput(particle, "stop");
+		AcceptEntityInput(particle, "Kill");
+		particle = -1;
+	}
 	}
 }
 
 stock DealDamage(iVictim, iDamage, iAttacker=0,iDmgType=DMG_GENERIC, String:strWeapon[]="") {
 	if (!validClient(iAttacker)) iAttacker = 0;
 	if(validClient(iVictim) && iDamage > 0){
-		decl String:strDamage[16];
-		IntToString(iDamage, strDamage, 16);
-		decl String:strDamageType[32];
-		IntToString(iDmgType, strDamageType, 32);
-		new iHurt = CreateEntityByName("point_hurt");
-		if(iHurt > 0 && IsValidEdict(iHurt)) {
-			DispatchKeyValue(iVictim,"targetname","infectious_hurtme");
-			DispatchKeyValue(iHurt,"DamageTarget","infectious_hurtme");
-			DispatchKeyValue(iHurt,"Damage",strDamage);
-			DispatchKeyValue(iHurt,"DamageType",strDamageType);
-			if(!StrEqual(strWeapon, "")){
-				DispatchKeyValue(iHurt,"classname", strWeapon);
-			}
-			DispatchSpawn(iHurt);
-			AcceptEntityInput(iHurt,"Hurt", iAttacker);
-			DispatchKeyValue(iHurt,"classname","point_hurt");
-			DispatchKeyValue(iVictim,"targetname","infectious_donthurtme");
-			RemoveEdict(iHurt);
+	decl String:strDamage[16];
+	IntToString(iDamage, strDamage, 16);
+	decl String:strDamageType[32];
+	IntToString(iDmgType, strDamageType, 32);
+	new iHurt = CreateEntityByName("point_hurt");
+	if(iHurt > 0 && IsValidEdict(iHurt)) {
+		DispatchKeyValue(iVictim,"targetname","infectious_hurtme");
+		DispatchKeyValue(iHurt,"DamageTarget","infectious_hurtme");
+		DispatchKeyValue(iHurt,"Damage",strDamage);
+		DispatchKeyValue(iHurt,"DamageType",strDamageType);
+		if(!StrEqual(strWeapon, "")){
+		DispatchKeyValue(iHurt,"classname", strWeapon);
 		}
+		DispatchSpawn(iHurt);
+		AcceptEntityInput(iHurt,"Hurt", iAttacker);
+		DispatchKeyValue(iHurt,"classname","point_hurt");
+		DispatchKeyValue(iVictim,"targetname","infectious_donthurtme");
+		RemoveEdict(iHurt);
+	}
 	}
 }
 
@@ -3922,28 +4059,28 @@ GetMostDamageZom()
 	
 	for (i = 1; i <= MaxClients; i++)
 	{
-		if (validZom(i))
-		{
-			if (g_iDamage[i] > iHighest) iHighest = g_iDamage[i];
-		}
+	if (validZom(i))
+	{
+		if (g_iDamage[i] > iHighest) iHighest = g_iDamage[i];
+	}
 	}
 	
 	for (i = 1; i <= MaxClients; i++)
 	{
-		if (validZom(i) && g_iDamage[i] >= iHighest)
-		{
-			PushArrayCell(hArray, i);
-		}
+	if (validZom(i) && g_iDamage[i] >= iHighest)
+	{
+		PushArrayCell(hArray, i);
+	}
 	}
 	
 	if (GetArraySize(hArray) <= 0)
 	{
-		CloseHandle(hArray);
-		return 0;
+	CloseHandle_2(hArray);
+	return 0;
 	}
 	
 	new iClient = GetArrayCell(hArray, GetRandomInt(0, GetArraySize(hArray)-1));
-	CloseHandle(hArray);
+	CloseHandle_2(hArray);
 	return iClient;
 }
 
@@ -3951,7 +4088,7 @@ bool:ZombiesHaveTank()
 {
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) return true;
+	if (validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) return true;
 	}
 	return false;
 }
@@ -3963,18 +4100,18 @@ ZombieTank(iCaller = 0)
 	
 	if (ZombiesHaveTank())
 	{
-		if (validClient(iCaller)) PrintToChat(iCaller, "Zombies already have a tank");
-		return;
+	if (validClient(iCaller)) PrintToChat(iCaller, "%t", "Zombies already have a tank");
+	return;
 	}
 	if (g_iZombieTank > 0)
 	{   
-		if (validClient(iCaller)) PrintToChat(iCaller, "A zombie tank is on the way");
-		return;
+	if (validClient(iCaller)) PrintToChat(iCaller, "%t","A zombie tank is on the way");
+	return;
 	}
 	if (g_bZombieRage)
 	{
-		if (validClient(iCaller)) PrintToChat(iCaller, "Zombies are frenzied");
-		return;
+	if (validClient(iCaller)) PrintToChat(iCaller, "%t","Zombies are frenzied");
+	return;
 	}
 	
 	g_iZombieTank = GetMostDamageZom();
@@ -3982,13 +4119,13 @@ ZombieTank(iCaller = 0)
 	
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (validZom(i))
-		{
-			CPrintToChat(i, "{olive}[ZF] {red}%N{default} was picked based on performance to become the TANK!", g_iZombieTank);
-		}
+	if (validZom(i))
+	{
+		CPrintToChat(i, "%t", "{olive}[ZF] {red}{1}{default} was picked based on performance to become the TANK!", g_iZombieTank);
+	}
 	}
 	if (validClient(iCaller)) {
-		PrintToChat(iCaller, "Called tank");
+	PrintToChat(iCaller, "%t", "Called tank");
 	}
 	
 	g_bTankOnce = true;
@@ -4005,12 +4142,12 @@ public Action:command_tank(client, args)
 	
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (validZom(i))
-		{
-			CPrintToChat(i, "{olive}[ZF] {red}%N{default} was picked based on performance to become the TANK!", g_iZombieTank);
-		}
+	if (validZom(i))
+	{
+		CPrintToChat(i, "%t", "{olive}[ZF] {red}{1}{default} was picked based on performance to become the TANK!", g_iZombieTank);
 	}
-			
+	}
+		
 	return Plugin_Handled;
 }
 
@@ -4042,7 +4179,7 @@ public Action:command_tank_random(client, args)
 {
 	if (!zf_bEnabled) return Plugin_Handled;
 	ZombieTank(client);
-			
+		
 	return Plugin_Handled;
 }
 
@@ -4056,7 +4193,7 @@ stock bool:HasRazorback(iClient) {
 	new iEntity = -1;
 	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable")) != -1)
 	{
-		if (IsClassname(iEntity, "tf_wearable") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 57) return true;
+	if (IsClassname(iEntity, "tf_wearable") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 57) return true;
 	}
 	return false;
 }
@@ -4065,11 +4202,11 @@ stock bool:RemoveSecondaryWearable(iClient) {
 	new iEntity = -1;
 	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
 	{
-		if (IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient)
-		{
-			RemoveEdict(iEntity);
-			return true;
-		}
+	if (IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient)
+	{
+		RemoveEdict(iEntity);
+		return true;
+	}
 	}
 	return false;
 }
@@ -4109,9 +4246,9 @@ GiveBonus(iClient, String:strBonus[])
 	
 	if (g_hBonus[iClient] == INVALID_HANDLE)
 	{
-		g_iBonusCombo[iClient] = 0;
-		g_bBonusAlt[iClient] = false;
-		g_hBonus[iClient] = CreateArray(255);
+	g_iBonusCombo[iClient] = 0;
+	g_bBonusAlt[iClient] = false;
+	g_hBonus[iClient] = CreateArray(255);
 	}
 	
 	PushArrayString(g_hBonus[iClient], strBonus);
@@ -4129,48 +4266,48 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	
 	if (GetArraySize(g_hBonus[iClient]) <= 0)
 	{
-		ClientCommand(iClient, "r_screenoverlay\"\"");
-		CloseHandle(g_hBonus[iClient]);
-		g_hBonus[iClient] = INVALID_HANDLE;
-		return Plugin_Handled;
+	ClientCommand(iClient, "r_screenoverlay\"\"");
+	CloseHandle_2(g_hBonus[iClient]);
+	g_hBonus[iClient] = INVALID_HANDLE;
+	return Plugin_Handled;
 	}
 	
 	if (!g_bBonusAlt[iClient])
 	{
-		decl String:strEntry[255];
-		decl String:strPath[PLATFORM_MAX_PATH];
-		GetArrayString(g_hBonus[iClient], 0, strEntry, sizeof(strEntry));
-		Format(strPath, sizeof(strPath), "r_screenoverlay\"left4fortress/%s\"", strEntry);
-		ClientCommand(iClient, strPath);
-		
-		new iPitch = g_iBonusCombo[iClient] * 30 + 100;
-		if (iPitch > 250) iPitch = 250;
-		
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_AWARD]-1);
-		MusicGetPath(MUSIC_AWARD, iRandom, strPath, sizeof(strPath));
-		
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
-		
-		g_iBonusCombo[iClient]++;
-		
-		if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(1.9, ShowBonus, iClient);
+	decl String:strEntry[255];
+	decl String:strPath[PLATFORM_MAX_PATH];
+	GetArrayString(g_hBonus[iClient], 0, strEntry, sizeof(strEntry));
+	Format(strPath, sizeof(strPath), "r_screenoverlay\"left4fortress/%s\"", strEntry);
+	ClientCommand(iClient, strPath);
+	
+	new iPitch = g_iBonusCombo[iClient] * 30 + 100;
+	if (iPitch > 250) iPitch = 250;
+	
+	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_AWARD]-1);
+	MusicGetPath(MUSIC_AWARD, iRandom, strPath, sizeof(strPath));
+	
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
+	
+	g_iBonusCombo[iClient]++;
+	
+	if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(1.9, ShowBonus, iClient);
 	} else
 	{
-		ClientCommand(iClient, "r_screenoverlay\"\"");
-		RemoveFromArray(g_hBonus[iClient], 0);
-		if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
+	ClientCommand(iClient, "r_screenoverlay\"\"");
+	RemoveFromArray(g_hBonus[iClient], 0);
+	if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
 	}
 	
 	TF2_SetPlayerResourceData(iClient, TFResource_TotalScore, 99);
@@ -4186,11 +4323,11 @@ GetAverageDamage()
 	new iCount = 0;
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i))
-		{
-			iTotalDamage += g_iDamage[i];
-			iCount++;
-		}
+	if (IsClientInGame(i))
+	{
+		iTotalDamage += g_iDamage[i];
+		iCount++;
+	}
 	}
 	return RoundFloat(float(iTotalDamage) / float(iCount));
 }
@@ -4210,7 +4347,7 @@ RemovePhysicObjects()
 	new index = -1; 
 	while ((index = FindEntityByClassname(index, "prop_physics")) != -1)
 	{
-		if (IsClassname(index, "prop_physics")) AcceptEntityInput(index, "Kill");
+	if (IsClassname(index, "prop_physics")) AcceptEntityInput(index, "Kill");
 	}
 }
 
@@ -4219,7 +4356,7 @@ GetActivePlayerCount()
 	new i = 0;
 	for (new j = 1; j <= MaxClients; j++)
 	{
-		if (validActivePlayer(j)) i++;
+	if (validActivePlayer(j)) i++;
 	}
 	return i;
 }
@@ -4231,7 +4368,7 @@ DetermineControlPoints()
 	
 	for (new i = 0; i < sizeof(g_iControlPointsInfo); i++)
 	{
-		g_iControlPointsInfo[i][0] = -1;
+	g_iControlPointsInfo[i][0] = -1;
 	}
 	
 	//LogMessage("SZF: Calculating cps...");
@@ -4240,27 +4377,27 @@ DetermineControlPoints()
 
 	new iEntity = -1;
 	while ((iEntity = FindEntityByClassname2(iEntity, "team_control_point_master")) != -1) {
-		if (IsClassname(iEntity, "team_control_point_master")) {
-			iMaster = iEntity;
-		}
+	if (IsClassname(iEntity, "team_control_point_master")) {
+		iMaster = iEntity;
+	}
 	}
 	
 	if (iMaster <= 0)
 	{
-		//LogMessage("No master found");
-		return;
+	//LogMessage("No master found");
+	return;
 	}
 	
 	iEntity = -1;
 	while ((iEntity = FindEntityByClassname2(iEntity, "team_control_point")) != -1) {
-		if (IsClassname(iEntity, "team_control_point") && g_iControlPoints < sizeof(g_iControlPointsInfo)) {
-			new iIndex = GetEntProp(iEntity, Prop_Data, "m_iPointIndex");			
-			g_iControlPointsInfo[g_iControlPoints][0] = iIndex;
-			g_iControlPointsInfo[g_iControlPoints][1] = 0;
-			g_iControlPoints++;
-			
-			//LogMessage("Found CP with index %d", iIndex);
-		}
+	if (IsClassname(iEntity, "team_control_point") && g_iControlPoints < sizeof(g_iControlPointsInfo)) {
+		new iIndex = GetEntProp(iEntity, Prop_Data, "m_iPointIndex");		
+		g_iControlPointsInfo[g_iControlPoints][0] = iIndex;
+		g_iControlPointsInfo[g_iControlPoints][1] = 0;
+		g_iControlPoints++;
+		
+		//LogMessage("Found CP with index %d", iIndex);
+	}
 	}
 	
 	//LogMessage("Found a total of %d cps", g_iControlPoints);
@@ -4280,10 +4417,10 @@ public Action:event_CPCapture(Handle:hEvent, const String:strName[], bool:bHide)
 	
 	for (new i = 0; i < g_iControlPoints; i++)
 	{
-		if (g_iControlPointsInfo[i][0] == iCaptureIndex)
-		{
-			g_iControlPointsInfo[i][1] = 2;
-		}
+	if (g_iControlPointsInfo[i][0] == iCaptureIndex)
+	{
+		g_iControlPointsInfo[i][1] = 2;
+	}
 	}
 	
 	CheckRemainingCP();
@@ -4301,11 +4438,11 @@ public Action:event_CPCaptureStart(Handle:hEvent, const String:strName[], bool:b
 	
 	for (new i = 0; i < g_iControlPoints; i++)
 	{
-		if (g_iControlPointsInfo[i][0] == iCaptureIndex)
-		{
-			g_iControlPointsInfo[i][1] = 1;
-			//LogMessage("Set capture status on %d to 1", i);
-		}
+	if (g_iControlPointsInfo[i][0] == iCaptureIndex)
+	{
+		g_iControlPointsInfo[i][1] = 1;
+		//LogMessage("Set capture status on %d to 1", i);
+	}
 	}
 	
 	//LogMessage("Done with capturing CP event");
@@ -4324,16 +4461,16 @@ CheckRemainingCP()
 	new iCapturing = 0;
 	for (new i = 0; i < g_iControlPoints; i++)
 	{
-		if (g_iControlPointsInfo[i][1] >= 2) iCaptureCount++;
-		if (g_iControlPointsInfo[i][1] == 1) iCapturing++;
+	if (g_iControlPointsInfo[i][1] >= 2) iCaptureCount++;
+	if (g_iControlPointsInfo[i][1] == 1) iCapturing++;
 	}
 	
 	//LogMessage("Capture count: %d, Max CPs: %d, Capturing: %d", iCaptureCount, g_iControlPoints, iCapturing);
 	
 	if (iCaptureCount == g_iControlPoints-1 && iCapturing > 0)
 	{
-		g_bCapturingLastPoint = true;
-		if (g_fZombieDamageScale < 1.0 && !g_bTankOnce) ZombieTank();
+	g_bCapturingLastPoint = true;
+	if (g_fZombieDamageScale < 1.0 && !g_bTankOnce) ZombieTank();
 	}
 }
 
@@ -4343,39 +4480,39 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 	
 	if (StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
 	{
-		hWeapon = hWeaponLochNLoad;
-		iSlot = 0;
-		iClass = TFClassWeapon_DemoMan;
-		strcopy(strName, iMaxSize, "Loch'n'Load");
+	hWeapon = hWeaponLochNLoad;
+	iSlot = 0;
+	iClass = TFClassWeapon_DemoMan;
+	strcopy(strName, iMaxSize, "Loch'n'Load");
 	}
 	else if (StrEqual(strModel, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl"))
 	{
-		hWeapon = hWeaponFlareGun;
-		iSlot = 1;
-		iClass = TFClassWeapon_Pyro;
-		strcopy(strName, iMaxSize, "Flaregun");
+	hWeapon = hWeaponFlareGun;
+	iSlot = 1;
+	iClass = TFClassWeapon_Pyro;
+	strcopy(strName, iMaxSize, "Flaregun");
 	}
 	else if (StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
 	{
-		hWeapon = hWeaponShotgunPyro;
-		iSlot = 1;
-		iClass = TFClassWeapon_Group_Shotgun;
-		strcopy(strName, iMaxSize, "Shotgun");
+	hWeapon = hWeaponShotgunPyro;
+	iSlot = 1;
+	iClass = TFClassWeapon_Group_Shotgun;
+	strcopy(strName, iMaxSize, "Shotgun");
 	}
 	else if (StrEqual(strModel, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl"))
 	{
-		hWeapon = hWeaponBison;
-		iSlot = 1;
-		iClass = TFClassWeapon_Soldier;
-		strcopy(strName, iMaxSize, "Righteous Bison");
+	hWeapon = hWeaponBison;
+	iSlot = 1;
+	iClass = TFClassWeapon_Soldier;
+	strcopy(strName, iMaxSize, "Righteous Bison");
 	}
 	else if (StrEqual(strModel, "models/weapons/c_models/c_targe/c_targe.mdl"))
 	{
-		hWeapon = hWeaponTarge;
-		iSlot = 1;
-		iSwitchSlot = 2;
-		bWearable = true;
-		strcopy(strName, iMaxSize, "Chargin' Targe");
+	hWeapon = hWeaponTarge;
+	iSlot = 1;
+	iSwitchSlot = 2;
+	bWearable = true;
+	strcopy(strName, iMaxSize, "Chargin' Targe");
 	}
 	if (iSwitchSlot < 0) iSwitchSlot = iSlot;
 	
@@ -4409,13 +4546,13 @@ bool:AttemptGrabItem(iClient)
 	// fix up multi-class weapons
 	if (iWeaponClass == TFClassWeapon_Group_Shotgun)
 	{
-		if (iClass == TFClassWeapon_Pyro) hWeapon = hWeaponShotgunPyro;
-		else if (iClass == TFClassWeapon_Soldier) hWeapon = hWeaponShotgunSoldier;
-		else return false;
+	if (iClass == TFClassWeapon_Pyro) hWeapon = hWeaponShotgunPyro;
+	else if (iClass == TFClassWeapon_Soldier) hWeapon = hWeaponShotgunSoldier;
+	else return false;
 	}
 	else if (iWeaponClass != iClass) return false;
 	
-	CPrintToChat(iClient, "You picked up a {olive}%s", strName);
+	CPrintToChat(iClient, "%t", "You picked up a {olive}{1}", strName);
 	
 	if (iSwitchSlot < 0) iSwitchSlot = iSlot;
 	
@@ -4430,32 +4567,32 @@ bool:AttemptGrabItem(iClient)
 	
 	if (iWeaponMode == 1)
 	{
-		if (iEntity <= 0 || !IsValidEdict(iEntity))
-		{
-			iSlot = 0;
-			iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
-		}
-		if (iEntity <= 0 || !IsValidEdict(iEntity))
-		{
-			iSlot = 1;
-			iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
-		}
+	if (iEntity <= 0 || !IsValidEdict(iEntity))
+	{
+		iSlot = 0;
+		iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
+	}
+	if (iEntity <= 0 || !IsValidEdict(iEntity))
+	{
+		iSlot = 1;
+		iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
+	}
 	}
 	
 	// Replace it or remove it
 	if (iWeaponMode != 1)
 	{
-		if (iEntity > 0 && IsValidEdict(iEntity))
-		{
-			if (IsClassname(iEntity, "tf_wearable_demoshield")) GetEntityModel(iEntity, strModel, sizeof(strModel), "m_nModelIndex");
-			else GetEntityModel(iEntity, strModel, sizeof(strModel), "m_iWorldModelIndex");
-			PrecacheModel(strModel);
-			SetEntityModel(iTarget, strModel);
-		}
-		else
-		{
-			AcceptEntityInput(iTarget, "kill");
-		}
+	if (iEntity > 0 && IsValidEdict(iEntity))
+	{
+		if (IsClassname(iEntity, "tf_wearable_demoshield")) GetEntityModel(iEntity, strModel, sizeof(strModel), "m_nModelIndex");
+		else GetEntityModel(iEntity, strModel, sizeof(strModel), "m_iWorldModelIndex");
+		PrecacheModel(strModel);
+		SetEntityModel(iTarget, strModel);
+	}
+	else
+	{
+		AcceptEntityInput(iTarget, "kill");
+	}
 	}
 	
 	TF2_RemoveWeaponSlot(iClient, iSlot);
@@ -4491,11 +4628,11 @@ GetPlayerWeaponSlot2(iClient, iSlot)
 	
 	if (iSlot == 1)
 	{
-		iEntity = -1;
-		while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
-		{
-			if (IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient) return iEntity;
-		}
+	iEntity = -1;
+	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
+	{
+		if (IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient) return iEntity;
+	}
 	}
 	
 	return -1;
@@ -4507,12 +4644,12 @@ CheckStartWeapons()
 	
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (validLivingSur(i) && !DoesPlayerHaveRealWeapon(i))
-		{
-			new TFClassType:iClass = TF2_GetPlayerClass(i);
-			iClassesWithoutWeapons[iClass]++;
-			//PrintToChat(i, "You do not have a real weapon");
-		}
+	if (validLivingSur(i) && !DoesPlayerHaveRealWeapon(i))
+	{
+		new TFClassType:iClass = TF2_GetPlayerClass(i);
+		iClassesWithoutWeapons[iClass]++;
+		//PrintToChat(i, "You do not have a real weapon");
+	}
 	}
 	
 	decl String:strModel[PLATFORM_MAX_PATH];
@@ -4520,49 +4657,49 @@ CheckStartWeapons()
 	new iEntity = -1;
 	while ((iEntity = FindEntityByClassname2(iEntity, "prop_dynamic")) != -1)
 	{
-		if (IsClassname(iEntity, "prop_dynamic") && GetWeaponType(iEntity) == 1)
+	if (IsClassname(iEntity, "prop_dynamic") && GetWeaponType(iEntity) == 1)
+	{
+		GetEntityModel(iEntity, strModel, sizeof(strModel));
+		new TFClassWeapon:iClass = GetWeaponClass(strModel);
+		
+		new Handle:hArray = CreateArray();
+		if (iClass == TFClassWeapon_Group_Shotgun)
 		{
-			GetEntityModel(iEntity, strModel, sizeof(strModel));
-			new TFClassWeapon:iClass = GetWeaponClass(strModel);
-			
-			new Handle:hArray = CreateArray();
-			if (iClass == TFClassWeapon_Group_Shotgun)
-			{
-				PushArrayCell(hArray, TFClassWeapon_Soldier);
-				PushArrayCell(hArray, TFClassWeapon_Heavy);
-				PushArrayCell(hArray, TFClassWeapon_Pyro);
-				PushArrayCell(hArray, TFClassWeapon_Engineer);
-			}
-			else
-			{
-				PushArrayCell(hArray, iClass);
-			}
-			
-			
-			new bool:bEnable = false;
-			for (new i = 0; i < GetArraySize(hArray); i++)
-			{
-				new iClass2 = GetArrayCell(hArray, i);
-				//PrintToServer("Class: %d", iClass2);
-				if (iClassesWithoutWeapons[iClass2] > 0)
-				{
-					bEnable = true;
-					iClassesWithoutWeapons[iClass2]--;
-					//PrintToChatAll("Enabling weapon %s", strModel);
-				}
-			}
-			
-			if (bEnable)
-			{
-				AcceptEntityInput(iEntity, "TurnOn");
-				AcceptEntityInput(iEntity, "EnableCollision");
-			}
-			else
-			{
-				AcceptEntityInput(iEntity, "TurnOff");
-				AcceptEntityInput(iEntity, "DisableCollision");
-			}
+		PushArrayCell(hArray, TFClassWeapon_Soldier);
+		PushArrayCell(hArray, TFClassWeapon_Heavy);
+		PushArrayCell(hArray, TFClassWeapon_Pyro);
+		PushArrayCell(hArray, TFClassWeapon_Engineer);
 		}
+		else
+		{
+		PushArrayCell(hArray, iClass);
+		}
+		
+		
+		new bool:bEnable = false;
+		for (new i = 0; i < GetArraySize(hArray); i++)
+		{
+		new iClass2 = GetArrayCell(hArray, i);
+		//PrintToServer("Class: %d", iClass2);
+		if (iClassesWithoutWeapons[iClass2] > 0)
+		{
+			bEnable = true;
+			iClassesWithoutWeapons[iClass2]--;
+			//PrintToChatAll("Enabling weapon %s", strModel);
+		}
+		}
+		
+		if (bEnable)
+		{
+		AcceptEntityInput(iEntity, "TurnOn");
+		AcceptEntityInput(iEntity, "EnableCollision");
+		}
+		else
+		{
+		AcceptEntityInput(iEntity, "TurnOff");
+		AcceptEntityInput(iEntity, "DisableCollision");
+		}
+	}
 	}
 }
 
@@ -4634,8 +4771,8 @@ UpdateClientCarrying(iClient)
 	if (iTarget <= 0) return;
 	if (!IsClassname(iTarget, "prop_physics"))
 	{
-		DropCarryingItem(iClient);
-		return;
+	DropCarryingItem(iClient);
+	return;
 	}
 	
 	//PrintCenterText(iClient, "Teleporting gas can 1");
@@ -4676,9 +4813,9 @@ bool:DropCarryingItem(iClient, bool:bDrop = true)
    
 	if (bDrop && (IsEntityStuck(iTarget) || ObstancleBetweenEntities(iClient, iTarget)))
 	{
-		decl Float:vOrigin[3];
-		GetClientEyePosition(iClient, vOrigin);
-		TeleportEntity(iTarget, vOrigin, NULL_VECTOR, NULL_VECTOR);
+	decl Float:vOrigin[3];
+	GetClientEyePosition(iClient, vOrigin);
+	TeleportEntity(iTarget, vOrigin, NULL_VECTOR, NULL_VECTOR);
 	}
 	return true;
 }
