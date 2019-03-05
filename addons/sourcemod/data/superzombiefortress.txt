@@ -1,0 +1,247 @@
+"music"
+{
+	"drums01"
+	{
+		"path"		"left4fortress/zombat/drums01.wav"
+		"category"	"drums" 
+	}
+	"drums02"
+	{
+		"path"		"left4fortress/zombat/drums02.wav"
+		"category"	"drums"	
+	}
+	"drums03"
+	{
+		"path"		"left4fortress/zombat/drums03.wav"
+		"category"	"drums"
+	}
+	"drums04"
+	{
+		"path"		"left4fortress/zombat/drums04.wav"
+		"category"	"drums"
+	}
+	"drums05"
+	{
+		"path"		"left4fortress/zombat/drums05.wav"
+		"category"	"drums"
+	}
+	
+	
+	
+	"slayer_mild01"
+	{
+		"path"		"left4fortress/zombat/slayer_violin01.wav"
+		"category"	"slayermild"
+	}
+	"slayer_mild02"
+	{
+		"path"		"left4fortress/zombat/slayer_violin02.wav"
+		"category"	"slayermild" 
+	}
+	"slayer_mild03"
+	{
+		"path"		"left4fortress/zombat/slayer_violin03.wav"
+		"category"	"slayermild"
+	}
+	
+	"slayer01"
+	{
+		"path"		"left4fortress/zombat/slayer01.wav"
+		"category"	"slayer"
+	}
+	
+	"trumpet01"
+	{
+		"path"		"left4fortress/zombat/trumpet01.wav"
+		"category"	"trumpet"
+	}
+	"trumpet02"
+	{
+		"path"		"left4fortress/zombat/trumpet02.wav"
+		"category"	"trumpet"
+	}
+	"trumpet03"
+	{
+		"path"		"left4fortress/zombat/trumpet03.wav"
+		"category"	"trumpet"
+	}
+	"trumpet04"
+	{
+		"path"		"left4fortress/zombat/trumpet04.wav"
+		"category"	"trumpet"
+	}
+	"trumpet05"
+	{
+		"path"		"left4fortress/zombat/trumpet05.wav"
+		"category"	"trumpet"
+	}
+	"trumpet06"
+	{
+		"path"		"left4fortress/zombat/trumpet06.wav"
+		"category"	"trumpet"
+	}
+	
+	"snare01"
+	{
+		"path"		"left4fortress/zombat/snare01.wav"
+		"category"	"snare"
+	}
+	"snare02"
+	{
+		"path"		"left4fortress/zombat/snare02.wav"
+		"category"	"snare"
+	}
+	
+	"banjo01"
+	{
+		"path"		"left4fortress/zombat/banjo01.wav"
+		"category"	"banjo"
+	}
+	"banjo02"
+	{
+		"path"		"left4fortress/zombat/banjo02.wav"
+		"category"	"banjo"
+	}
+	"banjo03"
+	{
+		"path"		"left4fortress/zombat/banjo03.wav"
+		"category"	"banjo"
+	}
+	"banjo04"
+	{
+		"path"		"left4fortress/zombat/banjo04.wav"
+		"category"	"banjo"
+	}
+	"banjo05"
+	{
+		"path"		"left4fortress/zombat/banjo05.wav"
+		"category"	"banjo"
+	}
+	"banjo06"
+	{
+		"path"		"left4fortress/zombat/banjo06.wav"
+		"category"	"banjo"
+	}
+	"banjo07"
+	{
+		"path"		"left4fortress/zombat/banjo07.wav"
+		"category"	"banjo"
+	}
+	
+	"heartbeat_slow"
+	{
+		"path"		"left4fortress/zombat/heartbeat_slow.wav"
+		"category"	"heartslow"
+	}
+	
+	"heartbeat_medium"
+	{
+		"path"		"left4fortress/zombat/heartbeat_medium.wav"
+		"category"	"heartmedium"
+	}
+	
+	"heartbeat_fast"
+	{
+		"path"		"left4fortress/zombat/heartbeat_fast.wav"
+		"category"	"heartfast"
+	}
+	
+	"rabies01"
+	{
+		"path"		"left4fortress/rabies01.mp3"
+		"category"	"rabies"
+	}
+	"rabies02"
+	{
+		"path"		"left4fortress/rabies02.mp3"
+		"category"	"rabies"
+	}
+	"rabies03"
+	{
+		"path"		"left4fortress/rabies03.mp3"
+		"category"	"rabies"
+	}
+	"rabies04"
+	{
+		"path"		"left4fortress/rabies04.mp3"
+		"category"	"rabies"
+	}
+	
+	"theend"
+	{
+		"path"		"left4fortress/theend.mp3"
+		"category"	"dead"
+	}
+	
+	"incoming01"
+	{
+		"path"		"left4fortress/zincoming01.mp3"
+		"category"	"incoming"
+	}
+	"incoming02"
+	{
+		"path"		"left4fortress/zincoming02.mp3"
+		"category"	"incoming"
+	}
+	"incoming03"
+	{
+		"path"		"left4fortress/zincoming03.mp3"
+		"category"	"incoming"
+	}
+	"incoming04"
+	{
+		"path"		"left4fortress/zincoming04.mp3"
+		"category"	"incoming"
+	}
+	"incoming_mob"
+	{
+		"path"		"left4fortress/zincoming_mob.mp3"
+		"category"	"incoming"
+	}
+	
+	"prepare01"
+	{
+		"path"		"left4fortress/prepare01.mp3"
+		"category"	"prepare"
+	}
+	"prepare02"
+	{
+		"path"		"left4fortress/prepare02.mp3"
+		"category"	"prepare"
+	}
+	"prepare_rain"
+	{
+		"path"		"left4fortress/prepare_rain.mp3"
+		"category"	"prepare"
+	}
+	
+	"drowning01"
+	{
+		"path"		"left4fortress/drowning.mp3"
+		"category"	"drown"
+	}
+	
+	"tank"
+	{
+		"path"		"left4fortress/onebadtank.mp3"
+		"category"	"tank"
+	}
+	
+	"laststand"
+	{
+		"path"		"left4fortress/skinonourteeth.mp3"
+		"category"	"laststand"
+	}
+	
+	"neardeath"
+	{
+		"path"		"left4fortress/iamsocold.mp3"
+		"category"	"neardeath"
+	}
+	
+	"neardeath2"
+	{
+		"path"		"left4fortress/youaresocold.mp3"
+		"category"	"neardeath2"
+	}
+}
