@@ -17,8 +17,8 @@
 			}
 			"GrenadeDetonate"
 			{
-			"windows"    "216"
-			"linux"      "217"
+				"windows"	"216"
+				"linux"		"217"
 			}
 		}
 	}
