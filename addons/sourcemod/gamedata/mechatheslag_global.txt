@@ -7,18 +7,18 @@
 		{
 			"EquipWearable"
 			{
-				"windows"	"418"
-				"linux"		"419"
+				"windows"	"425"
+				"linux"		"424"
 			}
 			"RemoveWearable"
 			{
-				"windows"	"419"
-				"linux"		"420"
+				"windows"	"426"
+				"linux"		"425"
 			}
 			"GrenadeDetonate"
 			{
-				"windows"	"213"
-				"linux"		"214"
+			"windows"    "216"
+			"linux"      "217"
 			}
 		}
 	}
