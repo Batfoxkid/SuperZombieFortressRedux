@@ -269,19 +269,19 @@ public OnPluginStart()
 	utilPrefInit();
 	
 	// Register cvars
-	CreateConVar("sm_zf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
-	zf_cvForceOn = CreateConVar("sm_zf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	zf_cvRatio = CreateConVar("sm_zf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", FCVAR_PLUGIN, true, 0.01, true, 1.0);
-	zf_cvAllowTeamPref = CreateConVar("sm_zf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	zf_cvSwapOnPayload = CreateConVar("sm_zf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	zf_cvSwapOnAttdef = CreateConVar("sm_zf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	zf_cvTankHealth = CreateConVar("sm_zf_tank_health", "400", "Amount of health the Tank gets per alive survivor", FCVAR_PLUGIN, true, 10.0);
-	zf_cvTankHealthMin = CreateConVar("sm_zf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", FCVAR_PLUGIN, true, 0.0);
-	zf_cvTankHealthMax = CreateConVar("sm_zf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", FCVAR_PLUGIN, true, 0.0);
-	zf_cvTankTime = CreateConVar("sm_zf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", FCVAR_PLUGIN, true, 0.0);
-	zf_cvFrenzyChance = CreateConVar("sm_zf_frenzy_chance", "5.0", "% Chance of a random frenzy", FCVAR_PLUGIN, true, 0.0);
-	zf_cvFrenzyTankChance = CreateConVar("sm_zf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", FCVAR_PLUGIN, true, 0.0);
-	zf_cvTankOnce = CreateConVar("sm_zf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", FCVAR_PLUGIN, true, 0.0);
+	CreateConVar("sm_zf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
+	zf_cvForceOn = CreateConVar("sm_zf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
+	zf_cvRatio = CreateConVar("sm_zf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
+	zf_cvAllowTeamPref = CreateConVar("sm_zf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
+	zf_cvSwapOnPayload = CreateConVar("sm_zf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
+	zf_cvSwapOnAttdef = CreateConVar("sm_zf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
+	zf_cvTankHealth = CreateConVar("sm_zf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
+	zf_cvTankHealthMin = CreateConVar("sm_zf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
+	zf_cvTankHealthMax = CreateConVar("sm_zf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
+	zf_cvTankTime = CreateConVar("sm_zf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
+	zf_cvFrenzyChance = CreateConVar("sm_zf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
+	zf_cvFrenzyTankChance = CreateConVar("sm_zf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
+	zf_cvTankOnce = CreateConVar("sm_zf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
 
 	// Hook events
 	HookEvent("teamplay_round_start", event_RoundStart);
@@ -343,33 +343,27 @@ public OnMapEnd()
 	// Close timer handles
 	if(zf_tMain != INVALID_HANDLE)
 	{				
-		  CloseHandle_2(zf_tMain);
+		  CloseHandle(zf_tMain);
 		  zf_tMain = INVALID_HANDLE;
 	}
 	if(zf_tMainSlow != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tMainSlow);
+		  CloseHandle(zf_tMainSlow);
 		  zf_tMainSlow = INVALID_HANDLE;
 	}
 	
 	if(zf_tMainFast != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tMainFast);
+		  CloseHandle(zf_tMainFast);
 		  zf_tMainFast = INVALID_HANDLE;
 	}
 	if(zf_tHoarde != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tHoarde);
+		  CloseHandle(zf_tHoarde);
 		  zf_tHoarde = INVALID_HANDLE;		  
 	}
 	setRoundState(RoundPost);
 	g_bRoundActive = false;
-}
-
-stock CloseHandle_2(Handle:hndl)
-{
-	if(IsValidHandle(hndl))
-		CloseHandle(hndl);
 }
 	
 public OnClientPostAdminCheck(client)
@@ -458,7 +452,7 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 		  if (g_iSuperHealth[iVictim] < 0) g_iSuperHealth[iVictim] = 0;
 		  bChanged = true;
 		  
-		  new iMaxHealth = RoundFloat(float(GetClientMaxHealth(iVictim))*1.5);
+		  new iMaxHealth = RoundFloat(float(GetEntProp(iVictim, Prop_Data, "m_iMaxHealth"))*1.5);
 		  SetEntityHealth(iVictim, iMaxHealth);
 	}
 	if (iVictim != iAttacker)
@@ -1242,12 +1236,12 @@ public Action:event_PlayerBuiltObject(Handle:event, const String:name[], bool:do
 	if(!zf_bEnabled) return Plugin_Continue;
 
 	new index = GetEventInt(event, "index");
-	new object = GetEventInt(event, "object");
+	new building = GetEventInt(event, "object");
 
 	// 1. Handle dispenser rules.
 	//		  Disable dispensers when they begin construction.
 	//		  Increase max health to 250 (default level 1 is 150).				
-	if(object == PLAYERBUILTOBJECT_ID_DISPENSER)
+	if(building == PLAYERBUILTOBJECT_ID_DISPENSER)
 	{
 		  SetEntProp(index, Prop_Send, "m_bDisabled", 1);
 		  SetEntProp(index, Prop_Send, "m_iMaxHealth", 250);
@@ -2010,7 +2004,7 @@ public panel_PrintPrefs(client)
 		DrawPanelItem(panel, temp_string1);	
 	}
 	Format(temp_string1, sizeof(temp_string1),"%T", "Close Menu", client);
-   DrawPanelItem(panel, temp_string1);
+	DrawPanelItem(panel, temp_string1);
 	SendPanelToClient(panel, client, panel_HandlePrefs, 10);
 	CloseHandle_2(panel);
 }
@@ -2019,11 +2013,11 @@ public panel_HandlePrefs(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintPrefs00(param1);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintPrefs00(param1);
+			default: return;
+		}
 	}
 }
 
@@ -2037,34 +2031,34 @@ public panel_PrintPrefs00(client)
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_NONE)
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) None", client);
-		  DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "None", client);
-		  DrawPanelItem(panel, temp_string2);
+		DrawPanelItem(panel, temp_string2);
 	}
 
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_SUR)
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Survivors", client);
-		  DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "Survivors", client);
-		  DrawPanelItem(panel, temp_string2);
+		DrawPanelItem(panel, temp_string2);
 	}
 					
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Zombies", client);
-		  DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
+		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "Zombies", client);
-		  DrawPanelItem(panel, temp_string2);
+		DrawPanelItem(panel, temp_string2);
 	}  
 	Format(temp_string2, sizeof(temp_string2),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string2);
@@ -2076,13 +2070,13 @@ public panel_HandlePrefTeam(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: prefSet(param1, TeamPref, ZF_TEAMPREF_NONE);
-				case 2: prefSet(param1, TeamPref, ZF_TEAMPREF_SUR);
-				case 3: prefSet(param1, TeamPref, ZF_TEAMPREF_ZOM);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: prefSet(param1, TeamPref, ZF_TEAMPREF_NONE);
+			case 2: prefSet(param1, TeamPref, ZF_TEAMPREF_SUR);
+			case 3: prefSet(param1, TeamPref, ZF_TEAMPREF_ZOM);
+			default: return;	 
+		} 
 	}
 }
 
@@ -2116,15 +2110,15 @@ public panel_HandleHelp(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintOverview(param1);
-				case 2: panel_PrintTeam(param1, _:surTeam());
-				case 3: panel_PrintTeam(param1, _:zomTeam());
-				case 4: panel_PrintSurClass(param1);
-				case 5: panel_PrintZomClass(param1);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintOverview(param1);
+			case 2: panel_PrintTeam(param1, _:surTeam());
+			case 3: panel_PrintTeam(param1, _:zomTeam());
+			case 4: panel_PrintSurClass(param1);
+			case 5: panel_PrintZomClass(param1);
+			default: return;	 
+		} 
 	} 
 }
  
@@ -2157,11 +2151,11 @@ public panel_HandleOverview(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintHelp(param1);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintHelp(param1);
+			default: return;	 
+		} 
 	} 
 }
  
@@ -2175,41 +2169,41 @@ public panel_PrintTeam(client, team)
 	{
 		decl String:temp_string5[1024];
 		Format(temp_string5, sizeof(temp_string5),"%T", "ZF Survivor Team", client);
-		  SetPanelTitle(panel, temp_string5);
-		  DrawPanelText(panel, "-------------------------------------------");
+		SetPanelTitle(panel, temp_string5);
+		DrawPanelText(panel, "-------------------------------------------");
 		Format(temp_string5, sizeof(temp_string5),"%T", "Survivors consist of soldiers, demomen,", client);
-		  DrawPanelText(panel, temp_string5);
+		DrawPanelText(panel, temp_string5);
 		Format(temp_string5, sizeof(temp_string5),"%T", "pyros, engineers, medics, and snipers.", client);
-		  DrawPanelText(panel, temp_string5);
+		DrawPanelText(panel, temp_string5);
 		Format(temp_string5, sizeof(temp_string5),"%T", "They receive morale boosts for multiple", client);
-		  DrawPanelText(panel, temp_string5);
+		DrawPanelText(panel, temp_string5);
 		Format(temp_string5, sizeof(temp_string5),"%T", "kills in a row. Morale boosts grant crit", client);
-		  DrawPanelText(panel, temp_string5);
+		DrawPanelText(panel, temp_string5);
 		Format(temp_string5, sizeof(temp_string5),"%T",  "and health bonuses.", client);
-		  DrawPanelText(panel, temp_string5);
-		  DrawPanelText(panel, "-------------------------------------------");
+		DrawPanelText(panel, temp_string5);
+		DrawPanelText(panel, "-------------------------------------------");
 	}
 	else if(team == _:zomTeam())
 	{
 		decl String:temp_string6[2048];
 		Format(temp_string6, sizeof(temp_string6),"%T", "ZF Zombie Team", client);
-		  SetPanelTitle(panel, temp_string6);
-		  DrawPanelText(panel, "-------------------------------------------");
+		SetPanelTitle(panel, temp_string6);
+		DrawPanelText(panel, "-------------------------------------------");
 		Format(temp_string6, sizeof(temp_string6),"%T", "Zombies consist of scouts, heavies, and", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "spies. They receive regeneration and crit", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "bonuses for sticking together as a hoarde.", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "They also possess the Rage ability, which", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "gives health and speed bonuses. Rage is", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "activated by calling for a medic, and", client);
-		  DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, temp_string6);
 		Format(temp_string6, sizeof(temp_string6),"%T", "recharges after 30s.", client);
-		  DrawPanelText(panel, temp_string6);
-		  DrawPanelText(panel, "-------------------------------------------");
+		DrawPanelText(panel, temp_string6);
+		DrawPanelText(panel, "-------------------------------------------");
 	}
 	decl String:temp_string7[512];
 	Format(temp_string7, sizeof(temp_string7),"%T", "Return to Help Menu", client);
@@ -2224,11 +2218,11 @@ public panel_HandleTeam(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintHelp(param1);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintHelp(param1);
+			default: return;	 
+		} 
 	} 
 }
 
@@ -2264,16 +2258,16 @@ public panel_HandleSurClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintClass(param1, TFClass_Soldier);
-				case 2: panel_PrintClass(param1, TFClass_Sniper);
-				case 3: panel_PrintClass(param1, TFClass_Medic);
-				case 4: panel_PrintClass(param1, TFClass_DemoMan);
-				case 5: panel_PrintClass(param1, TFClass_Pyro);
-				case 6: panel_PrintClass(param1, TFClass_Engineer);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintClass(param1, TFClass_Soldier);
+			case 2: panel_PrintClass(param1, TFClass_Sniper);
+			case 3: panel_PrintClass(param1, TFClass_Medic);
+			case 4: panel_PrintClass(param1, TFClass_DemoMan);
+			case 5: panel_PrintClass(param1, TFClass_Pyro);
+			case 6: panel_PrintClass(param1, TFClass_Engineer);
+			default: return;	 
+		}
 	} 
 }
 				
@@ -2299,13 +2293,13 @@ public panel_HandleZomClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintClass(param1, TFClass_Scout);
-				case 2: panel_PrintClass(param1, TFClass_Heavy);
-				case 3: panel_PrintClass(param1, TFClass_Spy);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintClass(param1, TFClass_Scout);
+			case 2: panel_PrintClass(param1, TFClass_Heavy);
+			case 3: panel_PrintClass(param1, TFClass_Spy);
+			default: return;	 
+		} 
 	} 
 }
 
@@ -2314,141 +2308,140 @@ public panel_PrintClass(client, TFClassType:class)
 	new Handle:panel = CreatePanel();
 	switch(class)
 	{
-		  case TFClass_Soldier:
-		  {
+		case TFClass_Soldier:
+		{
 			decl String:temp_string10[1024];
 			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier [Survivor/Assault]", client);
-				SetPanelTitle(panel, temp_string10);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string10);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string10, sizeof(temp_string10),"%T", "Gains 2 rockets per kill.", client);
-				DrawPanelText(panel, temp_string10);
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Pyro:
-		  {
+			DrawPanelText(panel, temp_string10);
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Pyro:
+		{
 			decl String:temp_string11[512];
 			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro [Survivor/Assault]", client);
-				SetPanelTitle(panel, temp_string11);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string11);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string11, sizeof(temp_string11),"%T", "Flamethrowers limited to 125.", client);
-				DrawPanelText(panel, temp_string11);
+			DrawPanelText(panel, temp_string11);
 			Format(temp_string11, sizeof(temp_string11),"%T", "Speed decreased to 240 (from 300).", client);
-				DrawPanelText(panel, temp_string11);				
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_DemoMan:
-		  {
+			DrawPanelText(panel, temp_string11);				
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_DemoMan:
+		{
 			decl String:temp_string12[1024];
 			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman [Survivor/Assault]", client);
-				SetPanelTitle(panel, temp_string12);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string12);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string12, sizeof(temp_string12),"%T", "Gains 2 pipes per kill.", client);
-				DrawPanelText(panel, temp_string12);		  
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Engineer:
-		  {
+			DrawPanelText(panel, temp_string12);		  
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Engineer:
+		{
 			decl String:temp_string13[2048];
 			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer [Survivor/Support]", client);
-				SetPanelTitle(panel, temp_string13);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string13);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string13, sizeof(temp_string13),"%T", "Buildables can't be upgraded, but can be", client);
-				DrawPanelText(panel, temp_string13);
+			DrawPanelText(panel, temp_string13);
 			Format(temp_string13, sizeof(temp_string13),"%T", "repaired. Sentry ammo limited to 60 and", client);
-				DrawPanelText(panel, temp_string13);
+			DrawPanelText(panel, temp_string13);
 			Format(temp_string13, sizeof(temp_string13),"%T", "slowly decays. More ammo can't be added.", client);
-				DrawPanelText(panel, temp_string13);
+			DrawPanelText(panel, temp_string13);
 			Format(temp_string13, sizeof(temp_string13),"%T", "Sentries self destruct when ammo is depleted.", client);
-				DrawPanelText(panel, temp_string13);
+			DrawPanelText(panel, temp_string13);
 			Format(temp_string13, sizeof(temp_string13),"%T", "Dispenser health increased to 250 (from 150).", client);
-				DrawPanelText(panel, temp_string13);		  
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Medic:
-		  {
+			DrawPanelText(panel, temp_string13);		  
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Medic:
+		{
 			decl String:temp_string14[2048];
 			Format(temp_string14, sizeof(temp_string14),"%T", "Medic [Survivor/Support]", client);
-				SetPanelTitle(panel, temp_string14);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string14);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string14, sizeof(temp_string14),"%T", "Syringe Guns don't have to reload. Ueber/", client);
-				DrawPanelText(panel, temp_string14);
+			DrawPanelText(panel, temp_string14);
 			Format(temp_string14, sizeof(temp_string14),"%T", "charge faster, but don't last as long.", client);
-				DrawPanelText(panel, temp_string14);
+			DrawPanelText(panel, temp_string14);
 			Format(temp_string14, sizeof(temp_string14),"%T", "Overheal limited to 125% of max health", client);
-				DrawPanelText(panel, temp_string14);
+			DrawPanelText(panel, temp_string14);
 			Format(temp_string14, sizeof(temp_string14),"%T", "and decays more slowly.", client);
-				DrawPanelText(panel, temp_string14);
-
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Sniper:
-		  {
+			DrawPanelText(panel, temp_string14);
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Sniper:
+		{
 			decl String:temp_string15[1024];
 			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper [Survivor/Support]", client);
-				SetPanelTitle(panel, temp_string15);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string15);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string15, sizeof(temp_string15),"%T", "Gains 5 Rifle/2 Huntman ammo per kill.", client);
-				DrawPanelText(panel, temp_string15);
+			DrawPanelText(panel, temp_string15);
 			Format(temp_string15, sizeof(temp_string15),"%T", "SMG doesn't have to reload.", client);
-				DrawPanelText(panel, temp_string15);	 
-				DrawPanelText(panel, "-------------------------------------------");
-		  }		  
-		  case TFClass_Scout:
-		  {
+			DrawPanelText(panel, temp_string15);	 
+			DrawPanelText(panel, "-------------------------------------------");
+		}	  
+		case TFClass_Scout:
+		{
 			decl String:temp_string16[1024];
 			Format(temp_string16, sizeof(temp_string16),"%T", "Scout [Zombie]", client);
-				SetPanelTitle(panel, temp_string16);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string16);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string16, sizeof(temp_string16),"%T", "Bats / Drinks only.", client);
-				DrawPanelText(panel, temp_string16);
+			DrawPanelText(panel, temp_string16);
 			Format(temp_string16, sizeof(temp_string16),"%T", "Rage ability: Increase speed and health", client);
-				DrawPanelText(panel, temp_string16);
+			DrawPanelText(panel, temp_string16);
 			Format(temp_string16, sizeof(temp_string16),"%T", "by calling for medic. Recharges after 30s.", client);
-				DrawPanelText(panel, temp_string16);
+			DrawPanelText(panel, temp_string16);
 			Format(temp_string16, sizeof(temp_string16),"%T", "Speed reduced to 350 (from 400).", client);
-				DrawPanelText(panel, temp_string16);		  
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Heavy:
-		  {
+			DrawPanelText(panel, temp_string16);		  
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Heavy:
+		{
 			decl String:temp_string17[1024];
 			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy [Zombie]", client);
-				SetPanelTitle(panel, temp_string17);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string17);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string17, sizeof(temp_string17),"%T", "Fists / Gloves / Food only.", client);
-				DrawPanelText(panel, temp_string17);
+			DrawPanelText(panel, temp_string17);
 			Format(temp_string17, sizeof(temp_string17),"%T", "Rage ability: Increase speed and health", client);
-				DrawPanelText(panel, temp_string17);
+			DrawPanelText(panel, temp_string17);
 			Format(temp_string17, sizeof(temp_string17),"%T", "by calling for medic. Recharges after 30s.", client);
-				DrawPanelText(panel, temp_string17);
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
-		  case TFClass_Spy:
-		  {
+			DrawPanelText(panel, temp_string17);
+			DrawPanelText(panel, "-------------------------------------------");
+		}
+		case TFClass_Spy:
+		{
 			decl String:temp_string18[1024];
 			Format(temp_string18, sizeof(temp_string18),"%T", "Spy [Zombie]", client);
-				SetPanelTitle(panel, temp_string18);
-				DrawPanelText(panel, "-------------------------------------------");
+			SetPanelTitle(panel, temp_string18);
+			DrawPanelText(panel, "-------------------------------------------");
 			Format(temp_string18, sizeof(temp_string18),"%T", "Knives / Invis Watch / CnD only.", client);
-				DrawPanelText(panel, temp_string18);
+			DrawPanelText(panel, temp_string18);
 			Format(temp_string18, sizeof(temp_string18),"%T", "Rage ability: Increase speed and health", client);
-				DrawPanelText(panel, temp_string18);
+			DrawPanelText(panel, temp_string18);
 			Format(temp_string18, sizeof(temp_string18),"%T", "by calling for medic. Recharges after 30s.", client);
-				DrawPanelText(panel, temp_string18);
+			DrawPanelText(panel, temp_string18);
 			Format(temp_string18, sizeof(temp_string18),"%T", "Speed reduced to 280 (from 300).", client);
-				DrawPanelText(panel, temp_string18);
-				DrawPanelText(panel, "-------------------------------------------");
-		  }		  
-		  default:
-		  {
+			DrawPanelText(panel, temp_string18);
+			DrawPanelText(panel, "-------------------------------------------");
+		}		  
+		default:
+		{
 			decl String:temp_string19[1024];
 			Format(temp_string19, sizeof(temp_string19),"%T", "Unassigned / Spectator", client);
-				SetPanelTitle(panel, temp_string19);
-				DrawPanelText(panel, "-------------------------------------------"); 
+			SetPanelTitle(panel, temp_string19);
+			DrawPanelText(panel, "-------------------------------------------"); 
 			Format(temp_string19, sizeof(temp_string19),"%T", "Honestly, what were you expecting here?", client);			
-				DrawPanelText(panel, temp_string19);
-				DrawPanelText(panel, "-------------------------------------------");
-		  }
+			DrawPanelText(panel, temp_string19);
+			DrawPanelText(panel, "-------------------------------------------");
+		}
 	}
 	decl String:temp_string20[512];
 	Format(temp_string20, sizeof(temp_string20),"%T", "Return to Help Menu", client);
@@ -2463,62 +2456,77 @@ public panel_HandleClass(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Select)
 	{
-		  switch(param2)
-		  {
-				case 1: panel_PrintHelp(param1);
-				default: return;	 
-		  } 
+		switch(param2)
+		{
+			case 1: panel_PrintHelp(param1);
+			default: return;	 
+		} 
 	} 
 }
 
 public dummy_PanelHandler(Handle:menu, MenuAction:action, param1, param2)
-{ return; }
+{
+	return;
+}
 
-SetGlow() {
+SetGlow()
+{
 	new iCount = GetSurvivorCount();
 	new iGlow = 0;
 	new iGlow2;
 	
 	if (iCount >= 1 && iCount <= 3) iGlow = 1;
 	
-	for(new i = 1; i <= MaxClients; i++) {
-		  if(IsClientInGame(i) && IsPlayerAlive(i)) {
-				iGlow2 = iGlow;
-				if (!isSur(i)) iGlow2 = 0;
-				if (isZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) iGlow2 = 1;
-				SetEntProp(i, Prop_Send, "m_bGlowEnabled", iGlow2);
-		  }
+	for(new i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientInGame(i) && IsPlayerAlive(i))
+		{
+			iGlow2 = iGlow;
+			if (!isSur(i))
+				iGlow2 = 0;
+			if (isZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
+				iGlow2 = 1;
+			SetEntProp(i, Prop_Send, "m_bGlowEnabled", iGlow2);
+		}
 	}
 }
 
-stock GetPlayerCount() {
+stock GetPlayerCount()
+{
 	new playerCount = 0;
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		  if(IsClientInGame(i) && (GetClientTeam(i) > 1))
-		  {
-				playerCount++;  
-		  }
+		if(IsClientInGame(i) && (GetClientTeam(i) > 1))
+		{
+			playerCount++;  
+		}
 	}
 	return playerCount;
 }
 
-stock GetSurvivorCount() {
+stock GetSurvivorCount()
+{
 	new iCount = 0;
-	for(new i = 1; i <= MaxClients; i++) {
-		  if(validLivingSur(i)) {
-				iCount++;
-		  }
+	for(new i = 1; i <= MaxClients; i++)
+	{
+		if(validLivingSur(i))
+		{
+			iCount++;
+		}
 	}
 	return iCount;
 }
 
-public OnSlagChange(iClient, iFeature, bool:bEnabled) {
-	if (!bEnabled) return;
+public OnSlagChange(iClient, iFeature, bool:bEnabled)
+{
+	if (!bEnabled)
+		return;
 	
-	if (iFeature == 10) {
-		  if(validSur(iClient)) {
-				ForcePlayerSuicide(iClient);
+	if (iFeature == 10)
+	{
+		  if(validSur(iClient))
+		  {
+			ForcePlayerSuicide(iClient);
 		  }
 	}
 }
@@ -2735,17 +2743,8 @@ ShowDebug(String:strInput[]) {
 	}
 }
 
-stock GetMecha()
-{	
-	decl String:strAuth[255];
-	for (new i = 1; i <= MaxClients; i++)
-	{
-		  if (IsClientInGame(i))
-		  {
-				GetClientAuthString(i, strAuth, sizeof(strAuth));
-				if (StrEqual(strAuth, "STEAM_0:0:17402999", false)) return i;
-		  }
-	}
+stock GetMecha()	// VSH and SZF did it.. .w. I get you want to be noticed but ok
+{
 	return -1;
 }
 
@@ -3238,7 +3237,7 @@ MusicHandleClient(iClient)
 				Scared = ZombieNum * 3 / Health% + Rage*20
 		  */
 		  new iCurrentHealth = GetClientHealth(iClient);
-		  new iMaxHealth = GetClientMaxHealth(iClient);
+		  new iMaxHealth = GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
 		  new Float:fHealth = float(iCurrentHealth) / float(iMaxHealth);
 		  if (fHealth < 0.5) fHealth = 0.5;
 		  if (fHealth > 1.1) fHealth = 1.1;
@@ -3294,10 +3293,6 @@ MusicHandleClient(iClient)
 		  
 		  StartSoundSystem(iClient, iMusic);
 	}
-}
-
-stock GetClientMaxHealth(iClient) {
-	return TF2_GetPlayerResourceData(iClient, TFResource_MaxHealth);
 }
 
 public Action:command_rabies(client, args)
@@ -4266,7 +4261,7 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	
 	if (GetArraySize(g_hBonus[iClient]) <= 0)
 	{
-		  ClientCommand(iClient, "r_screenoverlay\"\"");
+		  ClientCommand(iClient, "r_screenoverlay \"\"");
 		  CloseHandle_2(g_hBonus[iClient]);
 		  g_hBonus[iClient] = INVALID_HANDLE;
 		  return Plugin_Handled;
@@ -4303,14 +4298,18 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 		  g_iBonusCombo[iClient]++;
 		  
 		  if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(1.9, ShowBonus, iClient);
-	} else
+	}
+	else
 	{
-		  ClientCommand(iClient, "r_screenoverlay\"\"");
+		  ClientCommand(iClient, "r_screenoverlay \"\"");
 		  RemoveFromArray(g_hBonus[iClient], 0);
 		  if (g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
 	}
 	
-	TF2_SetPlayerResourceData(iClient, TFResource_TotalScore, 99);
+	new Handle:event=CreateEvent("player_escort_score", true);
+	SetEventInt(event, "player", iClient);
+	SetEventInt(event, "points", 99);
+	FireEvent(event);
 	
 	g_bBonusAlt[iClient] = !g_bBonusAlt[iClient];
 	
@@ -4323,11 +4322,11 @@ GetAverageDamage()
 	new iCount = 0;
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		  if (IsClientInGame(i))
-		  {
-				iTotalDamage += g_iDamage[i];
-				iCount++;
-		  }
+		if (IsClientInGame(i))
+		{
+			iTotalDamage += g_iDamage[i];
+			iCount++;
+		}
 	}
 	return RoundFloat(float(iTotalDamage) / float(iCount));
 }
@@ -4825,7 +4824,7 @@ stock AnglesToVelocity(Float:fAngle[3], Float:fVelocity[3], Float:fSpeed = 1.0) 
 	fVelocity[1] = Sine(DegToRad(fAngle[1]));
 	fVelocity[2] = Sine(DegToRad(fAngle[0])) * -1.0;
 	
-	NormalizeVector(fVelity, fVelocity);
+	NormalizeVector(fVelocity, fVelocity);
 	
 	ScaleVector(fVelocity, fSpeed);
 }
