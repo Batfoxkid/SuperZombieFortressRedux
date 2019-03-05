@@ -1738,7 +1738,7 @@ handle_hoardeBonus()
 	for(new i = 0; i < playerCount; i++)
 		  zf_hoardeBonus[player[i]] = hoardeSize[playerHoardeId[i]] - 1;
 		  
-	CloseHandle_2(hStack);		  
+	CloseHandle(hStack);		  
 }
 
 ////////////////////////////////////////////////////////////
@@ -1775,23 +1775,23 @@ zfEnable()
 		  
 	// [Re]Enable periodic timers.
 	if(zf_tMain != INVALID_HANDLE)		  
-		  CloseHandle_2(zf_tMain);
+		  CloseHandle(zf_tMain);
 	zf_tMain = CreateTimer(1.0, timer_main, _, TIMER_REPEAT); 
 	
 	if(zf_tMainSlow != INVALID_HANDLE)
-		  CloseHandle_2(zf_tMainSlow);		  
+		  CloseHandle(zf_tMainSlow);		  
 	zf_tMainSlow = CreateTimer(240.0, timer_mainSlow, _, TIMER_REPEAT);
 	
 	if(zf_tMainFast != INVALID_HANDLE)
-		  CloseHandle_2(zf_tMainFast);		  
+		  CloseHandle(zf_tMainFast);		  
 	zf_tMainFast = CreateTimer(0.5, timer_mainFast, _, TIMER_REPEAT);
 	
 	if(zf_tHoarde != INVALID_HANDLE)
-		  CloseHandle_2(zf_tHoarde);
+		  CloseHandle(zf_tHoarde);
 	zf_tHoarde = CreateTimer(5.0, timer_hoarde, _, TIMER_REPEAT); 
 	
 	if(zf_tDataCollect != INVALID_HANDLE)
-		  CloseHandle_2(zf_tDataCollect);
+		  CloseHandle(zf_tDataCollect);
 	zf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT); 
 }
 
@@ -1823,23 +1823,23 @@ zfDisable()
 	// Disable periodic timers.
 	if(zf_tMain != INVALID_HANDLE)
 	{				
-		  CloseHandle_2(zf_tMain);
+		  CloseHandle(zf_tMain);
 		  zf_tMain = INVALID_HANDLE;
 	}
 	if(zf_tMainSlow != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tMainSlow);
+		  CloseHandle(zf_tMainSlow);
 		  zf_tMainSlow = INVALID_HANDLE;
 	}
 	if(zf_tHoarde != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tHoarde);
+		  CloseHandle(zf_tHoarde);
 		  zf_tHoarde = INVALID_HANDLE;
 	}
 	
 	if(zf_tDataCollect != INVALID_HANDLE)
 	{
-		  CloseHandle_2(zf_tDataCollect);
+		  CloseHandle(zf_tDataCollect);
 		  zf_tDataCollect = INVALID_HANDLE;
 	}
 
@@ -1973,7 +1973,7 @@ public panel_PrintMain(client)
 	Format(temp_string21, sizeof(temp_string21),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string21);
 	SendPanelToClient(panel, client, panel_HandleMain, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleMain(Handle:menu, MenuAction:action, param1, param2)
@@ -2006,7 +2006,7 @@ public panel_PrintPrefs(client)
 	Format(temp_string1, sizeof(temp_string1),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string1);
 	SendPanelToClient(panel, client, panel_HandlePrefs, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandlePrefs(Handle:menu, MenuAction:action, param1, param2)
@@ -2063,7 +2063,7 @@ public panel_PrintPrefs00(client)
 	Format(temp_string2, sizeof(temp_string2),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string2);
 	SendPanelToClient(panel, client, panel_HandlePrefTeam, 30);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandlePrefTeam(Handle:menu, MenuAction:action, param1, param2)
@@ -2103,7 +2103,7 @@ public panel_PrintHelp(client)
 	Format(temp_string3, sizeof(temp_string3),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string3);
 	SendPanelToClient(panel, client, panel_HandleHelp, 30);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleHelp(Handle:menu, MenuAction:action, param1, param2)
@@ -2144,7 +2144,7 @@ public panel_PrintOverview(client)
 	Format(temp_string4, sizeof(temp_string4),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string4);
 	SendPanelToClient(panel, client, panel_HandleOverview, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleOverview(Handle:menu, MenuAction:action, param1, param2)
@@ -2211,7 +2211,7 @@ public panel_PrintTeam(client, team)
 	Format(temp_string7, sizeof(temp_string7),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string7);
 	SendPanelToClient(panel, client, panel_HandleTeam, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleTeam(Handle:menu, MenuAction:action, param1, param2)
@@ -2251,7 +2251,7 @@ public panel_PrintSurClass(client)
 	Format(temp_string8, sizeof(temp_string8),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string8);
 	SendPanelToClient(panel, client, panel_HandleSurClass, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleSurClass(Handle:menu, MenuAction:action, param1, param2)
@@ -2286,7 +2286,7 @@ public panel_PrintZomClass(client)
 	Format(temp_string9, sizeof(temp_string9),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string9);
 	SendPanelToClient(panel, client, panel_HandleZomClass, 10);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleZomClass(Handle:menu, MenuAction:action, param1, param2)
@@ -2449,7 +2449,7 @@ public panel_PrintClass(client, TFClassType:class)
 	Format(temp_string20, sizeof(temp_string20),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string20);	
 	SendPanelToClient(panel, client, panel_HandleClass, 8);
-	CloseHandle_2(panel);
+	CloseHandle(panel);
 }
 
 public panel_HandleClass(Handle:menu, MenuAction:action, param1, param2)
@@ -2750,7 +2750,8 @@ stock GetMecha()	// VSH and SZF did it.. .w. I get you want to be noticed but ok
 
 LoadSoundSystem()
 {
-	if (g_hMusicArray != INVALID_HANDLE) CloseHandle_2(g_hMusicArray);
+	if (g_hMusicArray != INVALID_HANDLE)
+		CloseHandle(g_hMusicArray);
 	g_hMusicArray = CreateArray();
 	
 	for (new iLoop = 0; iLoop < sizeof(g_iMusicCount); iLoop++)
@@ -2798,7 +2799,7 @@ LoadSoundSystem()
 	} while (KvGotoNextKey(hKeyvalue));
 	//LogMessage("Done with the sound system");
 	
-	CloseHandle_2(hKeyvalue);
+	CloseHandle(hKeyvalue);
 }
 
 MusicCategoryToNumber(String:strCategory[])
@@ -3316,7 +3317,8 @@ public Action:command_goo(client, args)
 
 FastRespawnReset()
 {
-	if (g_hFastRespawnArray != INVALID_HANDLE) CloseHandle_2(g_hFastRespawnArray);
+	if (g_hFastRespawnArray != INVALID_HANDLE)
+		CloseHandle(g_hFastRespawnArray);
 	g_hFastRespawnArray = CreateArray(3);
 }
 
@@ -3367,12 +3369,12 @@ FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
 	{
 		  new iRandom = GetRandomInt(0, GetArraySize(hTombola)-1);
 		  new iResult = GetArrayCell(hTombola, iRandom);
-		  CloseHandle_2(hTombola);
+		  CloseHandle(hTombola);
 		  return iResult;
 	}
 	else
 	{
-		  CloseHandle_2(hTombola);
+		  CloseHandle(hTombola);
 	}
 	return -1;
 }
@@ -3396,12 +3398,12 @@ bool:PerformFastRespawn2(iClient)
 	
 	if (GetArraySize(hTombola) <= 0)
 	{
-		  CloseHandle_2(hTombola);
+		  CloseHandle(hTombola);
 		  return false;
 	}
 	
 	new iTarget = GetArrayCell(hTombola, GetRandomInt(0, GetArraySize(hTombola)-1));
-	CloseHandle_2(hTombola);
+	CloseHandle(hTombola);
 	
 	new iResult = FastRespawnNearby(iTarget, 7.0);
 	if (iResult < 0) return false;
@@ -3447,7 +3449,7 @@ stock bool:PointsAtTarget(Float:fBeginPos[3], any:iTarget) {
 	new iHit = -1;
 	if (TR_DidHit(hTrace)) iHit = TR_GetEntityIndex(hTrace);
 	
-	CloseHandle_2(hTrace);
+	CloseHandle(hTrace);
 	return (iHit == iTarget);
 }
 
@@ -3487,7 +3489,7 @@ stock GetClientPointVisible(iClient) {
 	{
 		  iReturn = iHit;
 	}
-	CloseHandle_2(hTrace);
+	CloseHandle(hTrace);
 	
 	return iReturn;
 }
@@ -3504,7 +3506,7 @@ stock bool:ObstancleBetweenEntities(iEntity1, iEntity2) {
 	
 	new bool:bHit = TR_DidHit(hTrace);
 	new iHit = TR_GetEntityIndex(hTrace);
-	CloseHandle_2(hTrace);
+	CloseHandle(hTrace);
 	
 	if (!bHit) return true;
 	if (iHit != iEntity2) return true;
@@ -4070,12 +4072,12 @@ GetMostDamageZom()
 	
 	if (GetArraySize(hArray) <= 0)
 	{
-		  CloseHandle_2(hArray);
+		  CloseHandle(hArray);
 		  return 0;
 	}
 	
 	new iClient = GetArrayCell(hArray, GetRandomInt(0, GetArraySize(hArray)-1));
-	CloseHandle_2(hArray);
+	CloseHandle(hArray);
 	return iClient;
 }
 
@@ -4262,7 +4264,7 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	if (GetArraySize(g_hBonus[iClient]) <= 0)
 	{
 		  ClientCommand(iClient, "r_screenoverlay \"\"");
-		  CloseHandle_2(g_hBonus[iClient]);
+		  CloseHandle(g_hBonus[iClient]);
 		  g_hBonus[iClient] = INVALID_HANDLE;
 		  return Plugin_Handled;
 	}
