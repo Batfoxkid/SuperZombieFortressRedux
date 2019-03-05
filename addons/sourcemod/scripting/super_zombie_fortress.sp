@@ -24,8 +24,8 @@
 
 
 
-#include "zf_util_base.inc"
-#include "zf_util_pref.inc"
+#include "szf_util_base.inc"
+#include "szf_util_pref.inc"
 
 //#define FEATURE_GAMEPLAYBAN	 64
 #if defined FEATURE_GAMEPLAYBAN 
