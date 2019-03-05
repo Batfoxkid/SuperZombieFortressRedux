@@ -1,0 +1,351 @@
+"Phrases"
+{
+	"This server is running Super Zombie Fortress {1}"
+	{
+		"en"		"Our Server is running Super Zombie Fortress 2.0"
+	}
+	"Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper."
+	{
+		"en"		"Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper."
+	}
+	"Grace period complete. Survivors can no longer change classes."
+	{
+		"en"		"Grace period complete. Survivors can no longer change classes."
+	}
+	"Type \"/zf\" for info!"
+	{
+		"en"		"Type \"/zf\" for info!"
+	}
+	"ZF Enabled. Restarting Round..."
+	{
+		"en"		"ZF Enabled. Restarting Round..."
+	}
+	"ZF Disabled. Restarting Round..."
+	{
+		"en"		"ZF Disabled. Restarting Round..."
+	}
+	"Team roles swapped. Restarting Round..."
+	{
+		"en"		"Team roles swapped. Restarting Round..."
+	}
+	"Valid zombies: Scout, Heavy, Spy."
+	{
+		"en"		"Valid zombies: Scout, Heavy, Spy."
+	}
+	"Survivors can't change classes during a round!"
+	{
+		"en"		"Survivors can't change classes during a round!"
+	}
+	"Grace period begun. Survivors can change classes."
+	{
+		"en"		"Grace period begun. Survivors can change classes."
+	}
+	"ZF Main Menu"
+	{
+		"en"		"ZF Main Menu"
+	}
+	"Help"
+	{
+		"en"		"Help"
+	}
+	"Close Menu"
+	{
+		"en"		"Close Menu"
+	}
+	"Preferences"
+	{
+		"en"		"Preferences"
+	}
+	"Team Preference"
+	{
+		"en"		"Team Preference"
+	}
+	"ZF Preferences"
+	{
+		"en"		"ZF Preferences"
+	}
+	"ZF Help"
+	{
+		"en"		"ZF Help"
+	}
+	"ZF Overview"
+	{
+		"en"		"ZF Overview"
+	}
+	"Team: Survivors"
+	{
+		"en"		"Team: Survivors"
+	}
+	"Team: Zombies"
+	{
+		"en"		"Team: Zombies"
+	}
+	"Classes: Survivors"
+	{
+		"en"		"Classes: Survivors"
+	}
+	"Classes: Zombies"
+	{
+		"en"		"Classes: Zombies"
+	}
+	"Humans must survive the endless hoarde."
+	{
+		"en"		"Humans must survive the endless hoarde."
+	}
+	"When a human dies, they become a zombie."
+	{
+		"en"		"When a human dies, they become a zombie."
+	}
+	"Return to Help Menu"
+	{
+		"en"		"Return to Help Menu"
+	}
+	"ZF Survivor Team"
+	{
+		"en"		"ZF Survivor Team"
+	}
+	"Survivors consist of soldiers, demomen,"
+	{
+		"en"		"Survivors consist of soldiers, demomen,"
+	}
+	"pyros, engineers, medics, and snipers."
+	{
+		"en"		"pyros, engineers, medics, and snipers."
+	}
+	"They receive morale boosts for multiple"
+	{
+		"en"		"They receive morale boosts for multiple"
+	}
+	"kills in a row. Morale boosts grant crit"
+	{
+		"en"		"kills in a row. Morale boosts grant crit"
+	}
+	"and health bonuses."
+	{
+		"en"		"and health bonuses."
+	}
+	"ZF Zombie Team"
+	{
+		"en"		"ZF Zombie Team"
+	}
+	"Zombies consist of scouts, heavies, and"
+	{
+		"en"		"Zombies consist of scouts, heavies, and"
+	}
+	"spies. They receive regeneration and crit"
+	{
+		"en"		"spies. They receive regeneration and crit"
+	}
+	"bonuses for sticking together as a hoarde."
+	{
+		"en"		"bonuses for sticking together as a hoarde."
+	}
+	"They also possess the Rage ability, which"
+	{
+		"en"		"They also possess the Rage ability, which"
+	}
+	"gives health and speed bonuses. Rage is"
+	{
+		"en"		"gives health and speed bonuses. Rage is"
+	}
+	"activated by calling for a medic, and"
+	{
+		"en"		"activated by calling for a medic, and"
+	}
+	"recharges after 30s."
+	{
+		"en"		"recharges after 30s."
+	}
+	"ZF Survivor Classes"
+	{
+		"en"		"ZF Survivor Classes"
+	}
+	"Soldier"
+	{
+		"en"		"Soldier"
+	}
+	"Sniper"
+	{
+		"en"		"Sniper"
+	}
+	"Medic"
+	{
+		"en"		"Medic"
+	}
+	"Demo"
+	{
+		"en"		"Demo"
+	}
+	"Pyro"
+	{
+		"en"		"Pyro"
+	}
+	"Engineer"
+	{
+		"en"		"Engineer"
+	}
+	"ZF Zombie Classes"
+	{
+		"en"		"ZF Zombie Classes"
+	}
+	"Scout"
+	{
+		"en"		"Scout"
+	}
+	"Heavy"
+	{
+		"en"		"Heavy"
+	}
+	"Spy"
+	{
+		"en"		"Spy"
+	}
+	"Soldier [Survivor/Assault]"
+	{
+		"en"		"Soldier [Survivor/Assault]"
+	}
+	"Gains 2 rockets per kill."
+	{
+		"en"		"Gains 2 rockets per kill."
+	}
+	"Pyro [Survivor/Assault]"
+	{
+		"en"		"Pyro [Survivor/Assault]"
+	}
+	"Flamethrowers limited to 125."
+	{
+		"en"		"Flamethrowers limited to 125."
+	}
+	"Speed decreased to 240 (from 300)."
+	{
+		"en"		"Speed decreased to 240 (from 300)."
+	}
+	"Demoman [Survivor/Assault]"
+	{
+		"en"		"Demoman [Survivor/Assault]"
+	}
+	"Gains 2 pipes per kill."
+	{
+		"en"		"Gains 2 pipes per kill."
+	}
+	"Engineer [Survivor/Support]"
+	{
+		"en"		"Engineer [Survivor/Support]"
+	}
+	"Buildables can't be upgraded, but can be"
+	{
+		"en"		"Buildables can't be upgraded, but can be"
+	}
+	"repaired. Sentry ammo limited to 60 and"
+	{
+		"en"		"repaired. Sentry ammo limited to 60 and"
+	}
+	"slowly decays. More ammo can't be added."
+	{
+		"en"		"slowly decays. More ammo can't be added."
+	}
+	"Sentries self destruct when ammo is depleted."
+	{
+		"en"		"Sentries self destruct when ammo is depleted."
+	}
+	"Dispenser health increased to 250 (from 150)."
+	{
+		"en"		"Dispenser health increased to 250 (from 150)."
+	}
+	"Medic [Survivor/Support]"
+	{
+		"en"		"Medic [Survivor/Support]"
+	}
+	"Syringe Guns don't have to reload. Ueber/"
+	{
+		"en"		"Syringe Guns don't have to reload. Ueber/"
+	}
+	"charge faster, but don't last as long."
+	{
+		"en"		"charge faster, but don't last as long."
+	}
+	"Overheal limited to 125% of max health"
+	{
+		"en"		"Overheal limited to 125% of max health"
+	}
+	"and decays more slowly."
+	{
+		"en"		"and decays more slowly."
+	}
+	"Sniper [Survivor/Support]"
+	{
+		"en"		"Sniper [Survivor/Support]"
+	}
+	"Gains 5 Rifle/2 Huntman ammo per kill."
+	{
+		"en"		"Gains 5 Rifle/2 Huntman ammo per kill."
+	}
+	"SMG doesn't have to reload."
+	{
+		"en"		"SMG doesn't have to reload."
+	}
+	"Scout [Zombie]"
+	{
+		"en"		"Scout [Zombie]"
+	}
+	"Bats / Drinks only."
+	{
+		"en"		"Bats / Drinks only."
+	}
+	"Rage ability: Increase speed and health"
+	{
+		"en"		"Rage ability: Increase speed and health"
+	}
+	"by calling for medic. Recharges after 30s."
+	{
+		"en"		"by calling for medic. Recharges after 30s."
+	}
+	"Speed reduced to 350 (from 400)."
+	{
+		"en"		"Speed reduced to 350 (from 400)."
+	}
+	"Heavy [Zombie]"
+	{
+		"en"		"Heavy [Zombie]"
+	}
+	"Fists / Gloves / Food only."
+	{
+		"en"		"Fists / Gloves / Food only."
+	}
+	"Rage ability: Increase speed and health"
+	{
+		"en"		"Rage ability: Increase speed and health"
+	}
+	"by calling for medic. Recharges after 30s."
+	{
+		"en"		"by calling for medic. Recharges after 30s."
+	}
+	"Spy [Zombie]"
+	{
+		"en"		"Spy [Zombie]"
+	}
+	"Knives / Invis Watch / CnD only."
+	{
+		"en"		"Knives / Invis Watch / CnD only."
+	}
+	"Rage ability: Increase speed and health"
+	{
+		"en"		"Rage ability: Increase speed and health"
+	}
+	"by calling for medic. Recharges after 30s."
+	{
+		"en"		"by calling for medic. Recharges after 30s."
+	}
+	"Speed reduced to 280 (from 300)."
+	{
+		"en"		"Speed reduced to 280 (from 300)."
+	}
+	"Unassigned / Spectator"
+	{
+		"en"		"Unassigned / Spectator"
+	}
+	"Honestly, what were you expecting here?"
+	{
+		"en"		"Honestly, what were you expecting here?"
+	}
+}
