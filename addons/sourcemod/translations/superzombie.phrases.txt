@@ -1,351 +1,407 @@
 "Phrases"
 {
-	"This server is running Super Zombie Fortress {1}"
+	"Server Info"	// Chat
 	{
-		"en"		"Our Server is running Super Zombie Fortress 2.0"
+		"#format"	"{1:s}"
+		"en"		"Our Server is running Super Zombie Fortress {1}"
 	}
-	"Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper."
+	"SZF Command"	// Chat
+	{
+		"en"		"Type {olive}/szf{default} for info!"
+	}
+	"Survivor Classes"	// Chat
 	{
 		"en"		"Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper."
 	}
-	"Grace period complete. Survivors can no longer change classes."
-	{
-		"en"		"Grace period complete. Survivors can no longer change classes."
-	}
-	"Type \"/zf\" for info!"
-	{
-		"en"		"Type \"/zf\" for info!"
-	}
-	"ZF Enabled. Restarting Round..."
-	{
-		"en"		"ZF Enabled. Restarting Round..."
-	}
-	"ZF Disabled. Restarting Round..."
-	{
-		"en"		"ZF Disabled. Restarting Round..."
-	}
-	"Team roles swapped. Restarting Round..."
-	{
-		"en"		"Team roles swapped. Restarting Round..."
-	}
-	"Valid zombies: Scout, Heavy, Spy."
+	"Zombies Classes"	// Chat
 	{
 		"en"		"Valid zombies: Scout, Heavy, Spy."
 	}
-	"Survivors can't change classes during a round!"
+	"Grace Period End"	// Chat
+	{
+		"en"		"Grace period complete. Survivors can no longer change classes."
+	}
+	"SZF Enabled"	// Chat
+	{
+		"en"		"ZF Enabled. Restarting Round..."
+	}
+	"SZF Disabled"	// Chat
+	{
+		"en"		"ZF Disabled. Restarting Round..."
+	}
+	"Team Swap"	// Chat
+	{
+		"en"		"Team roles swapped. Restarting Round..."
+	}
+	"Class Change Deny"	// Chat
 	{
 		"en"		"Survivors can't change classes during a round!"
 	}
-	"Grace period begun. Survivors can change classes."
+	"Grace Period Start"	// Chat
 	{
 		"en"		"Grace period begun. Survivors can change classes."
 	}
-	"ZF Main Menu"
+	"SZF Main Menu"	// Menu
 	{
-		"en"		"ZF Main Menu"
+		"en"		"SZF Main Menu"
 	}
-	"Help"
+	"Help"	// Menu
 	{
 		"en"		"Help"
 	}
-	"Close Menu"
+	"Close Menu"	// Menu
 	{
 		"en"		"Close Menu"
 	}
-	"Preferences"
+	"Preferences"	// Menu
 	{
 		"en"		"Preferences"
 	}
-	"Team Preference"
+	"Team Preference"	// Menu
 	{
 		"en"		"Team Preference"
 	}
-	"ZF Preferences"
+	"SZF Preferences"	// Menu
 	{
-		"en"		"ZF Preferences"
+		"en"		"SZF Preferences"
 	}
-	"ZF Help"
+	"SZF Help"	// Menu
 	{
-		"en"		"ZF Help"
+		"en"		"SZF Help"
 	}
-	"ZF Overview"
+	"SZF Overview"	// Menu
 	{
-		"en"		"ZF Overview"
+		"en"		"SZF Overview"
 	}
-	"Team: Survivors"
+	"Survivors"	// Menu
 	{
-		"en"		"Team: Survivors"
+		"en"		"Survivors"
 	}
-	"Team: Zombies"
+	"Zombies"	// Menu
 	{
-		"en"		"Team: Zombies"
+		"en"		"Zombies"
 	}
-	"Classes: Survivors"
+	"None"	// Menu
 	{
-		"en"		"Classes: Survivors"
+		"en"		"None"
 	}
-	"Classes: Zombies"
+	"Team"	// Menu
 	{
-		"en"		"Classes: Zombies"
+		"en"		"Team: "
 	}
-	"Humans must survive the endless hoarde."
+	"Classes"	// Menu
+	{
+		"en"		"Classes: "
+	}
+	"Current"	// Menu
+	{
+		"en"		"(Current) "
+	}
+	"Human Help 1"	// Menu
 	{
 		"en"		"Humans must survive the endless hoarde."
 	}
-	"When a human dies, they become a zombie."
+	"Human Help 2"	// Menu
 	{
 		"en"		"When a human dies, they become a zombie."
 	}
-	"Return to Help Menu"
+	"Return to Help Menu"	// Menu
 	{
 		"en"		"Return to Help Menu"
 	}
-	"ZF Survivor Team"
+	"SZF Survivor Team"	// Menu
 	{
-		"en"		"ZF Survivor Team"
+		"en"		"SZF Survivor Team"
 	}
-	"Survivors consist of soldiers, demomen,"
+	"Human Help A"	// Menu
 	{
 		"en"		"Survivors consist of soldiers, demomen,"
 	}
-	"pyros, engineers, medics, and snipers."
+	"Human Help B"	// Menu
 	{
 		"en"		"pyros, engineers, medics, and snipers."
 	}
-	"They receive morale boosts for multiple"
+	"Human Help C"	// Menu
 	{
 		"en"		"They receive morale boosts for multiple"
 	}
-	"kills in a row. Morale boosts grant crit"
+	"Human Help D"	// Menu
 	{
 		"en"		"kills in a row. Morale boosts grant crit"
 	}
-	"and health bonuses."
+	"Human Help E"	// Menu
 	{
 		"en"		"and health bonuses."
 	}
-	"ZF Zombie Team"
+	"SZF Zombie Team"	// Menu
 	{
-		"en"		"ZF Zombie Team"
+		"en"		"SZF Zombie Team"
 	}
-	"Zombies consist of scouts, heavies, and"
+	"Zombie Help A"	// Menu
 	{
 		"en"		"Zombies consist of scouts, heavies, and"
 	}
-	"spies. They receive regeneration and crit"
+	"Zombie Help B"	// Menu
 	{
 		"en"		"spies. They receive regeneration and crit"
 	}
-	"bonuses for sticking together as a hoarde."
+	"Zombie Help C"	// Menu
 	{
 		"en"		"bonuses for sticking together as a hoarde."
 	}
-	"They also possess the Rage ability, which"
+	"Zombie Help D"	// Menu
 	{
 		"en"		"They also possess the Rage ability, which"
 	}
-	"gives health and speed bonuses. Rage is"
+	"Zombie Help E"	// Menu
 	{
 		"en"		"gives health and speed bonuses. Rage is"
 	}
-	"activated by calling for a medic, and"
+	"Zombie Help F"	// Menu
 	{
 		"en"		"activated by calling for a medic, and"
 	}
-	"recharges after 30s."
+	"Zombie Help G"	// Menu
 	{
 		"en"		"recharges after 30s."
 	}
-	"ZF Survivor Classes"
+	"SZF Survivor Classes"	// Menu
 	{
-		"en"		"ZF Survivor Classes"
+		"en"		"SZF Survivor Classes"
 	}
-	"Soldier"
+	"SZF Zombie Classes"	// Menu
 	{
-		"en"		"Soldier"
+		"en"		"SZF Zombie Classes"
 	}
-	"Sniper"
-	{
-		"en"		"Sniper"
-	}
-	"Medic"
-	{
-		"en"		"Medic"
-	}
-	"Demo"
-	{
-		"en"		"Demo"
-	}
-	"Pyro"
-	{
-		"en"		"Pyro"
-	}
-	"Engineer"
-	{
-		"en"		"Engineer"
-	}
-	"ZF Zombie Classes"
-	{
-		"en"		"ZF Zombie Classes"
-	}
-	"Scout"
+	"Scout"	// Menu
 	{
 		"en"		"Scout"
 	}
-	"Heavy"
+	"Soldier"	// Menu
+	{
+		"en"		"Soldier"
+	}
+	"Pyro"	// Menu
+	{
+		"en"		"Pyro"
+	}
+	"Demoman"	// Menu
+	{
+		"en"		"Demoman"
+	}
+	"Heavy"	// Menu
 	{
 		"en"		"Heavy"
 	}
-	"Spy"
+	"Engineer"	// Menu
+	{
+		"en"		"Engineer"
+	}
+	"Medic"	// Menu
+	{
+		"en"		"Medic"
+	}
+	"Sniper"	// Menu
+	{
+		"en"		"Sniper"
+	}
+	"Spy"	// Menu
 	{
 		"en"		"Spy"
 	}
-	"Soldier [Survivor/Assault]"
+	"Soldier Human 1"	// Menu
 	{
 		"en"		"Soldier [Survivor/Assault]"
 	}
-	"Gains 2 rockets per kill."
+	"Soldier Human 2"	// Menu
 	{
 		"en"		"Gains 2 rockets per kill."
 	}
-	"Pyro [Survivor/Assault]"
+	"Pyro Human 1"	// Menu
 	{
 		"en"		"Pyro [Survivor/Assault]"
 	}
-	"Flamethrowers limited to 125."
+	"Pyro Human 2"	// Menu
 	{
 		"en"		"Flamethrowers limited to 125."
 	}
-	"Speed decreased to 240 (from 300)."
+	"Pyro Human 3"	// Menu
 	{
 		"en"		"Speed decreased to 240 (from 300)."
 	}
-	"Demoman [Survivor/Assault]"
+	"Demoman Human 1"	// Menu
 	{
 		"en"		"Demoman [Survivor/Assault]"
 	}
-	"Gains 2 pipes per kill."
+	"Demoman Human 2"	// Menu
 	{
 		"en"		"Gains 2 pipes per kill."
 	}
-	"Engineer [Survivor/Support]"
+	"Engineer Human 1"	// Menu
 	{
 		"en"		"Engineer [Survivor/Support]"
 	}
-	"Buildables can't be upgraded, but can be"
+	"Engineer Human 2"	// Menu
 	{
 		"en"		"Buildables can't be upgraded, but can be"
 	}
-	"repaired. Sentry ammo limited to 60 and"
+	"Engineer Human 3"	// Menu
 	{
 		"en"		"repaired. Sentry ammo limited to 60 and"
 	}
-	"slowly decays. More ammo can't be added."
+	"Engineer Human 4"	// Menu
 	{
 		"en"		"slowly decays. More ammo can't be added."
 	}
-	"Sentries self destruct when ammo is depleted."
+	"Engineer Human 5"	// Menu
 	{
 		"en"		"Sentries self destruct when ammo is depleted."
 	}
-	"Dispenser health increased to 250 (from 150)."
+	"Engineer Human 6"	// Menu
 	{
 		"en"		"Dispenser health increased to 250 (from 150)."
 	}
-	"Medic [Survivor/Support]"
+	"Medic Human 1"	// Menu
 	{
 		"en"		"Medic [Survivor/Support]"
 	}
-	"Syringe Guns don't have to reload. Ueber/"
+	"Medic Human 2"	// Menu
 	{
-		"en"		"Syringe Guns don't have to reload. Ueber/"
+		"en"		"Syringe Guns don't have to reload. Uber"
 	}
-	"charge faster, but don't last as long."
+	"Medic Human 3"	// Menu
 	{
 		"en"		"charge faster, but don't last as long."
 	}
-	"Overheal limited to 125% of max health"
+	"Medic Human 4"	// Menu
 	{
 		"en"		"Overheal limited to 125% of max health"
 	}
-	"and decays more slowly."
+	"Medic Human 5"	// Menu
 	{
 		"en"		"and decays more slowly."
 	}
-	"Sniper [Survivor/Support]"
+	"Sniper Human 1"	// Menu
 	{
 		"en"		"Sniper [Survivor/Support]"
 	}
-	"Gains 5 Rifle/2 Huntman ammo per kill."
+	"Sniper Human 2"	// Menu
 	{
 		"en"		"Gains 5 Rifle/2 Huntman ammo per kill."
 	}
-	"SMG doesn't have to reload."
+	"Sniper Human 3"	// Menu
 	{
 		"en"		"SMG doesn't have to reload."
 	}
-	"Scout [Zombie]"
+	"Scout Zombie 1"	// Menu
 	{
 		"en"		"Scout [Zombie]"
 	}
-	"Bats / Drinks only."
+	"Scout Zombie 2"	// Menu
 	{
 		"en"		"Bats / Drinks only."
 	}
-	"Rage ability: Increase speed and health"
+	"Scout Zombie 3"	// Menu
 	{
 		"en"		"Rage ability: Increase speed and health"
 	}
-	"by calling for medic. Recharges after 30s."
+	"Scout Zombie 4"	// Menu
 	{
 		"en"		"by calling for medic. Recharges after 30s."
 	}
-	"Speed reduced to 350 (from 400)."
+	"Scout Zombie 5"	// Menu
 	{
 		"en"		"Speed reduced to 350 (from 400)."
 	}
-	"Heavy [Zombie]"
+	"Heavy Zombie 1"	// Menu
 	{
 		"en"		"Heavy [Zombie]"
 	}
-	"Fists / Gloves / Food only."
+	"Heavy Zombie 2"	// Menu
 	{
 		"en"		"Fists / Gloves / Food only."
 	}
-	"Rage ability: Increase speed and health"
+	"Heavy Zombie 3"	// Menu
 	{
 		"en"		"Rage ability: Increase speed and health"
 	}
-	"by calling for medic. Recharges after 30s."
+	"Heavy Zombie 4"	// Menu
 	{
 		"en"		"by calling for medic. Recharges after 30s."
 	}
-	"Spy [Zombie]"
+	"Spy Zombie 1"	// Menu
 	{
 		"en"		"Spy [Zombie]"
 	}
-	"Knives / Invis Watch / CnD only."
+	"Spy Zombie 2"	// Menu
 	{
 		"en"		"Knives / Invis Watch / CnD only."
 	}
-	"Rage ability: Increase speed and health"
+	"Spy Zombie 3"	// Menu
 	{
 		"en"		"Rage ability: Increase speed and health"
 	}
-	"by calling for medic. Recharges after 30s."
+	"Spy Zombie 4"	// Menu
 	{
 		"en"		"by calling for medic. Recharges after 30s."
 	}
-	"Speed reduced to 280 (from 300)."
+	"Spy Zombie 5"	// Menu
 	{
-		"en"		"Speed reduced to 280 (from 300)."
+		"en"		"Speed reduced to 280 (from 320)."
 	}
-	"Unassigned / Spectator"
+	"Unassigned"	// Menu
 	{
 		"en"		"Unassigned / Spectator"
 	}
-	"Honestly, what were you expecting here?"
+	"Spectator"	// Menu
 	{
 		"en"		"Honestly, what were you expecting here?"
+	}
+	"Left 4 Dead"	// Chat
+	{
+		"en"		"You have perished, zombifying...."
+	}
+	"Tank"	// Chat
+	{
+		"en"		"Incoming Taaaank!"
+	}
+	"Tank Choosen"	// Chat
+	{
+		"#format"	"{1:s}"
+		"en"		"{red}{1}{default} was picked based on performance to become the TANK!"
+	}
+	"Last Mann"	// Chat
+	{
+		"#format"	"{1:s}"
+		"en"		"{teamcolor}{1}{default} is the last survivor!"
+	}
+	"Frenzy"	// Chat
+	{
+		"en"		"Zombies are frenzied!"
+	}
+	"Rest"	// Chat
+	{
+		"en"		"Zombies are resting..."
+	}
+	"Tank Deny Active"	// Chat
+	{
+		"en"		"Zombies already have a tank"
+	}
+	"Tank Deny Ready"	// Chat
+	{
+		"en"		"A zombie tank is on the way"
+	}
+	"Tank Deny Frenzy"	// Chat
+	{
+		"en"		"Zombies are frenzied"
+	}
+	"Called Tank"	// Chat
+	{
+		"en"		"Called tank"
+	}
+	"Pickup"	// Chat
+	{
+		"#format"	"{1:s}"
+		"en"		"You picked up a {olive}{1}{default}"
 	}
 }
