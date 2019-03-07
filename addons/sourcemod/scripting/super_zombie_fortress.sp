@@ -284,8 +284,9 @@ public OnPluginStart()
 		  SetFailState("SDK Hooks is not loaded.");
 	LoadTranslations("super_zombie_fortress.phrases");
 	// Add server tag.
-	AddServerTag("zf");	
-					
+	AddServerTag("zf");
+	AddServerTag("szf");	
+
 	// Initialize global state
 	zf_bEnabled = false;
 	zf_bNewRound = true;
@@ -302,7 +303,7 @@ public OnPluginStart()
 	utilPrefInit();
 	
 	// Register cvars
-	CreateConVar("sm_zf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
+	CreateConVar("szf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
 	zf_cvForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
 	zf_cvRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
 	zf_cvAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
@@ -317,30 +318,30 @@ public OnPluginStart()
 	zf_cvTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
 
 	// Hook events
-	HookEvent("teamplay_round_start", event_RoundStart);
-	HookEvent("teamplay_setup_finished", event_SetupEnd);
-	HookEvent("teamplay_round_win", event_RoundEnd);
+	HookEvent("teamplay_round_start", OnRoundStart);
+	HookEvent("teamplay_setup_finished", OnSetupEnd);
+	HookEvent("teamplay_round_win", OnRoundEnd);
 	HookEvent("teamplay_timer_time_added", EventTimeAdded);
-	HookEvent("player_spawn", event_PlayerSpawn);	
-	HookEvent("player_death", event_PlayerDeath);
+	HookEvent("player_spawn", OnPlayerSpawn);	
+	HookEvent("player_death", OnPlayerDeath);
 	
-	HookEvent("player_builtobject", event_PlayerBuiltObject); 
-	HookEvent("teamplay_point_captured", event_CPCapture); 
-	HookEvent("teamplay_point_startcapture", event_CPCaptureStart); 
+	HookEvent("player_builtobject", OnPlayerBuiltObject); 
+	HookEvent("teamplay_point_captured", OnCPCapture); 
+	HookEvent("teamplay_point_startcapture", OnCPCaptureStart); 
 
 	// Register Admin Commands
-	RegAdminCmd("szf_enable", command_zfEnable, ADMFLAG_GENERIC, "Activates the Zombie Fortress plugin.");
-	RegAdminCmd("szf_disable", command_zfDisable, ADMFLAG_GENERIC, "Deactivates the Zombie Fortress plugin.");
-	RegAdminCmd("szf_swapteams", command_zfSwapTeams, ADMFLAG_GENERIC, "Swaps current team roles.");
-	RegAdminCmd("szf_rabies", command_rabies, ADMFLAG_GENERIC, "Rabies.");
-	RegAdminCmd("szf_goo", command_goo, ADMFLAG_GENERIC, "Goo!");
-	RegAdminCmd("szf_tank", command_tank, ADMFLAG_GENERIC, "Become a tank");
-	RegAdminCmd("szf_tank_random", command_tank_random, ADMFLAG_GENERIC, "Pick a random tank");
+	RegAdminCmd("szf_enable", command_zfEnable, ADMFLAG_RCON, "Activates the Zombie Fortress plugin.");
+	RegAdminCmd("szf_disable", command_zfDisable, ADMFLAG_RCON, "Deactivates the Zombie Fortress plugin.");
+	RegAdminCmd("szf_swapteams", command_zfSwapTeams, ADMFLAG_RCON, "Swaps current team roles.");
+	RegAdminCmd("szf_rabies", command_rabies, ADMFLAG_CHEATS, "Rabies.");
+	RegAdminCmd("szf_goo", command_goo, ADMFLAG_CHEATS, "Goo!");
+	RegAdminCmd("szf_tank", command_tank, ADMFLAG_CHEATS, "Become a tank");
+	RegAdminCmd("szf_tank_random", command_tank_random, ADMFLAG_CHEATS, "Pick a random tank");
 	
 	// Hook Client Commands
-	AddCommandListener(hook_JoinTeam, "jointeam");
-	AddCommandListener(hook_JoinClass, "joinclass");
-	AddCommandListener(hook_VoiceMenu, "voicemenu"); 
+	AddCommandListener(OnJoinTeam, "jointeam");
+	AddCommandListener(OnJoinClass, "joinclass");
+	AddCommandListener(OnCallMedic, "voicemenu"); 
 	// Hook Client Console Commands	
 	AddCommandListener(hook_zfTeamPref, "zf_teampref");
 	// Hook Client Chat / Console Commands
@@ -642,7 +643,7 @@ public Action:command_zfSwapTeams(client, args)
 // Client Console / Chat Command Handlers
 //
 ////////////////////////////////////////////////////////////
-public Action:hook_JoinTeam(client, const String:command[], argc)
+public Action:OnJoinTeam(client, const String:command[], argc)
 {	
 	decl String:cmd1[32];
 	decl String:sSurTeam[16];	
@@ -695,7 +696,7 @@ public Action:hook_JoinTeam(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public Action:hook_JoinClass(client, const String:command[], argc)
+public Action:OnJoinClass(client, const String:command[], argc)
 {
 	decl String:cmd1[32];
 	
@@ -742,7 +743,7 @@ public Action:hook_JoinClass(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public Action:hook_VoiceMenu(client, const String:command[], argc)
+public Action:OnCallMedic(client, const String:command[], argc)
 {
 	decl String:cmd1[32], String:cmd2[32];
 	
@@ -872,7 +873,7 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 //
 // Round Start Event
 //
-public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue; 
 	
@@ -996,7 +997,7 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 //
 // Setup End Event
 //
-public Action:event_SetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnSetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue;
 		   
@@ -1024,7 +1025,7 @@ EndGracePeriod()
 //
 // Round End Event
 //
-public Action:event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue;
 	
@@ -1046,7 +1047,7 @@ public Action:event_RoundEnd(Handle:event, const String:name[], bool:dontBroadca
 //
 // Player Spawn Event
 //
-public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {	 
 	if(!zf_bEnabled) return Plugin_Continue;	
 				
@@ -1165,7 +1166,7 @@ public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 //
 // Player Death Event
 //
-public Action:event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue;
 
@@ -1292,7 +1293,7 @@ public Action:event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 //
 // Object Built Event
 //
-public Action:event_PlayerBuiltObject(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnPlayerBuiltObject(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled) return Plugin_Continue;
 
@@ -4266,10 +4267,238 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		return Plugin_Continue;
 	}
 
-	/*switch(iItemDefinitionIndex)
+	switch(iItemDefinitionIndex)
 	{
+		case 36:	// Blutsauger
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "16 ; 1 ; 129 ; 0 ; 191 ; -2");
+			// 16: On Hit: Gain up to +1 health
+			// 129:	0 health drained per second on wearer
+			// 191:	-2 health drained per second on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 
-	}*/
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 129);
+			}
+			#endif
+		}
+		case 129, 1001:	// Buff Banner
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "319 ; 0.6");
+			// 319:	-40% buff duration
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 132, 226, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
+			// 54:	-25% slower move speed on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 133:	// Gunboats
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 0.7");
+			// 58:	+50% self damage force
+			// 135:	-30% blast damage from rocket jumps
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_SetByDefIndex(client, 58, 1.5);
+				TF2Attrib_SetByDefIndex(client, 135, 0.7);
+			}
+			#endif
+		}
+		case 142:	// Gunslinger
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0");
+			// 26:	+0 max health on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 26);
+			}
+			#endif
+		}
+		case 155:	// Southern Hospitality
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "61 ; 1 ; 412 ; 1.1");
+			// 61: 0% fire damage vulnerability on wearer
+			// 412: 10% damage vulnerability on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 226:	// Battalion's Backup
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
+			// 26:	+0 max health on wearer
+			// 140:	+10 max health on wearer
+			// 319:	-40% buff duration
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 26);
+			}
+			#endif
+		}
+		case 228:	// Black Box
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "741 ; 5");
+			// 741:	On Hit: Gain up to +5 health per attack
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 237, 265:	// Rocket Jumper & Sticky Jumper
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.3");
+			// 58:	+30% self damage force
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 304:	// Amputator
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1");
+			// 57:	+0 health regenerated per second on wearer
+			// 190:	+1 health regenerated per second on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 57);
+			}
+			#endif
+		}
+		case 354:	// Concheror
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1 ; 319 ; 0.6");
+			// 57:	+0 health regenerated per second on wearer
+			// 190:	+1 health regenerated per second on wearer
+			// 319:	-40% buff duration
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 57);
+			}
+			#endif
+		}
+		case 404:	// Persian Persuader
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "778 ; 1.15");
+			// 58:	Melee hits refill 15% of your charge meter
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		case 405, 608:	// Ali Baba's Wee Booties & Bootlegger
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 20");
+			// 26:	+0 max health on wearer
+			// 140:	+20 max health on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 26);
+				TF2Attrib_SetByDefIndex(client, 140, 20.0);
+			}
+			#endif
+		}
+		case 444:	// Mantreads
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+			// 58:	+50% self damage force
+			// 135:	+30% blast damage from rocket jumps
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_SetByDefIndex(client, 58, 1.5);
+				TF2Attrib_SetByDefIndex(client, 135, 1.3);
+			}
+			#endif
+		}
+		case 642:	// Cozy Camper
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1");
+			// 57:	+0 health regenerated per second on wearer
+			// 190:	+1 health regenerated per second on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
+
+			#if defined _tf2attributes_included
+			if(tf2attributes)
+			{
+				TF2Attrib_RemoveByDefIndex(client, 57);
+				TF2Attrib_SetByDefIndex(client, 190, 1.0);
+			}
+			#endif
+		}
+	}
 	if(!StrContains(classname, "tf_weapon_shovel") ||
 	   !StrContains(classname, "tf_weapon_fireaxe") ||
 	   !StrContains(classname, "tf_weapon_breakable_sign") ||
@@ -4277,13 +4506,13 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	   !StrContains(classname, "tf_weapon_bottle") ||
 	   !StrContains(classname, "tf_weapon_sword") ||
 	   !StrContains(classname, "tf_weapon_katana") ||
-	   !StrContains(classname, "tf_weapon_stickbomb") ||
 	   !StrContains(classname, "tf_weapon_wrench") ||
-	   !StrContains(classname, "tf_weapon_robot_arm") ||
-	   !StrContains(classname, "tf_weapon_bonesaw") ||
+	   !StrContains(classname, "tf_weapon_robot_arm")
 	   !StrContains(classname, "tf_weapon_club"))			// Melees
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 740 ; 0.1");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1");
+		// 28:	-75% random critical hit chance
+		// 734:	-90% less healing from all sources
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4293,6 +4522,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
+		// 59:	-50% self damage force
+		// 77:	-25% max primary ammo on wearer
+		// 135:	-50% blast damage from rocket jumps
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4302,6 +4534,12 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
+		// 5:	-35% slower fire rate
+		// 59:	-50% self damage force
+		// 72:	-50% afterburn damage penalty
+		// 77:	-25% max primary ammo on wearer
+		// 96:	+50% slower reload time
+		// 135:	-50% blast damage from rocket jumps
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4311,6 +4549,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
+		// 5:	-25% slower fire rate
+		// 96:	+35% slower reload time
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4319,7 +4559,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.35");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+		// 58:	+50% self damage force
+		// 135:	+30% blast damage from rocket jumps
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4328,7 +4570,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15 ; 226 ; 1");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
+		// 220:	Gain 15% of base health on kill
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4337,7 +4580,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5");	// -50% primary ammo
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
+		// 77:	-50% max primary ammo on wearer
+		// 869:	Minicrits whenever it would normally crit
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4346,7 +4591,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6");	// -40% damage vs burning
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
+		// 795:	-40% damage bonus vs burning players
+		// 869:	Minicrits whenever it would normally crit
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4355,7 +4602,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");	// 1500 damage for full charge
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
+		// 2059:	
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4364,7 +4612,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");	// -25% primary ammo
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+		// 77:	-25% max primary ammo on wearer
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4374,6 +4623,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 79 ; 0.75 ; 135 ; 0.5");
+		// 59:	-50% self damage force
+		// 79:	-25% max secondary ammo on wearer
+		// 135:	-50% blast damage from rocket jumps
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4382,16 +4634,28 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");	// -50% recharge rate
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
+		// 249:	-50% increase in charge recharge rate
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
 			return Plugin_Changed;
 		}
 	}
+	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
+		// 28: -75% random critical hit chance
+		// 734:	-90% less healing from all sources
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");	// Crits are mini-crits
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
+		// 869:	Minicrits whenever it would normally crit
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4401,6 +4665,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
+		// 5:	-20% slower fire rate
+		// 96:	+35% slower reload time
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4409,7 +4675,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");	// -25% primary ammo
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+		// 77:	-25% max primary ammo on wearer
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4418,7 +4685,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");	// -76% secondary ammo
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
+		// 79:	-76% max secondary ammo on wearer
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4427,7 +4695,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");	// Always crit boosted
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
+		// 20:	100% critical hit vs burning players
+		// 408:	100% critical hit vs non-burning players
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4436,7 +4706,12 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "790 ; 10 ; 464 ; 0.5 ; 286 ; 0.5 ; 287 ; 0.65 ; 465 ; 0.5");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
+		// 286:	-50% max building health
+		// 287:	-35% Sentry Gun damage bonus
+		// 464: Sentry build speed increased by -50%
+		// 465: Increases teleporter build speed by -50%
+		// 790: +900% metal cost when constructing or upgrading teleporters
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4446,6 +4721,10 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
+		// 2:	+200% damage bonus
+		// 77:	-80% max primary ammo on wearer
+		// 138:	-67% damage vs players
+		// 775:	-67% damage penalty vs buildings
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4454,7 +4733,20 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");	// -80% uber rate
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
+		// 9:	-80% ÜberCharge rate
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 734 ; 0.15");
+		// 28:	-70% random critical hit chance
+		// 131:	-300% natural regen rate
+		// 734:	-85% less healing from all sources
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4463,7 +4755,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");	// -60% recharge rate
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
+		// 249:	-60% increase in charge recharge rate
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4481,7 +4774,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	   StrContains(classname, "tf_weapon_compound_bow") ||
 	   StrContains(classname, "tf_wearable"))			// No Random Critical Hits Weapons
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5");	// -50% critical hit chance
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5");
+		// 28: -50% random critical hit chance
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4490,6 +4784,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	return Plugin_Continue;
 }
+
 public Action:Timer_CheckItems(Handle:timer, any:userid)
 {
 	new client=GetClientOfUserId(userid);
@@ -4508,19 +4803,10 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			#if defined _tf2attributes_included
-			case 41, 312:  // Natascha & Brass Beast
-			{
-				if(tf2attributes)
-				{
-					TF2Attrib_RemoveByDefIndex(client, 738);
-				}
-			}
-			#endif
 			case 527:  // Windowmaker
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "");
+				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "28 ; 0.5");
 			}
 		}
 	}
@@ -4535,10 +4821,10 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			case 998:  // Vaccinator
+			case 998:	// Vaccinator
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-				SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");	// -80% uber rate
+				SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");
 			}
 		}
 
@@ -4562,10 +4848,10 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			case 589:  // Eureka Effect
+			case 589:	// Eureka Effect
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.25 ; 740 ; 0.1");
+				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.25 ; 734 ; 0.1");
 			}
 		}
 	}
@@ -4990,7 +5276,7 @@ DetermineControlPoints()
 	CheckRemainingCP();
 }
 
-public Action:event_CPCapture(Handle:hEvent, const String:strName[], bool:bHide)
+public Action:OnCPCapture(Handle:hEvent, const String:strName[], bool:bHide)
 {
 	if (g_iControlPoints <= 0) return;
 	
@@ -5011,7 +5297,7 @@ public Action:event_CPCapture(Handle:hEvent, const String:strName[], bool:bHide)
 	CheckRemainingCP();
 }
 
-public Action:event_CPCaptureStart(Handle:hEvent, const String:strName[], bool:bHide)
+public Action:OnCPCaptureStart(Handle:hEvent, const String:strName[], bool:bHide)
 {
 	if (g_iControlPoints <= 0) return;
 	
