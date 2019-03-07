@@ -1,14 +1,19 @@
-////////////////////////////////////////////////////////////////////////////////
-//
-//   Super Zombie Fortress
-//
-//	This is an extended modification of dirtyminuth's ZF mod.
-//
-//	Author: dirtyminuth (original), Mecha the Slag (Super Zombie Fortress)
-//
-//	Credits: Sirot, original author of ZF.
-//
-////////////////////////////////////////////////////////////////////////////////
+/*
+             << Super Zombie Fortress >>
+                     < Redux >
+
+       Original Author of Zombie Fortress, Sirot
+ https://forums.alliedmods.net/showthread.php?p=688433
+
+                Recoded by dirtyminuth
+ https://forums.alliedmods.net/showthread.php?p=1227078
+
+            Updated again by Mecha the Slag
+ https://forums.alliedmods.net/showthread.php?p=1467101
+
+                 Revamped by Batfoxkid
+
+*/
 
 #pragma semicolon 1
 
@@ -21,29 +26,44 @@
 #include <tf2_stocks>
 #include <morecolors>
 #include <tf2items>
-
-
+#undef REQUIRE_EXTENSIONS
+#tryinclude <steamtools>
+#define REQUIRE_EXTENSIONS
+#undef REQUIRE_PLUGIN
+#tryinclude <tf2attributes>
+#define REQUIRE_PLUGIN
 
 #include "szf_util_base.inc"
 #include "szf_util_pref.inc"
 
-//#define FEATURE_GAMEPLAYBAN	 64
-#if defined FEATURE_GAMEPLAYBAN 
-#include <slaginventory>
-#endif
-
 //
 // Plugin Information
 //
-#define PLUGIN_VERSION "1.05RUS"
+#define MAJOR_REVISION "2"
+#define MINOR_REVISION "0"
+#define STABLE_REVISION "0"
+#define DEV_REVISION "Build-1"
+#if !defined DEV_REVISION
+	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
+#else
+	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
+#endif
+
+#if defined _steamtools_included
+new bool:steamtools = false;
+#endif
+
+#if defined _tf2attributes_included
+new bool:tf2attributes = false;
+#endif
+
 public Plugin:myinfo = 
 {
-	name						  = "Super Zombie Fortress",
-	author					= "Mecha the Slag (Advanced), dirtyminuth (Recode), Sirot (Original)",
-	description	 = "Pits a team of survivors aganist an endless onslaught of zombies.",
-	version				 = PLUGIN_VERSION,
-	url						   = "http://forums.alliedmods.net/showthread.php?p=1227078"
-}
+	name		=	"Super Zombie Fortress Redux",
+	author		=	"Many many people",
+	description	=	"Pits a team of survivors aganist an endless onslaught of zombies.",
+	version		=	PLUGIN_VERSION,
+};
 
 #define PLAYERBUILTOBJECT_ID_DISPENSER	0
 #define PLAYERBUILTOBJECT_ID_TELENT		   1
@@ -244,12 +264,25 @@ new String:g_strSoundCritHit[][128] =
 // Sourcemod Callbacks
 //
 ////////////////////////////////////////////////////////////
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+{
+	#if defined _steamtools_included
+	MarkNativeAsOptional("Steam_SetGameDescription");
+	#endif
+	
+	#if defined _tf2attributes_included
+	MarkNativeAsOptional("TF2Attrib_SetByDefIndex");
+	MarkNativeAsOptional("TF2Attrib_RemoveByDefIndex");
+	#endif
+	return APLRes_Success;
+
+}
 public OnPluginStart()
 {
 	// Check for necessary extensions
 	if(GetExtensionFileStatus("sdkhooks.ext") < 1)
 		  SetFailState("SDK Hooks is not loaded.");
-	LoadTranslations("superzombie.phrases");
+	LoadTranslations("super_zombie_fortress.phrases");
 	// Add server tag.
 	AddServerTag("zf");	
 					
@@ -270,18 +303,18 @@ public OnPluginStart()
 	
 	// Register cvars
 	CreateConVar("sm_zf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
-	zf_cvForceOn = CreateConVar("sm_zf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
-	zf_cvRatio = CreateConVar("sm_zf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
-	zf_cvAllowTeamPref = CreateConVar("sm_zf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
-	zf_cvSwapOnPayload = CreateConVar("sm_zf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
-	zf_cvSwapOnAttdef = CreateConVar("sm_zf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
-	zf_cvTankHealth = CreateConVar("sm_zf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
-	zf_cvTankHealthMin = CreateConVar("sm_zf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
-	zf_cvTankHealthMax = CreateConVar("sm_zf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
-	zf_cvTankTime = CreateConVar("sm_zf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
-	zf_cvFrenzyChance = CreateConVar("sm_zf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
-	zf_cvFrenzyTankChance = CreateConVar("sm_zf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
-	zf_cvTankOnce = CreateConVar("sm_zf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
+	zf_cvForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
+	zf_cvRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
+	zf_cvAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
+	zf_cvSwapOnPayload = CreateConVar("szf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
+	zf_cvSwapOnAttdef = CreateConVar("szf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
+	zf_cvTankHealth = CreateConVar("szf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
+	zf_cvTankHealthMin = CreateConVar("szf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
+	zf_cvTankHealthMax = CreateConVar("szf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
+	zf_cvTankTime = CreateConVar("szf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
+	zf_cvFrenzyChance = CreateConVar("szf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
+	zf_cvFrenzyTankChance = CreateConVar("szf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
+	zf_cvTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
 
 	// Hook events
 	HookEvent("teamplay_round_start", event_RoundStart);
@@ -296,13 +329,13 @@ public OnPluginStart()
 	HookEvent("teamplay_point_startcapture", event_CPCaptureStart); 
 
 	// Register Admin Commands
-	RegAdminCmd("sm_zf_enable", command_zfEnable, ADMFLAG_GENERIC, "Activates the Zombie Fortress plugin.");
-	RegAdminCmd("sm_zf_disable", command_zfDisable, ADMFLAG_GENERIC, "Deactivates the Zombie Fortress plugin.");
-	RegAdminCmd("sm_zf_swapteams", command_zfSwapTeams, ADMFLAG_GENERIC, "Swaps current team roles.");
-	RegAdminCmd("sm_zf_rabies", command_rabies, ADMFLAG_GENERIC, "Rabies.");
-	RegAdminCmd("sm_zf_goo", command_goo, ADMFLAG_GENERIC, "Goo!");
-	RegAdminCmd("sm_zf_tank", command_tank, ADMFLAG_GENERIC, "Become a tank");
-	RegAdminCmd("sm_zf_tank_random", command_tank_random, ADMFLAG_GENERIC, "Pick a random tank");
+	RegAdminCmd("szf_enable", command_zfEnable, ADMFLAG_GENERIC, "Activates the Zombie Fortress plugin.");
+	RegAdminCmd("szf_disable", command_zfDisable, ADMFLAG_GENERIC, "Deactivates the Zombie Fortress plugin.");
+	RegAdminCmd("szf_swapteams", command_zfSwapTeams, ADMFLAG_GENERIC, "Swaps current team roles.");
+	RegAdminCmd("szf_rabies", command_rabies, ADMFLAG_GENERIC, "Rabies.");
+	RegAdminCmd("szf_goo", command_goo, ADMFLAG_GENERIC, "Goo!");
+	RegAdminCmd("szf_tank", command_tank, ADMFLAG_GENERIC, "Become a tank");
+	RegAdminCmd("szf_tank_random", command_tank_random, ADMFLAG_GENERIC, "Pick a random tank");
 	
 	// Hook Client Commands
 	AddCommandListener(hook_JoinTeam, "jointeam");
@@ -311,14 +344,56 @@ public OnPluginStart()
 	// Hook Client Console Commands	
 	AddCommandListener(hook_zfTeamPref, "zf_teampref");
 	// Hook Client Chat / Console Commands
-	RegConsoleCmd("zf", cmd_zfMenu);
-	RegConsoleCmd("zf_menu", cmd_zfMenu); 
+	RegConsoleCmd("szf", cmd_zfMenu);
+	RegConsoleCmd("szf_menu", cmd_zfMenu); 
 	
 	CreateTimer(10.0, SpookySound, 0, TIMER_REPEAT);
 	
 	SetupSDK();
 	SetupWeapons();
 	CheckStartWeapons();
+
+	#if defined _steamtools_included
+	steamtools = LibraryExists("SteamTools");
+	#endif
+	
+	#if defined _tf2attributes_included
+	tf2attributes = LibraryExists("tf2attributes");
+	#endif
+}
+
+public OnLibraryAdded(const String:name[])
+{
+	#if defined _steamtools_included
+	if (!strcmp(name, "SteamTools", false))
+	{
+		steamtools = true;
+	}
+	#endif
+	
+	#if defined _tf2attributes_included
+	if (!strcmp(name, "tf2attributes", false))
+	{
+		tf2attributes = true;
+	}
+	#endif
+}
+
+public OnLibraryRemoved(const String:name[])
+{
+	#if defined _steamtools_included
+	if (!strcmp(name, "SteamTools", false))
+	{
+		steamtools = false;
+	}
+	#endif
+	
+	#if defined _tf2attributes_included
+	if (!strcmp(name, "tf2attributes", false))
+	{
+		tf2attributes = false;
+	}
+	#endif
 }
 
 public OnConfigsExecuted()
@@ -400,13 +475,6 @@ public OnGameFrame()
 // SDKHooks Callbacks
 //
 ////////////////////////////////////////////////////////////
-public Action:OnGetGameDescription(String:gameDesc[64])
-{
-	if(!zf_bEnabled) return Plugin_Continue;		  
-	Format(gameDesc, sizeof(gameDesc), "Super Zombie Fortress (%s)", PLUGIN_VERSION);
-	return Plugin_Changed;
-}
-
 public OnPreThinkPost(client)
 {	
 	if(!zf_bEnabled) return;
@@ -534,12 +602,12 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 //
 ////////////////////////////////////////////////////////////
 public Action:command_zfEnable(client, args)
-{ 
+{
 	if(zf_bEnabled) return Plugin_Continue;
 
 	zfEnable();
 	ServerCommand("mp_restartgame 10");
-	PrintToChatAll("\x05[ZF]\x01 %t", "ZF Enabled. Restarting Round...");
+	CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Enabled");
 
 	return Plugin_Continue;
 }
@@ -550,7 +618,7 @@ public Action:command_zfDisable (client, args)
 	
 	zfDisable();
 	ServerCommand("mp_restartgame 10");	
-	PrintToChatAll("\x05[ZF]\x01 %t", "ZF Disabled. Restarting Round...");
+	CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Disabled");
 	
 	return Plugin_Continue;
 }
@@ -561,7 +629,7 @@ public Action:command_zfSwapTeams(client, args)
 
 	zfSwapTeams();
 	ServerCommand("mp_restartgame 10");
-	PrintToChatAll("\x05[ZF]\x01 %t", "Team roles swapped. Restarting Round...");
+	CPrintToChatAll("{olive}[SZF]{default} %t", "Team Swap");
 
 	zf_bNewRound = true;				
 	setRoundState(RoundInit2);
@@ -645,7 +713,7 @@ public Action:hook_JoinClass(client, const String:command[], argc)
 					 StrEqual(cmd1, "spy", false)	|| 
 					 StrEqual(cmd1, "heavyweapons", false)))
 		  {
-				PrintToChat(client, "\x05[ZF]\x01 %t", "Valid zombies: Scout, Heavy, Spy.");
+				CPrintToChat(client, "{olive}[SZF]{default} %t", "Zombies Classes");
 		  }
 	}
 
@@ -654,7 +722,7 @@ public Action:hook_JoinClass(client, const String:command[], argc)
 		  // Prevent survivors from switching classes during the round.
 		  if(roundState() == RoundActive)
 		  {
-				PrintToChat(client, "\x05[ZF]\x01 %t", "Survivors can't change classes during a round!");
+				CPrintToChat(client, "{olive}[SZF]{default} %t", "Class Change Deny");
 				return Plugin_Handled;						  
 		  }
 		  // If an invalid survivor class is selected, print a message
@@ -667,7 +735,7 @@ public Action:hook_JoinClass(client, const String:command[], argc)
 									StrEqual(cmd1, "medic", false) || 
 									StrEqual(cmd1, "sniper", false)))
 		  {
-				PrintToChat(client, "\x05[ZF]\x01 %t", "Valid survivors: Soldier, Pyro, Demo, Engineer, Medic, Sniper.");
+				CPrintToChat(client, "{olive}[SZF]{default} %t", "Survivor Classes");
 		  }				 
 	}
 		  
@@ -844,7 +912,7 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 	else
 	{
 		  setRoundState(RoundGrace);
-		  PrintToChatAll("\x05[ZF]\x01 %t", "Grace period begun. Survivors can change classes.");	
+		  CPrintToChatAll("{olive}[SZF]{default} %t", "Grace Period Start");	
 	}
 	
 	//
@@ -895,13 +963,6 @@ public Action:event_RoundStart(Handle:event, const String:name[], bool:dontBroad
 				if (validClient(iClient))
 				{
 					new bool:bGood = true;
-					#if defined FEATURE_GAMEPLAYBAN
-					if (SlagInv_GetItemId(iClient, FEATURE_GAMEPLAYBAN) != INVALID_HANDLE)
-					{
-						  CPrintToChat(iClient, "{red}You are gameplay banned and as such, cannot be a survivor\nYou can buy your way out in the {olive}/shop");
-						  bGood = false;
-					}
-					#endif
 					if (bGood)
 					{
 						  spawnClient(iClient, surTeam());
@@ -956,7 +1017,7 @@ EndGracePeriod()
 	if(roundState() == RoundPost) return;
 	
 	setRoundState(RoundActive);
-	PrintToChatAll("\x05[ZF]\x01 %t", "Grace period complete. Survivors can no longer change classes.");
+	CPrintToChatAll("{olive}[SZF]{default} %t", "Grace Period End");
 	ZombieRage(true);
 }
 
@@ -1048,7 +1109,7 @@ public Action:event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 					
 					for (new i = 1; i <= MaxClients; i++)
 					{
-						  if (validClient(i)) CPrintToChat(i, "%t", "[ZF] Incoming Taaaank!");
+						  if (validClient(i)) CPrintToChat(i, "{olive}[SZF]{default} %t", "Tank");
 					}
 				}
 				
@@ -1416,13 +1477,15 @@ public Action:timer_initialHelp(Handle:timer, any:client)
 }
 
 public Action:timer_postSpawn(Handle:timer, any:client)
-{					 
+{
 	if(validClient(client) && IsPlayerAlive(client))
 	{
-		  HandleClientInventory(client);
-		  // Handle zombie spawn logic.
-		  if(isZom(client))
+		HandleClientInventory(client);
+		// Handle zombie spawn logic.
+		if(isZom(client))
 				stripWeapons(client);
+		if(!isZom(client))
+			CreateTimer(0.1, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
 	return Plugin_Continue; 
@@ -1433,7 +1496,7 @@ public Action:timer_zombify(Handle:timer, any:client)
 	if (roundState() != RoundActive) return Plugin_Continue;
 	if(validClient(client))
 	{
-		  PrintToChat(client, "\x05[ZF]\x01 %t", "You have perished, zombifying....");
+		  CPrintToChat(client, "{olive}[SZF]{default} %t", "Left 4 Dead");
 		  spawnClient(client, zomTeam());
 	}
 	
@@ -1496,7 +1559,7 @@ handle_winCondition()
 
 handle_survivorAbilities()
 {
-	decl clipAmmo;
+	/*decl clipAmmo;
 	decl resAmmo;
 	decl ammoAdj;
 		  
@@ -1593,7 +1656,7 @@ handle_survivorAbilities()
 				SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
 				AcceptEntityInput(index, "RemoveHealth");		  
 		  }
-	}
+	}*/
 }
 
 handle_zombieAbilities()
@@ -1761,13 +1824,13 @@ zfEnable()
 	ServerCommand("mp_autoteambalance 0");
 	ServerCommand("mp_teams_unbalance_limit 0");
 	// Engineer
-	ServerCommand("sm_cvar tf_obj_upgrade_per_hit 0"); // Locked
-	ServerCommand("sm_cvar tf_sentrygun_metal_per_shell 201"); // Locked
+	//ServerCommand("sm_cvar tf_obj_upgrade_per_hit 0"); // Locked
+	//ServerCommand("sm_cvar tf_sentrygun_metal_per_shell 201"); // Locked
 	// Medic
-	ServerCommand("sm_cvar weapon_medigun_charge_rate 30"); // Locked
-	ServerCommand("sm_cvar weapon_medigun_chargerelease_rate 6"); // Locked
-	ServerCommand("sm_cvar tf_max_health_boost 1.25"); // Locked
-	ServerCommand("sm_cvar tf_boost_drain_time 3600"); // Locked
+	//ServerCommand("sm_cvar weapon_medigun_charge_rate 30"); // Locked
+	//ServerCommand("sm_cvar weapon_medigun_chargerelease_rate 6"); // Locked
+	//ServerCommand("sm_cvar tf_max_health_boost 1.25"); // Locked
+	//ServerCommand("sm_cvar tf_boost_drain_time 30"); // Locked
 	// Spy
 	ServerCommand("sm_cvar tf_spy_invis_time 0.5"); // Locked 
 	ServerCommand("sm_cvar tf_spy_invis_unstealth_time 0.75"); // Locked 
@@ -1792,7 +1855,16 @@ zfEnable()
 	
 	if(zf_tDataCollect != INVALID_HANDLE)
 		  CloseHandle(zf_tDataCollect);
-	zf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT); 
+	zf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT);
+
+	#if defined _steamtools_included
+	if (steamtools)
+	{
+		decl String:gameDesc[64];
+		Format(gameDesc, sizeof(gameDesc), "Super Zombie Fortress (%s)", PLUGIN_VERSION);
+		Steam_SetGameDescription(gameDesc);
+	}
+	#endif
 }
 
 zfDisable()
@@ -1808,13 +1880,13 @@ zfDisable()
 	ServerCommand("mp_autoteambalance 1");
 	ServerCommand("mp_teams_unbalance_limit 1");
 	// Engineer
-	ServerCommand("sm_cvar tf_obj_upgrade_per_hit 25"); // Locked
-	ServerCommand("sm_cvar tf_sentrygun_metal_per_shell 1"); // Locked
+	//ServerCommand("sm_cvar tf_obj_upgrade_per_hit 25"); // Locked
+	//ServerCommand("sm_cvar tf_sentrygun_metal_per_shell 1"); // Locked
 	// Medic
-	ServerCommand("sm_cvar weapon_medigun_charge_rate 40"); // Locked
-	ServerCommand("sm_cvar weapon_medigun_chargerelease_rate 8"); // Locked
-	ServerCommand("sm_cvar tf_max_health_boost 1.5"); // Locked
-	ServerCommand("sm_cvar tf_boost_drain_time 15"); // Locked 
+	//ServerCommand("sm_cvar weapon_medigun_charge_rate 40"); // Locked
+	//ServerCommand("sm_cvar weapon_medigun_chargerelease_rate 8"); // Locked
+	//ServerCommand("sm_cvar tf_max_health_boost 1.5"); // Locked
+	//ServerCommand("sm_cvar tf_boost_drain_time 15"); // Locked 
 	// Spy
 	ServerCommand("sm_cvar tf_spy_invis_time 1.0"); // Locked 
 	ServerCommand("sm_cvar tf_spy_invis_unstealth_time 2.0"); // Locked 
@@ -1847,6 +1919,13 @@ zfDisable()
 	new index = -1;
 	while((index = FindEntityByClassname(index, "func_regenerate")) != -1)
 		  AcceptEntityInput(index, "Enable");
+
+	#if defined _steamtools_included
+	if (steamtools)
+	{
+		Steam_SetGameDescription("Team Fortress");
+	}
+	#endif
 }
 
 zfSetTeams()
@@ -1942,13 +2021,13 @@ public help_printZFInfoChat(client)
 {
 	if(client == 0)
 	{
-		  PrintToChatAll("\x05[ZF]\x01 %t", "This server is running Super Zombie Fortress {1}", PLUGIN_VERSION);
-		  PrintToChatAll("\x05[ZF]\x01 %t", "Type \"/zf\" for info!");		  
+		CPrintToChatAll("{olive}[SZF]{default} %t", "Server Info", PLUGIN_VERSION);
+		CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Command");		  
 	}
 	else
 	{
-		  PrintToChat(client, "\x05[ZF]\x01 %t", "This server is running Super Zombie Fortress {1}", PLUGIN_VERSION);
-		  PrintToChat(client, "\x05[ZF]\x01 %t", "Type \"/zf\" for info!");
+		CPrintToChat(client, "{olive}[SZF]{default} %t", "Server Info", PLUGIN_VERSION);
+		CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Command");
 	}
 }
 
@@ -1961,7 +2040,7 @@ public panel_PrintMain(client)
 {
 	new Handle:panel = CreatePanel();
 	decl String:temp_string21[256];
-	Format(temp_string21, sizeof(temp_string21),"%T", "ZF Main Menu", client);
+	Format(temp_string21, sizeof(temp_string21),"%T", "SZF Main Menu", client);
 	SetPanelTitle(panel, temp_string21);
 	Format(temp_string21, sizeof(temp_string21),"%T", "Help", client);
 	DrawPanelItem(panel, temp_string21);	
@@ -2025,12 +2104,12 @@ public panel_PrintPrefs00(client)
 {
 	new Handle:panel = CreatePanel();
 	decl String:temp_string2[512];
-	Format(temp_string2, sizeof(temp_string2),"%T", "ZF Team Preference", client);
+	Format(temp_string2, sizeof(temp_string2),"%T", "SZF Team Preference", client);
 	SetPanelTitle(panel, temp_string2);
 	
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_NONE)
 	{
-		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) None", client);
+		Format(temp_string2, sizeof(temp_string2),"%T%T", "Current", client, "None", client);
 		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
@@ -2041,7 +2120,7 @@ public panel_PrintPrefs00(client)
 
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_SUR)
 	{
-		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Survivors", client);
+		Format(temp_string2, sizeof(temp_string2),"%T%T", "Current", client, "Survivors", client);
 		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
@@ -2052,14 +2131,14 @@ public panel_PrintPrefs00(client)
 					
 	if(prefGet(client, TeamPref) == ZF_TEAMPREF_ZOM)
 	{
-		Format(temp_string2, sizeof(temp_string2),"%T", "(Current) Zombies", client);
+		Format(temp_string2, sizeof(temp_string2),"%T%T", "Current", client, "Zombies", client);
 		DrawPanelItem(panel, temp_string2, ITEMDRAW_DISABLED);
 	}
 	else
 	{
 		Format(temp_string2, sizeof(temp_string2),"%T", "Zombies", client);
 		DrawPanelItem(panel, temp_string2);
-	}  
+	}
 	Format(temp_string2, sizeof(temp_string2),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string2);
 	SendPanelToClient(panel, client, panel_HandlePrefTeam, 30);
@@ -2088,17 +2167,17 @@ public panel_PrintHelp(client)
 	new Handle:panel = CreatePanel();
 	
 	decl String:temp_string3[1024];
-	Format(temp_string3, sizeof(temp_string3),"%T", "ZF Help", client);
+	Format(temp_string3, sizeof(temp_string3),"%T", "SZF Help", client);
 	SetPanelTitle(panel, temp_string3);
-	Format(temp_string3, sizeof(temp_string3),"%T", "ZF Overview", client);
+	Format(temp_string3, sizeof(temp_string3),"%T", "SZF Overview", client);
 	DrawPanelItem(panel, temp_string3);
-	Format(temp_string3, sizeof(temp_string3),"%T", "Team: Survivors", client);
+	Format(temp_string3, sizeof(temp_string3),"%T%T", "Team", client, "Survivors", client);
 	DrawPanelItem(panel, temp_string3);
-	Format(temp_string3, sizeof(temp_string3),"%T", "Team: Zombies", client);
+	Format(temp_string3, sizeof(temp_string3),"%T%T", "Team", client, "Zombies", client);
 	DrawPanelItem(panel, temp_string3);
-	Format(temp_string3, sizeof(temp_string3),"%T", "Classes: Survivors", client);
+	Format(temp_string3, sizeof(temp_string3),"%T%T", "Classes", client, "Survivors", client);
 	DrawPanelItem(panel, temp_string3);
-	Format(temp_string3, sizeof(temp_string3),"%T", "Classes: Zombies", client);
+	Format(temp_string3, sizeof(temp_string3),"%T%T", "Classes", client, "Zombies", client);
 	DrawPanelItem(panel, temp_string3);
 	Format(temp_string3, sizeof(temp_string3),"%T", "Close Menu", client);
 	DrawPanelItem(panel, temp_string3);
@@ -2130,14 +2209,14 @@ public panel_PrintOverview(client)
 	new Handle:panel = CreatePanel();
 	
 	decl String:temp_string4[1024];
-	Format(temp_string4, sizeof(temp_string4),"%T", "ZF Overview", client);
+	Format(temp_string4, sizeof(temp_string4),"%T", "SZF Overview", client);
 	SetPanelTitle(panel, temp_string4);
 	DrawPanelText(panel, "-------------------------------------------");
-	Format(temp_string4, sizeof(temp_string4),"%T", "Humans must survive the endless hoarde.", client);
+	Format(temp_string4, sizeof(temp_string4),"%T", "Human Help 1", client);
 	DrawPanelText(panel, temp_string4);
-	Format(temp_string4, sizeof(temp_string4),"%T", "When a human dies, they become a zombie.", client);
+	Format(temp_string4, sizeof(temp_string4),"%T", "Human Help 2", client);
 	DrawPanelText(panel, temp_string4);
-	Format(temp_string4, sizeof(temp_string4),"%T", "ZF Overview", client);
+	Format(temp_string4, sizeof(temp_string4),"%T", "SZF Overview", client);
 	DrawPanelText(panel, "-------------------------------------------");
 	Format(temp_string4, sizeof(temp_string4),"%T", "Return to Help Menu", client);
 	DrawPanelItem(panel, temp_string4); 
@@ -2168,40 +2247,40 @@ public panel_PrintTeam(client, team)
 	if(team == _:surTeam())
 	{
 		decl String:temp_string5[1024];
-		Format(temp_string5, sizeof(temp_string5),"%T", "ZF Survivor Team", client);
+		Format(temp_string5, sizeof(temp_string5),"%T", "SZF Survivor Team", client);
 		SetPanelTitle(panel, temp_string5);
 		DrawPanelText(panel, "-------------------------------------------");
-		Format(temp_string5, sizeof(temp_string5),"%T", "Survivors consist of soldiers, demomen,", client);
+		Format(temp_string5, sizeof(temp_string5),"%T", "Human Help A", client);
 		DrawPanelText(panel, temp_string5);
-		Format(temp_string5, sizeof(temp_string5),"%T", "pyros, engineers, medics, and snipers.", client);
+		Format(temp_string5, sizeof(temp_string5),"%T", "Human Help B", client);
 		DrawPanelText(panel, temp_string5);
-		Format(temp_string5, sizeof(temp_string5),"%T", "They receive morale boosts for multiple", client);
+		Format(temp_string5, sizeof(temp_string5),"%T", "Human Help C", client);
 		DrawPanelText(panel, temp_string5);
-		Format(temp_string5, sizeof(temp_string5),"%T", "kills in a row. Morale boosts grant crit", client);
+		Format(temp_string5, sizeof(temp_string5),"%T", "Human Help D", client);
 		DrawPanelText(panel, temp_string5);
-		Format(temp_string5, sizeof(temp_string5),"%T",  "and health bonuses.", client);
+		Format(temp_string5, sizeof(temp_string5),"%T",  "Human Help E", client);
 		DrawPanelText(panel, temp_string5);
 		DrawPanelText(panel, "-------------------------------------------");
 	}
 	else if(team == _:zomTeam())
 	{
 		decl String:temp_string6[2048];
-		Format(temp_string6, sizeof(temp_string6),"%T", "ZF Zombie Team", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "SZF Zombie Team", client);
 		SetPanelTitle(panel, temp_string6);
 		DrawPanelText(panel, "-------------------------------------------");
-		Format(temp_string6, sizeof(temp_string6),"%T", "Zombies consist of scouts, heavies, and", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help A", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "spies. They receive regeneration and crit", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help B", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "bonuses for sticking together as a hoarde.", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help C", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "They also possess the Rage ability, which", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help D", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "gives health and speed bonuses. Rage is", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help E", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "activated by calling for a medic, and", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help F", client);
 		DrawPanelText(panel, temp_string6);
-		Format(temp_string6, sizeof(temp_string6),"%T", "recharges after 30s.", client);
+		Format(temp_string6, sizeof(temp_string6),"%T", "Zombie Help G", client);
 		DrawPanelText(panel, temp_string6);
 		DrawPanelText(panel, "-------------------------------------------");
 	}
@@ -2234,7 +2313,7 @@ public panel_PrintSurClass(client)
 	new Handle:panel = CreatePanel();
 	
 	decl String:temp_string8[512];
-	Format(temp_string8, sizeof(temp_string8),"%T", "ZF Survivor Classes", client);
+	Format(temp_string8, sizeof(temp_string8),"%T", "SZF Survivor Classes", client);
 	SetPanelTitle(panel, temp_string8);
 	Format(temp_string8, sizeof(temp_string8),"%T", "Soldier", client);
 	DrawPanelItem(panel, temp_string8);
@@ -2242,7 +2321,7 @@ public panel_PrintSurClass(client)
 	DrawPanelItem(panel, temp_string8);
 	Format(temp_string8, sizeof(temp_string8),"%T", "Medic", client);
 	DrawPanelItem(panel, temp_string8);
-	Format(temp_string8, sizeof(temp_string8),"%T", "Demo", client);
+	Format(temp_string8, sizeof(temp_string8),"%T", "Demoman", client);
 	DrawPanelItem(panel, temp_string8);
 	Format(temp_string8, sizeof(temp_string8),"%T", "Pyro", client);
 	DrawPanelItem(panel, temp_string8);
@@ -2275,7 +2354,7 @@ public panel_PrintZomClass(client)
 {
 	new Handle:panel = CreatePanel();
 	decl String:temp_string9[512];
-	Format(temp_string9, sizeof(temp_string9),"%T", "ZF Zombie Classes", client);
+	Format(temp_string9, sizeof(temp_string9),"%T", "SZF Zombie Classes", client);
 	SetPanelTitle(panel, temp_string9);
 	Format(temp_string9, sizeof(temp_string9),"%T", "Scout", client);
 	DrawPanelItem(panel, temp_string9);
@@ -2311,134 +2390,134 @@ public panel_PrintClass(client, TFClassType:class)
 		case TFClass_Soldier:
 		{
 			decl String:temp_string10[1024];
-			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier [Survivor/Assault]", client);
+			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier Human 1", client);
 			SetPanelTitle(panel, temp_string10);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string10, sizeof(temp_string10),"%T", "Gains 2 rockets per kill.", client);
+			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier Human 2", client);
 			DrawPanelText(panel, temp_string10);
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Pyro:
 		{
 			decl String:temp_string11[512];
-			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro [Survivor/Assault]", client);
+			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro Human 1", client);
 			SetPanelTitle(panel, temp_string11);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string11, sizeof(temp_string11),"%T", "Flamethrowers limited to 125.", client);
+			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro Human 2", client);
 			DrawPanelText(panel, temp_string11);
-			Format(temp_string11, sizeof(temp_string11),"%T", "Speed decreased to 240 (from 300).", client);
+			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro Human 3", client);
 			DrawPanelText(panel, temp_string11);				
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_DemoMan:
 		{
 			decl String:temp_string12[1024];
-			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman [Survivor/Assault]", client);
+			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman Human 1", client);
 			SetPanelTitle(panel, temp_string12);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string12, sizeof(temp_string12),"%T", "Gains 2 pipes per kill.", client);
+			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman Human 2", client);
 			DrawPanelText(panel, temp_string12);		  
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Engineer:
 		{
 			decl String:temp_string13[2048];
-			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer [Survivor/Support]", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 1", client);
 			SetPanelTitle(panel, temp_string13);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string13, sizeof(temp_string13),"%T", "Buildables can't be upgraded, but can be", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 2", client);
 			DrawPanelText(panel, temp_string13);
-			Format(temp_string13, sizeof(temp_string13),"%T", "repaired. Sentry ammo limited to 60 and", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 3", client);
 			DrawPanelText(panel, temp_string13);
-			Format(temp_string13, sizeof(temp_string13),"%T", "slowly decays. More ammo can't be added.", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 4", client);
 			DrawPanelText(panel, temp_string13);
-			Format(temp_string13, sizeof(temp_string13),"%T", "Sentries self destruct when ammo is depleted.", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 5", client);
 			DrawPanelText(panel, temp_string13);
-			Format(temp_string13, sizeof(temp_string13),"%T", "Dispenser health increased to 250 (from 150).", client);
+			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 6", client);
 			DrawPanelText(panel, temp_string13);		  
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Medic:
 		{
 			decl String:temp_string14[2048];
-			Format(temp_string14, sizeof(temp_string14),"%T", "Medic [Survivor/Support]", client);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 1", client);
 			SetPanelTitle(panel, temp_string14);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string14, sizeof(temp_string14),"%T", "Syringe Guns don't have to reload. Ueber/", client);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 2", client);
 			DrawPanelText(panel, temp_string14);
-			Format(temp_string14, sizeof(temp_string14),"%T", "charge faster, but don't last as long.", client);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 3", client);
 			DrawPanelText(panel, temp_string14);
-			Format(temp_string14, sizeof(temp_string14),"%T", "Overheal limited to 125% of max health", client);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 4", client);
 			DrawPanelText(panel, temp_string14);
-			Format(temp_string14, sizeof(temp_string14),"%T", "and decays more slowly.", client);
+			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 5", client);
 			DrawPanelText(panel, temp_string14);
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Sniper:
 		{
 			decl String:temp_string15[1024];
-			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper [Survivor/Support]", client);
+			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper Human 1", client);
 			SetPanelTitle(panel, temp_string15);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string15, sizeof(temp_string15),"%T", "Gains 5 Rifle/2 Huntman ammo per kill.", client);
+			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper Human 2", client);
 			DrawPanelText(panel, temp_string15);
-			Format(temp_string15, sizeof(temp_string15),"%T", "SMG doesn't have to reload.", client);
+			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper Human 3", client);
 			DrawPanelText(panel, temp_string15);	 
 			DrawPanelText(panel, "-------------------------------------------");
 		}	  
 		case TFClass_Scout:
 		{
 			decl String:temp_string16[1024];
-			Format(temp_string16, sizeof(temp_string16),"%T", "Scout [Zombie]", client);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 1", client);
 			SetPanelTitle(panel, temp_string16);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string16, sizeof(temp_string16),"%T", "Bats / Drinks only.", client);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 2", client);
 			DrawPanelText(panel, temp_string16);
-			Format(temp_string16, sizeof(temp_string16),"%T", "Rage ability: Increase speed and health", client);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 3", client);
 			DrawPanelText(panel, temp_string16);
-			Format(temp_string16, sizeof(temp_string16),"%T", "by calling for medic. Recharges after 30s.", client);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 4", client);
 			DrawPanelText(panel, temp_string16);
-			Format(temp_string16, sizeof(temp_string16),"%T", "Speed reduced to 350 (from 400).", client);
+			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 5", client);
 			DrawPanelText(panel, temp_string16);		  
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Heavy:
 		{
 			decl String:temp_string17[1024];
-			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy [Zombie]", client);
+			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy Zombie 1", client);
 			SetPanelTitle(panel, temp_string17);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string17, sizeof(temp_string17),"%T", "Fists / Gloves / Food only.", client);
+			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy Zombie 2", client);
 			DrawPanelText(panel, temp_string17);
-			Format(temp_string17, sizeof(temp_string17),"%T", "Rage ability: Increase speed and health", client);
+			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy Zombie 3", client);
 			DrawPanelText(panel, temp_string17);
-			Format(temp_string17, sizeof(temp_string17),"%T", "by calling for medic. Recharges after 30s.", client);
+			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy Zombie 4", client);
 			DrawPanelText(panel, temp_string17);
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 		case TFClass_Spy:
 		{
 			decl String:temp_string18[1024];
-			Format(temp_string18, sizeof(temp_string18),"%T", "Spy [Zombie]", client);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 1", client);
 			SetPanelTitle(panel, temp_string18);
 			DrawPanelText(panel, "-------------------------------------------");
-			Format(temp_string18, sizeof(temp_string18),"%T", "Knives / Invis Watch / CnD only.", client);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 2", client);
 			DrawPanelText(panel, temp_string18);
-			Format(temp_string18, sizeof(temp_string18),"%T", "Rage ability: Increase speed and health", client);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 3", client);
 			DrawPanelText(panel, temp_string18);
-			Format(temp_string18, sizeof(temp_string18),"%T", "by calling for medic. Recharges after 30s.", client);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 4", client);
 			DrawPanelText(panel, temp_string18);
-			Format(temp_string18, sizeof(temp_string18),"%T", "Speed reduced to 280 (from 300).", client);
+			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 5", client);
 			DrawPanelText(panel, temp_string18);
 			DrawPanelText(panel, "-------------------------------------------");
 		}		  
 		default:
 		{
 			decl String:temp_string19[1024];
-			Format(temp_string19, sizeof(temp_string19),"%T", "Unassigned / Spectator", client);
+			Format(temp_string19, sizeof(temp_string19),"%T", "Unassigned", client);
 			SetPanelTitle(panel, temp_string19);
 			DrawPanelText(panel, "-------------------------------------------"); 
-			Format(temp_string19, sizeof(temp_string19),"%T", "Honestly, what were you expecting here?", client);			
+			Format(temp_string19, sizeof(temp_string19),"%T", "Spectator", client);			
 			DrawPanelText(panel, temp_string19);
 			DrawPanelText(panel, "-------------------------------------------");
 		}
@@ -2447,7 +2526,7 @@ public panel_PrintClass(client, TFClassType:class)
 	Format(temp_string20, sizeof(temp_string20),"%T", "Return to Help Menu", client);
 	DrawPanelItem(panel, temp_string20);
 	Format(temp_string20, sizeof(temp_string20),"%T", "Close Menu", client);
-	DrawPanelItem(panel, temp_string20);	
+	DrawPanelItem(panel, temp_string20);
 	SendPanelToClient(panel, client, panel_HandleClass, 8);
 	CloseHandle(panel);
 }
@@ -2554,10 +2633,10 @@ UpdateZombieDamageScale()
 	if (g_fZombieDamageScale < 0.1) g_fZombieDamageScale = 0.1;
 	if (g_fZombieDamageScale > 4.0) g_fZombieDamageScale = 4.0;
 	
-	decl String:strInput[255];
-	Format(strInput, sizeof(strInput), "%t", "{1} {2} {3} {4} message_1", fTime, iExpectedSurvivors, iCurrentSurvivors, g_fZombieDamageScale*100.0);
-	if (g_bCapturingLastPoint) Format(strInput, sizeof(strInput), "%t", "{1} message_2", strInput);
-	ShowDebug(strInput);
+	//decl String:strInput[255];
+	//Format(strInput, sizeof(strInput), "%d %d {3} {4} message_1", fTime, iExpectedSurvivors, iCurrentSurvivors, g_fZombieDamageScale*100.0);
+	//if (g_bCapturingLastPoint) Format(strInput, sizeof(strInput), "{1} message_2", strInput);
+	//ShowDebug(strInput);
 	
 	if (!g_bZombieRage && g_iZombieTank <= 0 && !ZombiesHaveTank())
 	{
@@ -2591,7 +2670,7 @@ public Action:CheckLastPlayer(Handle:hTimer) {
 					TF2_RegeneratePlayer(iLoop);
 					HandleClientInventory(iLoop);
 					SetEntityHealth(iLoop, 500);
-					CPrintToChatAllEx(iLoop, "\x05[ZF]\x01 %t", "{teamcolor}{1}{default} is the last survivor!", iLoop);
+					CPrintToChatAllEx(iLoop, "{olive}[SZF]{default} %t", "Last Mann", iLoop);
 					MusicHandleClient(iLoop);
 					return;
 				}
@@ -2734,14 +2813,14 @@ PrecacheZombieModels() {
 	*/
 }
 
-ShowDebug(String:strInput[]) {
+/*ShowDebug(String:strInput[]) {
 	new iClient = GetMecha();
 	if (iClient > 0)
 	{
 		  SetHudTextParams(0.04, 0.3, 10.0, 50, 255, 50, 255);
 		  ShowHudText(iClient, 1, strInput);
 	}
-}
+}*/
 
 stock GetMecha()	// VSH and SZF did it.. .w. I get you want to be noticed but ok
 {
@@ -3111,7 +3190,7 @@ ZombieRage(bool:bBeginning = false)
 					}
 					if (isZom(i))
 					{
-						  CPrintToChat(i, "\x05[ZF]\x01 %t", "Zombies are frenzied!");
+						  CPrintToChat(i, "{olive}[SZF]{default} %t", "Frenzy");
 					}
 					if (isZom(i) && !IsPlayerAlive(i))
 					{
@@ -3133,7 +3212,7 @@ public Action:StopZombieRage(Handle:hTimer)
 		  {
 				if (IsClientInGame(i) && isZom(i))
 				{
-					CPrintToChat(i, "\x05[ZF]\x01 %t", "Zombies are resting...");
+					CPrintToChat(i, "{olive}[SZF]{default} %t", "Rest");
 				}
 		  }
 	}
@@ -4097,17 +4176,17 @@ ZombieTank(iCaller = 0)
 	
 	if (ZombiesHaveTank())
 	{
-		  if (validClient(iCaller)) PrintToChat(iCaller, "%t", "Zombies already have a tank");
+		  if (validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t", "Tank Deny Active");
 		  return;
 	}
 	if (g_iZombieTank > 0)
 	{   
-		  if (validClient(iCaller)) PrintToChat(iCaller, "%t","A zombie tank is on the way");
+		  if (validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Ready");
 		  return;
 	}
 	if (g_bZombieRage)
 	{
-		  if (validClient(iCaller)) PrintToChat(iCaller, "%t","Zombies are frenzied");
+		  if (validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Frenzy");
 		  return;
 	}
 	
@@ -4118,11 +4197,11 @@ ZombieTank(iCaller = 0)
 	{
 		  if (validZom(i))
 		  {
-				CPrintToChat(i, "%t", "{olive}[ZF] {red}{1}{default} was picked based on performance to become the TANK!", g_iZombieTank);
+				CPrintToChat(i, "{olive}[SZF]{default} %t", "Tank Choosen", g_iZombieTank);
 		  }
 	}
 	if (validClient(iCaller)) {
-		  PrintToChat(iCaller, "%t", "Called tank");
+		  CPrintToChat(iCaller, "{olive}[SZF]{default} %t", "Called tank");
 	}
 	
 	g_bTankOnce = true;
@@ -4141,7 +4220,7 @@ public Action:command_tank(client, args)
 	{
 		  if (validZom(i))
 		  {
-				CPrintToChat(i, "%t", "{olive}[ZF] {red}{1}{default} was picked based on performance to become the TANK!", g_iZombieTank);
+				CPrintToChat(i, "%t", "{olive}[SZF]{default} %t", "Tank Choosen", g_iZombieTank);
 		  }
 	}
 				
@@ -4178,6 +4257,511 @@ public Action:command_tank_random(client, args)
 	ZombieTank(client);
 				
 	return Plugin_Handled;
+}
+
+public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefinitionIndex, &Handle:item)
+{
+	if(!zf_bEnabled)
+	{
+		return Plugin_Continue;
+	}
+
+	/*switch(iItemDefinitionIndex)
+	{
+
+	}*/
+	if(!StrContains(classname, "tf_weapon_shovel") ||
+	   !StrContains(classname, "tf_weapon_fireaxe") ||
+	   !StrContains(classname, "tf_weapon_breakable_sign") ||
+	   !StrContains(classname, "tf_weapon_slap") ||
+	   !StrContains(classname, "tf_weapon_bottle") ||
+	   !StrContains(classname, "tf_weapon_sword") ||
+	   !StrContains(classname, "tf_weapon_katana") ||
+	   !StrContains(classname, "tf_weapon_stickbomb") ||
+	   !StrContains(classname, "tf_weapon_wrench") ||
+	   !StrContains(classname, "tf_weapon_robot_arm") ||
+	   !StrContains(classname, "tf_weapon_bonesaw") ||
+	   !StrContains(classname, "tf_weapon_club"))			// Melees
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 740 ; 0.1");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.35");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15 ; 226 ; 1");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5");	// -50% primary ammo
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6");	// -40% damage vs burning
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");	// 1500 damage for full charge
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");	// -25% primary ammo
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 79 ; 0.75 ; 135 ; 0.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");	// -50% recharge rate
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");	// Crits are mini-crits
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");	// -25% primary ammo
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");	// -76% secondary ammo
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");	// Always crit boosted
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "790 ; 10 ; 464 ; 0.5 ; 286 ; 0.5 ; 287 ; 0.65 ; 465 ; 0.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");	// -80% uber rate
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");	// -60% recharge rate
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	if(StrContains(classname, "tf_weapon_jar") ||
+	   StrContains(classname, "tf_weapon_buff_item") ||
+	   StrContains(classname, "tf_weapon_parachute") ||
+	   StrContains(classname, "tf_weapon_lunchbox") ||
+	   StrContains(classname, "tf_weapon_pda") ||
+	   StrContains(classname, "tf_weapon_builder") ||
+	   StrContains(classname, "tf_weapon_medigun") ||
+	   StrContains(classname, "tf_weapon_sniperrifle") ||
+	   StrContains(classname, "tf_weapon_compound_bow") ||
+	   StrContains(classname, "tf_wearable"))			// No Random Critical Hits Weapons
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5");	// -50% critical hit chance
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
+}
+public Action:Timer_CheckItems(Handle:timer, any:userid)
+{
+	new client=GetClientOfUserId(userid);
+	if(!IsValidClient(client) || !IsPlayerAlive(client) || !zf_bEnabled)
+	{
+		return Plugin_Continue;
+	}
+
+	SetEntityRenderColor(client, 255, 255, 255, 255);
+	new index=-1;
+	new civilianCheck[MaxClients+1];
+
+	new weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+	if(IsValidEntity(weapon))
+	{
+		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+		switch(index)
+		{
+			#if defined _tf2attributes_included
+			case 41, 312:  // Natascha & Brass Beast
+			{
+				if(tf2attributes)
+				{
+					TF2Attrib_RemoveByDefIndex(client, 738);
+				}
+			}
+			#endif
+			case 527:  // Windowmaker
+			{
+				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "");
+			}
+		}
+	}
+	else
+	{
+		civilianCheck[client]++;
+	}
+
+	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+	if(IsValidEntity(weapon))
+	{
+		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+		switch(index)
+		{
+			case 998:  // Vaccinator
+			{
+				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
+				SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");	// -80% uber rate
+			}
+		}
+
+		if(TF2_GetPlayerClass(client)==TFClass_Medic)
+		{
+			if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
+			{
+				SetEntityRenderMode(weapon, RENDER_TRANSCOLOR);
+				SetEntityRenderColor(weapon, 255, 255, 255, 75);
+			}
+		}
+	}
+	else
+	{
+		civilianCheck[client]++;
+	}
+
+	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
+	if(IsValidEntity(weapon))
+	{
+		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+		switch(index)
+		{
+			case 589:  // Eureka Effect
+			{
+				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
+				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.25 ; 740 ; 0.1");
+			}
+		}
+	}
+	else
+	{
+		civilianCheck[client]++;
+	}
+
+	if(civilianCheck[client]==3)
+	{
+		civilianCheck[client]=0;
+		TF2_RespawnPlayer(client);
+	}
+	civilianCheck[client]=0;
+	return Plugin_Continue;
+}
+
+stock Handle:PrepareItemHandle(Handle:item, String:name[]="", index=-1, const String:att[]="", bool:dontPreserve=false)
+{
+	static Handle:weapon;
+	new addattribs;
+
+	new String:weaponAttribsArray[32][32];
+	new attribCount=ExplodeString(att, ";", weaponAttribsArray, 32, 32);
+
+	if(attribCount % 2)
+	{
+		--attribCount;
+	}
+
+	new flags=OVERRIDE_ATTRIBUTES;
+	if(!dontPreserve)
+	{
+		flags|=PRESERVE_ATTRIBUTES;
+	}
+
+	if(weapon==INVALID_HANDLE)
+	{
+		weapon=TF2Items_CreateItem(flags);
+	}
+	else
+	{
+		TF2Items_SetFlags(weapon, flags);
+	}
+	//new Handle:weapon=TF2Items_CreateItem(flags);  //INVALID_HANDLE;  Going to uncomment this since this is what Randomizer does
+
+	if(item!=INVALID_HANDLE)
+	{
+		addattribs=TF2Items_GetNumAttributes(item);
+		if(addattribs>0)
+		{
+			for(new i; i<2*addattribs; i+=2)
+			{
+				new bool:dontAdd=false;
+				new attribIndex=TF2Items_GetAttributeId(item, i);
+				for(new z; z<attribCount+i; z+=2)
+				{
+					if(StringToInt(weaponAttribsArray[z])==attribIndex)
+					{
+						dontAdd=true;
+						break;
+					}
+				}
+
+				if(!dontAdd)
+				{
+					IntToString(attribIndex, weaponAttribsArray[i+attribCount], 32);
+					FloatToString(TF2Items_GetAttributeValue(item, i), weaponAttribsArray[i+1+attribCount], 32);
+				}
+			}
+			attribCount+=2*addattribs;
+		}
+
+		if(weapon!=item)  //FlaminSarge: Item might be equal to weapon, so closing item's handle would also close weapon's
+		{
+			CloseHandle(item);  //probably returns false but whatever (rswallen-apparently not)
+		}
+	}
+
+	if(name[0]!='\0')
+	{
+		flags|=OVERRIDE_CLASSNAME;
+		TF2Items_SetClassname(weapon, name);
+	}
+
+	if(index!=-1)
+	{
+		flags|=OVERRIDE_ITEM_DEF;
+		TF2Items_SetItemIndex(weapon, index);
+	}
+
+	if(attribCount>0)
+	{
+		TF2Items_SetNumAttributes(weapon, attribCount/2);
+		new i2;
+		for(new i; i<attribCount && i2<16; i+=2)
+		{
+			new attrib=StringToInt(weaponAttribsArray[i]);
+			if(!attrib)
+			{
+				LogError("Bad weapon attribute passed: %s ; %s", weaponAttribsArray[i], weaponAttribsArray[i+1]);
+				CloseHandle(weapon);
+				return INVALID_HANDLE;
+			}
+
+			TF2Items_SetAttribute(weapon, i2, StringToInt(weaponAttribsArray[i]), StringToFloat(weaponAttribsArray[i+1]));
+			i2++;
+		}
+	}
+	else
+	{
+		TF2Items_SetNumAttributes(weapon, 0);
+	}
+	TF2Items_SetFlags(weapon, flags);
+	return weapon;
+}
+
+stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
+{
+	new Handle:hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
+	if(hWeapon==INVALID_HANDLE)
+	{
+		return -1;
+	}
+
+	TF2Items_SetClassname(hWeapon, name);
+	TF2Items_SetItemIndex(hWeapon, index);
+	TF2Items_SetLevel(hWeapon, level);
+	TF2Items_SetQuality(hWeapon, qual);
+	new String:atts[32][32];
+	new count=ExplodeString(att, ";", atts, 32, 32);
+
+	if(count % 2)
+	{
+		--count;
+	}
+
+	if(count>0)
+	{
+		TF2Items_SetNumAttributes(hWeapon, count/2);
+		new i2;
+		for(new i; i<count; i+=2)
+		{
+			new attrib=StringToInt(atts[i]);
+			if(!attrib)
+			{
+				LogError("Bad weapon attribute passed: %s ; %s", atts[i], atts[i+1]);
+				CloseHandle(hWeapon);
+				return -1;
+			}
+
+			TF2Items_SetAttribute(hWeapon, i2, attrib, StringToFloat(atts[i+1]));
+			i2++;
+		}
+	}
+	else
+	{
+		TF2Items_SetNumAttributes(hWeapon, 0);
+	}
+
+	new entity=TF2Items_GiveNamedItem(client, hWeapon);
+	CloseHandle(hWeapon);
+	EquipPlayerWeapon(client, entity);
+	return entity;
+}
+
+stock GetIndexOfWeaponSlot(client, slot)
+{
+	new weapon=GetPlayerWeaponSlot(client, slot);
+	return (weapon>MaxClients && IsValidEntity(weapon) ? GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex") : -1);
+}
+stock bool:IsValidClient(client, bool:replaycheck = true)
+{
+	if (client <= 0 || client > MaxClients)
+	{
+		return false;
+	}
+	
+	if (!IsClientInGame(client))
+	{
+		return false;
+	}
+	
+	if (GetEntProp(client, Prop_Send, "m_bIsCoaching"))
+	{
+		return false;
+	}
+	
+	if (replaycheck)
+	{
+		if (IsClientSourceTV(client) || IsClientReplay(client))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 stock FindEntityByClassname2(startEnt, const String:classname[]) {
@@ -4553,7 +5137,7 @@ bool:AttemptGrabItem(iClient)
 	}
 	else if (iWeaponClass != iClass) return false;
 	
-	CPrintToChat(iClient, "%t", "You picked up a {olive}{1}", strName);
+	CPrintToChat(iClient, "{olive}[SZF]{default} %t", "Pickup", strName);
 	
 	if (iSwitchSlot < 0) iSwitchSlot = iSlot;
 	
