@@ -57,6 +57,12 @@ new bool:steamtools = false;
 new bool:tf2attributes = false;
 #endif
 
+#if !defined DEV_REVISION
+new bool:debugmode = false;
+#else
+new bool:debugmode = true;
+#endif
+
 public Plugin:myinfo = 
 {
 	name		=	"Super Zombie Fortress Redux",
@@ -806,8 +812,10 @@ public Action:OnCallMedic(client, const String:command[], argc)
 		}
 		else if(isSur(client))
 		{
-			if(AttemptCarryItem(client)) return Plugin_Handled;
-			if(AttemptGrabItem(client)) return Plugin_Handled;
+			if(AttemptCarryItem(client))
+				return Plugin_Handled;
+			else if(AttemptGrabItem(client))
+				return Plugin_Handled;
 		}
 	}
 	
@@ -5584,7 +5592,8 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 		bWearable = true;
 		strcopy(strName, iMaxSize, "Chargin' Targe");
 	}
-	if(iSwitchSlot < 0) iSwitchSlot = iSlot;
+	if(iSwitchSlot < 0)
+		iSwitchSlot = iSlot;
 	
 	return iClass;
 }
@@ -5592,90 +5601,381 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 bool:AttemptGrabItem(iClient)
 {
 	new iTarget = GetClientPointVisible(iClient);
-	
+
 	new String:strClassname[255];
-	if(iTarget > 0) GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
-	//PrintToChat(iClient, "AttemptGrabItem %d (%s)", iTarget, strClassname);
-	if(iTarget <= 0 || !IsClassname(iTarget, "prop_dynamic")) return false;
+	if (iTarget > 0)
+		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
+	if (iTarget<=0 || !IsClassname(iTarget, "prop_dynamic"))
+		return;
 
 	decl String:strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
-	//PrintToChat(iClient, "Model: %s", strModel);
-	
-	new TFClassWeapon:iClass = TFClassWeapon:TF2_GetPlayerClass(iClient);
-	
-	new Handle:hWeapon = INVALID_HANDLE;
-	new iSlot = -1;
-	new iSwitchSlot = -1;
-	new bool:bWearable = false;
-	decl String:strName[255];
-	
-	new TFClassWeapon:iWeaponClass = GetWeaponInfoFromModel(strModel, iSlot, iSwitchSlot, hWeapon, bWearable, strName, sizeof(strName));
-	if(hWeapon == INVALID_HANDLE || iSlot < 0) return false;
-	
-	// fix up multi-class weapons
-	if(iWeaponClass == TFClassWeapon_Group_Shotgun)
+
+	if(TF2_GetPlayerClass(iClient) == TFClass_Soldier) // Soldier Only Weapons
 	{
-		if(iClass == TFClassWeapon_Pyro) hWeapon = hWeaponShotgunPyro;
-		else if(iClass == TFClassWeapon_Soldier) hWeapon = hWeaponShotgunSoldier;
-		else return false;
+		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
+		{
+			//GiveItem(iClient, 10, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
+		{
+			//GiveItem(iClient, 10, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
+		{
+			//GiveItem(iClient, 18, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_blackbox/c_blackbox.mdl"))
+		{
+			//GiveItem(iClient, 228, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_directhit/c_directhit.mdl"))
+		{
+			//GiveItem(iClient, 127, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl"))
+		{
+			//GiveItem(iClient, 513, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
+		{
+			//GiveItem(iClient, 415, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl"))
+		{
+			//GiveItem(iClient, 442, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_raygun", 442, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl"))
+		{
+			//GiveItem(iClient, 414, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl"))
+		{
+			//GiveItem(iClient, 441, iTarget) 
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl"))
+		{
+			//GiveItem(iClient, 354, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 354, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_bugle/c_bugle.mdl"))
+		{
+			//GiveItem(iClient, 129, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 5);
+		}
 	}
-	else if(iWeaponClass != iClass) return false;
-	
-	CPrintToChat(iClient, "{olive}[SZF]{default} %t", "Pickup", strName);
-	
-	if(iSwitchSlot < 0) iSwitchSlot = iSlot;
-	
-	ClientCommand(iClient, "playgamesound ui/item_heavy_gun_drop.wav");
-	ClientCommand(iClient, "playgamesound ui/item_heavy_gun_pickup.wav");
-	
-	// get his old model
-	new iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
-	
-	// check whether this is a start item. If it is, we need to place a primary or secondary down, so the client only has 1 item
-	new iWeaponMode = GetWeaponType(iTarget);
-	
-	if(iWeaponMode == 1)
+	else if(TF2_GetPlayerClass(iClient) == TFClass_Pyro) // Pyro Only Weapons
 	{
-		if(iEntity <= 0 || !IsValidEdict(iEntity))
+		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
 		{
-			iSlot = 0;
-			iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
+			//GiveItem(iClient, 12, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5);
 		}
-		if(iEntity <= 0 || !IsValidEdict(iEntity))
+		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
-			iSlot = 1;
-			iEntity = GetPlayerWeaponSlot2(iClient, iSlot);
+			//GiveItem(iClient, 12, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl"))
+		{
+			//GiveItem(iClient, 39, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_detonator/c_detonator.mdl"))
+		{
+			//GiveItem(iClient, 351, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
+		{
+			//GiveItem(iClient, 415, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_degreaser/c_degreaser.mdl"))
+		{
+			//GiveItem(iClient, 215, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl"))
+		{
+			//GiveItem(iClient, 594, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_flamethrower/c_flamethrower.mdl"))
+		{
+			//GiveItem(iClient, 21, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl"))
+		{
+			//GiveItem(iClient, 595, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun_revenge", 595, 5);
 		}
 	}
-	
-	// Replace it or remove it
-	if(iWeaponMode != 1)
+	else if(TF2_GetPlayerClass(iClient) == TFClass_DemoMan) // Demoman Only Weapons
 	{
-		if(iEntity > 0 && IsValidEdict(iEntity))
+		if(StrEqual(strModel, "models/weapons/w_models/w_grenadelauncher.mdl"))
 		{
-			if(IsClassname(iEntity, "tf_wearable_demoshield")) GetEntityModel(iEntity, strModel, sizeof(strModel), "m_nModelIndex");
-			else GetEntityModel(iEntity, strModel, sizeof(strModel), "m_iWorldModelIndex");
-			PrecacheModel(strModel);
-			SetEntityModel(iTarget, strModel);
+			//GiveItem(iClient, 19, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1);
 		}
-		else
+		else if(StrEqual(strModel, "models/weapons/c_models/c_scottish_resistance.mdl"))
 		{
-			AcceptEntityInput(iTarget, "kill");
+			//GiveItem(iClient, 130, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
+		{
+			//GiveItem(iClient, 308, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_stickybomb_launcher.mdl"))
+		{
+			//GiveItem(iClient, 20, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper.mdl"))
+		{
+			//GiveItem(iClient, 265, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_targe/c_targe.mdl"))
+		{
+			//GiveItem(iClient, 131, iTarget)
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_persian_shield/c_persian_shield.mdl"))
+		{
+			//GiveItem(iClient, 406, iTarget)
 		}
 	}
-	
-	TF2_RemoveWeaponSlot(iClient, iSlot);
-	if(iSlot == 1) RemoveSecondaryWearable(iClient);
-	iEntity = TF2Items_GiveNamedItem(iClient, hWeapon);
-	if(bWearable) SDKCall(hEquipWearable, iClient, iEntity);
-	else EquipPlayerWeapon(iClient, iEntity);
-	
-	ClientCommand(iClient, "slot%d", iSwitchSlot);
-	
-	CheckStartWeapons();
-	
+	else if(TF2_GetPlayerClass(iClient) == TFClass_Engineer) // Engineer Only Weapons
+	{
+		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
+		{
+			//GiveItem(iClient, 9, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
+		{
+			//GiveItem(iClient, 9, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_shotgun/c_dex_shotgun.mdl"))
+		{
+			//GiveItem(iClient, 527, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl"))
+		{
+			//GiveItem(iClient, 160, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl"))
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl"))
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl"))
+		{
+			//GiveItem(iClient, 140, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_laser_pointer", 140, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_pistol.mdl"))
+		{
+			//GiveItem(iClient, 22, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl"))
+		{
+			//GiveItem(iClient, 588, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_drg_pomson", 588, 5);
+		}
+	}
+	else if(TF2_GetPlayerClass(iClient) == TFClass_Medic) // Medic Only Weapons
+	{
+		if(StrEqual(strModel, "models/weapons/c_models/c_medigun/c_medigun.mdl"))
+		{
+			//GiveItem(iClient, 29, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 29, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl"))
+		{
+			//GiveItem(iClient, 411, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 411, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_syringegun/c_syringegun.mdl"))
+		{
+			//GiveItem(iClient, 17, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_syringegun.mdl"))
+		{
+			//GiveItem(iClient, 17, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl"))
+		{
+			//GiveItem(iClient, 412, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl"))
+		{
+			//GiveItem(iClient, 305, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_leechgun/c_leechgun.mdl"))
+		{
+			//GiveItem(iClient, 36, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 5);
+		}
+	}
+	else if(TF2_GetPlayerClass(iClient) == TFClass_Sniper) // Sniper Only Weapons
+	{
+		if(StrEqual(strModel, "models/weapons/w_models/w_sniperrifle.mdl"))
+		{
+			//GiveItem(iClient, 14, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_smg.mdl"))
+		{
+			//GiveItem(iClient, 16, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_dartgun.mdl"))
+		{
+			//GiveItem(iClient, 230, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl"))
+		{
+			//GiveItem(iClient, 402, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl"))
+		{
+			//GiveItem(iClient, 526, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/urinejar.mdl"))
+		{
+			//GiveItem(iClient, 58, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 5);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_bow/c_bow.mdl"))
+		{
+			//GiveItem(iClient, 56, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 5);
+		}
+	}
+
 	return true;
+}
+
+CreateWeapon(int client, int target, char[] classname, int itemindex, int level=-1)	// Modified from luki1412's GiveBotsWeapons
+{
+	AcceptEntityInput(target, "Kill")
+	int weapon = CreateEntityByName(classname);
+	
+	if(!IsValidEntity(weapon))
+	{
+		return false;
+	}
+	
+	char entclass[64];
+	GetEntityNetClass(weapon, entclass, sizeof(entclass));
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);	 
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
+
+	if(level<1)
+	{
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(1, 100));
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+	}
+	else if(level==1)
+	{
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 0);
+	}
+	else
+	{
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+	}	
+	
+	DispatchSpawn(weapon);
+	SDKCall(g_hWWeaponEquip, client, weapon);
+
+	ClientCommand(client, "playgamesound ui/item_heavy_gun_pickup.wav");
+	ClientCommand(client, "playgamesound ui/item_heavy_gun_drop.wav");
+
+	if(RemoveOnPick)
+	{
+		AcceptEntityInput(target, "Kill")
+	}
 }
 
 GetModelPath(iIndex, String:strModel[], iMaxSize)
