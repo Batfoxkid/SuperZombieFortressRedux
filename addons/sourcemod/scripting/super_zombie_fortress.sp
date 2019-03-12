@@ -42,7 +42,7 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Build-2"
+#define DEV_REVISION "Build-3"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
@@ -62,6 +62,10 @@ new bool:debugmode = false;
 #else
 new bool:debugmode = true;
 #endif
+
+Handle g_hWeaponEquip;
+Handle g_hWWeaponEquip;
+Handle g_hGameConfig;
 
 public Plugin:myinfo = 
 {
@@ -90,30 +94,31 @@ new zf_bNewRound;
 new zf_spawnSurvivorsKilledCounter;
 new zf_spawnZombiesKilledCounter;
 // Client State
-new zf_critBonus[MAXPLAYERS+1];
+new szf_critBonus[MAXPLAYERS+1];
 new zf_hoardeBonus[MAXPLAYERS+1];
 new zf_rageTimer[MAXPLAYERS+1];
 
 // Global Timer Handles
-new Handle:zf_tMain;
-new Handle:zf_tMainFast;
-new Handle:zf_tMainSlow;
-new Handle:zf_tHoarde;
-new Handle:zf_tDataCollect;
+new Handle:szf_tMain;
+new Handle:szf_tMainFast;
+new Handle:szf_tMainSlow;
+new Handle:szf_tHoarde;
+new Handle:szf_tDataCollect;
 
 // Cvar Handles
-new Handle:zf_cvForceOn;
-new Handle:zf_cvRatio;
-new Handle:zf_cvAllowTeamPref;
-new Handle:zf_cvSwapOnPayload;
-new Handle:zf_cvSwapOnAttdef;
-new Handle:zf_cvTankHealth;
-new Handle:zf_cvTankHealthMin;
-new Handle:zf_cvTankHealthMax;
-new Handle:zf_cvTankTime;
-new Handle:zf_cvFrenzyChance;
-new Handle:zf_cvFrenzyTankChance;
-new Handle:zf_cvTankOnce;
+new Handle:szf_cvForceOn;
+new Handle:szf_cvRatio;
+new Handle:szf_cvAllowTeamPref;
+new Handle:szf_cvSwapOnPayload;
+new Handle:szf_cvSwapOnAttdef;
+new Handle:szf_cvTankHealth;
+new Handle:szf_cvTankHealthMin;
+new Handle:szf_cvTankHealthMax;
+new Handle:szf_cvTankTime;
+new Handle:szf_cvFrenzyChance;
+new Handle:szf_cvFrenzyTankChance;
+new Handle:szf_cvRemoveWeapon;
+new Handle:szf_cvTankOnce;
 
 new Float:g_fZombieDamageScale = 1.0;
 
@@ -299,10 +304,10 @@ public OnPluginStart()
 	setRoundState(RoundInit1);
 			
 	// Initialize timer handles
-	zf_tMain = INVALID_HANDLE;
-	zf_tMainSlow = INVALID_HANDLE;
-	zf_tMainFast = INVALID_HANDLE;
-	zf_tHoarde = INVALID_HANDLE;
+	szf_tMain = INVALID_HANDLE;
+	szf_tMainSlow = INVALID_HANDLE;
+	szf_tMainFast = INVALID_HANDLE;
+	szf_tHoarde = INVALID_HANDLE;
 	
 	// Initialize other packages
 	utilBaseInit();
@@ -310,18 +315,19 @@ public OnPluginStart()
 	
 	// Register cvars
 	CreateConVar("szf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
-	zf_cvForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
-	zf_cvRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
-	zf_cvAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
-	zf_cvSwapOnPayload = CreateConVar("szf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
-	zf_cvSwapOnAttdef = CreateConVar("szf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
-	zf_cvTankHealth = CreateConVar("szf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
-	zf_cvTankHealthMin = CreateConVar("szf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
-	zf_cvTankHealthMax = CreateConVar("szf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
-	zf_cvTankTime = CreateConVar("szf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
-	zf_cvFrenzyChance = CreateConVar("szf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
-	zf_cvFrenzyTankChance = CreateConVar("szf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
-	zf_cvTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_zf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
+	szf_cvForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
+	szf_cvRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
+	szf_cvAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
+	szf_cvSwapOnPayload = CreateConVar("szf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
+	szf_cvSwapOnAttdef = CreateConVar("szf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
+	szf_cvTankHealth = CreateConVar("sszf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
+	szf_cvTankHealthMin = CreateConVar("sszf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
+	szf_cvTankHealthMax = CreateConVar("sszf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
+	szf_cvTankTime = CreateConVar("szf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
+	szf_cvFrenzyChance = CreateConVar("szf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
+	szf_cvFrenzyTankChance = CreateConVar("szf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
+	szf_cvRemoveWeapon = CreateConVar("szf_pickup_remove", "1.0", "0-Leave weapon, 1-Remove weapon once picked up", _, true, 0.0, true, 1.0);
+	szf_cvTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_szf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
 
 	// Hook events
 	HookEvent("teamplay_round_start", OnRoundStart);
@@ -349,11 +355,38 @@ public OnPluginStart()
 	AddCommandListener(OnJoinClass, "joinclass");
 	AddCommandListener(OnCallMedic, "voicemenu"); 
 	// Hook Client Console Commands	
-	//AddCommandListener(CommandTeamPref, "zf_teampref");
+	//AddCommandListener(CommandTeamPref, "szf_teampref");
 	// Hook Client Chat / Console Commands
 	RegConsoleCmd("szf", CommandMenu);
 	RegConsoleCmd("szf_menu", CommandMenu);
 	RegConsoleCmd("szf_pref", CommandTeamPref);
+	
+	g_hGameConfig = LoadGameConfigFile("szf_gamedata");
+	
+	if(!g_hGameConfig)
+	{
+		SetFailState("Failed to find szf_gamedata.txt gamedata! Can't continue.");
+	}	
+	
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(g_hGameConfig, SDKConf_Virtual, "WeaponEquip");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	g_hWeaponEquip = EndPrepSDKCall();
+	
+	if(!g_hWeaponEquip)
+	{
+		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+	}
+	
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(g_hGameConfig, SDKConf_Virtual, "EquipWearable");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	g_hWWeaponEquip = EndPrepSDKCall();
+	
+	if(!g_hWWeaponEquip)
+	{
+		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+	}
 	
 	CreateTimer(10.0, SpookySound, 0, TIMER_REPEAT);
 	
@@ -415,7 +448,7 @@ public OnConfigsExecuted()
 	}
 	else
 	{
-		GetConVarBool(zf_cvForceOn) ? zfEnable() : zfDisable();
+		GetConVarBool(szf_cvForceOn) ? zfEnable() : zfDisable();
 	} 
 
 	setRoundState(RoundInit1);
@@ -424,26 +457,26 @@ public OnConfigsExecuted()
 public OnMapEnd()
 {
 	// Close timer handles
-	if(zf_tMain != INVALID_HANDLE)
+	if(szf_tMain != INVALID_HANDLE)
 	{			
-		CloseHandle(zf_tMain);
-		zf_tMain = INVALID_HANDLE;
+		CloseHandle(szf_tMain);
+		szf_tMain = INVALID_HANDLE;
 	}
-	if(zf_tMainSlow != INVALID_HANDLE)
+	if(szf_tMainSlow != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainSlow);
-		zf_tMainSlow = INVALID_HANDLE;
+		CloseHandle(szf_tMainSlow);
+		szf_tMainSlow = INVALID_HANDLE;
 	}
 	
-	if(zf_tMainFast != INVALID_HANDLE)
+	if(szf_tMainFast != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainFast);
-		zf_tMainFast = INVALID_HANDLE;
+		CloseHandle(szf_tMainFast);
+		szf_tMainFast = INVALID_HANDLE;
 	}
-	if(zf_tHoarde != INVALID_HANDLE)
+	if(szf_tHoarde != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tHoarde);
-		zf_tHoarde = INVALID_HANDLE;		
+		CloseHandle(szf_tHoarde);
+		szf_tHoarde = INVALID_HANDLE;		
 	}
 	setRoundState(RoundPost);
 	g_bRoundActive = false;
@@ -898,13 +931,13 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	{
 		if(GetRandomInt(0, 1))
 		{
-			result = true;
+			result = false;
 			return Plugin_Changed;
 		}
 	}
 	else
 	{
-		result = (zf_critBonus[client] > GetRandomInt(0, 99));
+		result = (szf_critBonus[client] > GetRandomInt(0, 99));
 		return Plugin_Changed;
 	}
 	
@@ -984,13 +1017,13 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 		players[0] = temp;		
 		
 		// Sort players using team preference criteria
-		if(GetConVarBool(zf_cvAllowTeamPref)) 
+		if(GetConVarBool(szf_cvAllowTeamPref)) 
 		{
 			SortCustom1D(players, playerCount, SortFunc1D:Sort_Preference);
 		}
 		
 		// Calculate team counts. At least one survivor must exist.	 
-		surCount = RoundToFloor(playerCount*GetConVarFloat(zf_cvRatio));
+		surCount = RoundToFloor(playerCount*GetConVarFloat(szf_cvRatio));
 		if((surCount==0) && (playerCount>0))
 		{
 			surCount = 1;
@@ -1129,17 +1162,17 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 				g_iSpecialInfected[client] = INFECTED_TANK;
 				
 				new iSurvivors = GetSurvivorCount();
-				new iHealth = GetConVarInt(zf_cvTankHealth) * iSurvivors;
-				if(iHealth < GetConVarInt(zf_cvTankHealthMin))
-					iHealth = GetConVarInt(zf_cvTankHealthMin);
-				if(iHealth > GetConVarInt(zf_cvTankHealthMax))
-					iHealth = GetConVarInt(zf_cvTankHealthMax);
+				new iHealth = GetConVarInt(szf_cvTankHealth) * iSurvivors;
+				if(iHealth < GetConVarInt(szf_cvTankHealthMin))
+					iHealth = GetConVarInt(szf_cvTankHealthMin);
+				if(iHealth > GetConVarInt(szf_cvTankHealthMax))
+					iHealth = GetConVarInt(szf_cvTankHealthMax);
 				g_iSuperHealth[client] = iHealth;
 				
 				new iSubtract = 0;
-				if(GetConVarFloat(zf_cvTankTime) > 0.0)
+				if(GetConVarFloat(szf_cvTankTime) > 0.0)
 				{
-					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(zf_cvTankTime));
+					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(szf_cvTankTime));
 					if(iSubtract < 3) iSubtract = 3;
 				}
 				g_iSuperHealthSubtract[client] = iSubtract;
@@ -1327,11 +1360,11 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 				new maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
 				if(curH < maxH)
 				{
-					curH += (zf_critBonus[killers[i]] * 2);
+					curH += (szf_critBonus[killers[i]] * 2);
 					curH = min(curH, maxH);				
 					//SetEntityHealth(killers[i], curH);
 				}
-				//zf_critBonus[killers[i]] = min(100, zf_critBonus[killers[i]] + 5); 
+				//szf_critBonus[killers[i]] = min(100, szf_critBonus[killers[i]] + 5); 
 									 
 			} // if				 
 		} // for 
@@ -1685,7 +1718,7 @@ handle_survivorAbilities()
 			
 			// 2. Handle survivor crit bonus rules.
 			//		Decrement morale bonus.
-			zf_critBonus[i] = max(0, zf_critBonus[i] - 1);
+			szf_critBonus[i] = max(0, szf_critBonus[i] - 1);
 			
 		} //if
 	} //for
@@ -1786,7 +1819,7 @@ handle_zombieAbilities()
 					case TFClass_Spy: bonus = 5 + (1 * zf_hoardeBonus[i]);
 				}
 			}	 
-			zf_critBonus[i] = bonus;
+			szf_critBonus[i] = bonus;
 			
 			// 3. Handle zombie rage timer
 			//		Rage recharges every 30s.
@@ -1906,25 +1939,25 @@ zfEnable()
 	ServerCommand("sm_cvar tf_spy_cloak_no_attack_time 1.0"); // Locked 
 		
 	// [Re]Enable periodic timers.
-	if(zf_tMain != INVALID_HANDLE)		
-		CloseHandle(zf_tMain);
-	zf_tMain = CreateTimer(1.0, timer_main, _, TIMER_REPEAT); 
+	if(szf_tMain != INVALID_HANDLE)		
+		CloseHandle(szf_tMain);
+	szf_tMain = CreateTimer(1.0, timer_main, _, TIMER_REPEAT); 
 	
-	if(zf_tMainSlow != INVALID_HANDLE)
-		CloseHandle(zf_tMainSlow);		
-	zf_tMainSlow = CreateTimer(240.0, timer_mainSlow, _, TIMER_REPEAT);
+	if(szf_tMainSlow != INVALID_HANDLE)
+		CloseHandle(szf_tMainSlow);		
+	szf_tMainSlow = CreateTimer(240.0, timer_mainSlow, _, TIMER_REPEAT);
 	
-	if(zf_tMainFast != INVALID_HANDLE)
-		CloseHandle(zf_tMainFast);		
-	zf_tMainFast = CreateTimer(0.5, timer_mainFast, _, TIMER_REPEAT);
+	if(szf_tMainFast != INVALID_HANDLE)
+		CloseHandle(szf_tMainFast);		
+	szf_tMainFast = CreateTimer(0.5, timer_mainFast, _, TIMER_REPEAT);
 	
-	if(zf_tHoarde != INVALID_HANDLE)
-		CloseHandle(zf_tHoarde);
-	zf_tHoarde = CreateTimer(5.0, timer_hoarde, _, TIMER_REPEAT); 
+	if(szf_tHoarde != INVALID_HANDLE)
+		CloseHandle(szf_tHoarde);
+	szf_tHoarde = CreateTimer(5.0, timer_hoarde, _, TIMER_REPEAT); 
 	
-	if(zf_tDataCollect != INVALID_HANDLE)
-		CloseHandle(zf_tDataCollect);
-	zf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT);
+	if(szf_tDataCollect != INVALID_HANDLE)
+		CloseHandle(szf_tDataCollect);
+	szf_tDataCollect = CreateTimer(2.0, timer_datacollect, _, TIMER_REPEAT);
 
 	#if defined _steamtools_included
 	if(steamtools)
@@ -1962,26 +1995,26 @@ zfDisable()
 	ServerCommand("sm_cvar tf_spy_cloak_no_attack_time 2.0"); // Locked 
 			
 	// Disable periodic timers.
-	if(zf_tMain != INVALID_HANDLE)
+	if(szf_tMain != INVALID_HANDLE)
 	{			
-		CloseHandle(zf_tMain);
-		zf_tMain = INVALID_HANDLE;
+		CloseHandle(szf_tMain);
+		szf_tMain = INVALID_HANDLE;
 	}
-	if(zf_tMainSlow != INVALID_HANDLE)
+	if(szf_tMainSlow != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tMainSlow);
-		zf_tMainSlow = INVALID_HANDLE;
+		CloseHandle(szf_tMainSlow);
+		szf_tMainSlow = INVALID_HANDLE;
 	}
-	if(zf_tHoarde != INVALID_HANDLE)
+	if(szf_tHoarde != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tHoarde);
-		zf_tHoarde = INVALID_HANDLE;
+		CloseHandle(szf_tHoarde);
+		szf_tHoarde = INVALID_HANDLE;
 	}
 	
-	if(zf_tDataCollect != INVALID_HANDLE)
+	if(szf_tDataCollect != INVALID_HANDLE)
 	{
-		CloseHandle(zf_tDataCollect);
-		zf_tDataCollect = INVALID_HANDLE;
+		CloseHandle(szf_tDataCollect);
+		szf_tDataCollect = INVALID_HANDLE;
 	}
 
 	// Enable resupply lockers.
@@ -2012,7 +2045,7 @@ zfSetTeams()
 	//
 	if(mapIsPL())
 	{
-		if(GetConVarBool(zf_cvSwapOnPayload)) 
+		if(GetConVarBool(szf_cvSwapOnPayload)) 
 		{			
 			survivorTeam = _:TFTeam_Blue;
 			zombieTeam = _:TFTeam_Red;
@@ -2025,7 +2058,7 @@ zfSetTeams()
 	//
 	if(mapIsCP())
 	{
-		if(GetConVarBool(zf_cvSwapOnAttdef))
+		if(GetConVarBool(szf_cvSwapOnAttdef))
 		{
 			new bool:isAttdef = true;
 			new index = -1;
@@ -2076,7 +2109,7 @@ public Sort_Preference(client1, client2, const array[], Handle:hndl)
 
 resetClientState(client)
 { 
-	zf_critBonus[client] = 0;
+	szf_critBonus[client] = 0;
 	zf_hoardeBonus[client] = 0;
 	zf_rageTimer[client] = 0;
 }
@@ -2113,7 +2146,7 @@ public panel_PrintMain(client)
 	SetPanelTitle(panel, temp_string21);
 	Format(temp_string21, sizeof(temp_string21),"%T", "Help", client);
 	DrawPanelItem(panel, temp_string21);	
-	if(GetConVarBool(zf_cvAllowTeamPref)) 
+	if(GetConVarBool(szf_cvAllowTeamPref)) 
 	{
 		Format(temp_string21, sizeof(temp_string21),"%T", "Preferences", client);
 		DrawPanelItem(panel, temp_string21);
@@ -2146,7 +2179,7 @@ public panel_PrintPrefs(client)
 	decl String:temp_string1[256];
 	Format(temp_string1, sizeof(temp_string1),"%T", "ZF Preferences", client);
 	SetPanelTitle(panel, temp_string1);
-	if(GetConVarBool(zf_cvAllowTeamPref)) 
+	if(GetConVarBool(szf_cvAllowTeamPref)) 
 	{
 		Format(temp_string1, sizeof(temp_string1),"%T", "Team Preference", client);
 		DrawPanelItem(panel, temp_string1);	
@@ -2716,7 +2749,7 @@ UpdateZombieDamageScale()
 	
 	if(!g_bZombieRage && g_iZombieTank<=0 && !ZombiesHaveTank())
 	{
-		if(fTime<=GetConVarFloat(zf_cvTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale>=1.0)
+		if(fTime<=GetConVarFloat(szf_cvTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale>=1.0)
 		{
 			ZombieTank();
 		}
@@ -2724,9 +2757,9 @@ UpdateZombieDamageScale()
 		{
 			ZombieRage();
 		}
-		else if(g_fZombieDamageScale>=1.3 || (GetRandomInt(1, 100)<=GetConVarInt(zf_cvFrenzyChance) && g_fZombieDamageScale>=1.0))
+		else if(g_fZombieDamageScale>=1.3 || (GetRandomInt(1, 100)<=GetConVarInt(szf_cvFrenzyChance) && g_fZombieDamageScale>=1.0))
 		{
-			if(GetRandomInt(0, 100) <= GetConVarInt(zf_cvFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
+			if(GetRandomInt(0, 100) <= GetConVarInt(szf_cvFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
 			else ZombieRage();
 		}
 	}
@@ -3414,7 +3447,7 @@ MusicHandleAll()
 
 MusicHandleClient(iClient)
 {
-	if(!validClient(iClient)
+	if(!validClient(iClient))
 		return;
 	
 	if(GetClientTeam(iClient) == 1)
@@ -3801,7 +3834,7 @@ HandleClientInventory(iClient)
 		}
 	}
 	
-	if(hWeaponStickyLauncher != INVALID_HANDLE)
+	/*if(hWeaponStickyLauncher != INVALID_HANDLE)
 	{
 		iEntity = GetPlayerWeaponSlot(iClient, 1);
 		if(iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 265)
@@ -3859,7 +3892,7 @@ HandleClientInventory(iClient)
 			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponShovel);
 			EquipPlayerWeapon(iClient, iEntity);
 		}
-	}
+	}*/
 	
 	iEntity = GetPlayerWeaponSlot(iClient, 4);
 	if(iEntity > 0 && IsValidEdict(iEntity) && hWeaponWatch != INVALID_HANDLE && TF2_GetPlayerClass(iClient) == TFClass_Spy)
@@ -3905,12 +3938,12 @@ SetValidSlot(iClient)
 
 SetupSDK()
 {
-	hConfiguration = LoadGameConfigFile("mechatheslag_global");
+	/*hConfiguration = LoadGameConfigFile("mechatheslag_global");
 
 	StartPrepSDKCall(SDKCall_Player);
 	PrepSDKCall_SetFromConf(hConfiguration, SDKConf_Virtual, "EquipWearable");
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	hEquipWearable = EndPrepSDKCall();
+	hEquipWearable = EndPrepSDKCall();*/
 }
 
 SetupWeapons()
@@ -4301,7 +4334,7 @@ public Action:RemoveParticle(Handle:timer, any:particle)
 
 stock DealDamage(iVictim, iDamage, iAttacker=0,iDmgType=DMG_GENERIC, String:strWeapon[]="")
 {
-	if(!validClient(iAttacker)
+	if(!validClient(iAttacker))
 		iAttacker = 0;
 
 	if(validClient(iVictim) && iDamage > 0)
@@ -4501,7 +4534,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				return Plugin_Changed;
 			}
 		}
-		case 132, 226, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
+		case 132, 266, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
 			// 54:	-25% slower move speed on wearer
@@ -4710,12 +4743,12 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	   !StrContains(classname, "tf_weapon_sword") ||
 	   !StrContains(classname, "tf_weapon_katana") ||
 	   !StrContains(classname, "tf_weapon_wrench") ||
-	   !StrContains(classname, "tf_weapon_robot_arm")
+	   !StrContains(classname, "tf_weapon_robot_arm") ||
 	   !StrContains(classname, "tf_weapon_club"))			// Melees
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1");
-		// 28:	-75% random critical hit chance
-		// 734:	-90% less healing from all sources
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
+		// 28:	-50% random critical hit chance
+		// 69:	-90% health from healers on wearer
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4855,6 +4888,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			item=itemOverride;
 			return Plugin_Changed;
 		}
+	}
 	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
@@ -4946,10 +4980,10 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 734 ; 0.15");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
 		// 28:	-70% random critical hit chance
+		// 69:	-85% health from healers on wearer
 		// 131:	-300% natural regen rate
-		// 734:	-85% less healing from all sources
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4960,25 +4994,6 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
 		// 249:	-60% increase in charge recharge rate
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(StrContains(classname, "tf_weapon_jar") ||
-	   StrContains(classname, "tf_weapon_buff_item") ||
-	   StrContains(classname, "tf_weapon_parachute") ||
-	   StrContains(classname, "tf_weapon_lunchbox") ||
-	   StrContains(classname, "tf_weapon_pda") ||
-	   StrContains(classname, "tf_weapon_builder") ||
-	   StrContains(classname, "tf_weapon_medigun") ||
-	   StrContains(classname, "tf_weapon_sniperrifle") ||
-	   StrContains(classname, "tf_weapon_compound_bow") ||
-	   StrContains(classname, "tf_wearable"))			// No Random Critical Hits Weapons
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5");
-		// 28: -50% random critical hit chance
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -5009,7 +5024,7 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 			case 527:  // Windowmaker
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "28 ; 0.5");
+				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "");
 			}
 		}
 	}
@@ -5054,7 +5069,7 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 			case 589:	// Eureka Effect
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.25 ; 734 ; 0.1");
+				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.5 ; 69 ; 0.1");
 			}
 		}
 	}
@@ -5385,7 +5400,7 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	
 	new Handle:event=CreateEvent("player_escort_score", true);
 	SetEventInt(event, "player", iClient);
-	SetEventInt(event, "points", 99);
+	SetEventInt(event, "points", 5);
 	FireEvent(event);
 	
 	g_bBonusAlt[iClient] = !g_bBonusAlt[iClient];
@@ -5598,15 +5613,15 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 	return iClass;
 }
 
-bool:AttemptGrabItem(iClient)
+AttemptGrabItem(iClient)
 {
 	new iTarget = GetClientPointVisible(iClient);
-
+	new iWeapon;
 	new String:strClassname[255];
 	if (iTarget > 0)
 		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
 	if (iTarget<=0 || !IsClassname(iTarget, "prop_dynamic"))
-		return;
+		return false;
 
 	decl String:strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
@@ -5617,43 +5632,43 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 10, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 10, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
 		{
 			//GiveItem(iClient, 18, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_blackbox/c_blackbox.mdl"))
 		{
 			//GiveItem(iClient, 228, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 5, 18, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_directhit/c_directhit.mdl"))
 		{
 			//GiveItem(iClient, 127, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 5, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl"))
 		{
 			//GiveItem(iClient, 513, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 5, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
 			//GiveItem(iClient, 415, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 415, 5, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl"))
 		{
@@ -5665,7 +5680,7 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 414, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 5, 20, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl"))
 		{
@@ -5692,49 +5707,49 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 12, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 12, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl"))
 		{
 			//GiveItem(iClient, 39, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 5, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_detonator/c_detonator.mdl"))
 		{
 			//GiveItem(iClient, 351, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 5, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
 			//GiveItem(iClient, 415, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_degreaser/c_degreaser.mdl"))
 		{
 			//GiveItem(iClient, 215, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 5, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl"))
 		{
 			//GiveItem(iClient, 594, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 5, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flamethrower/c_flamethrower.mdl"))
 		{
 			//GiveItem(iClient, 21, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl"))
 		{
@@ -5749,31 +5764,34 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 19, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_scottish_resistance.mdl"))
 		{
 			//GiveItem(iClient, 130, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 5);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 5, 24, 0);
+			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
 		{
 			//GiveItem(iClient, 308, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 5, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_stickybomb_launcher.mdl"))
 		{
 			//GiveItem(iClient, 20, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1, 24, 0);
+			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper.mdl"))
 		{
 			//GiveItem(iClient, 265, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 5);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 5, 48, 0);
+			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_targe/c_targe.mdl"))
 		{
@@ -5790,37 +5808,37 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 9, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 9, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_shotgun/c_dex_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 527, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl"))
 		{
 			//GiveItem(iClient, 160, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 1, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl"))
 		{
 			//GiveItem(iClient, 141, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl"))
 		{
 			//GiveItem(iClient, 141, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl"))
 		{
@@ -5832,7 +5850,7 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 22, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl"))
 		{
@@ -5859,31 +5877,31 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 17, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_syringegun.mdl"))
 		{
 			//GiveItem(iClient, 17, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl"))
 		{
 			//GiveItem(iClient, 412, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 5, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl"))
 		{
 			//GiveItem(iClient, 305, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 5, 31, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_leechgun/c_leechgun.mdl"))
 		{
 			//GiveItem(iClient, 36, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 5, 190, 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Sniper) // Sniper Only Weapons
@@ -5892,57 +5910,56 @@ bool:AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 14, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_smg.mdl"))
 		{
 			//GiveItem(iClient, 16, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1, 100, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dartgun.mdl"))
 		{
 			//GiveItem(iClient, 230, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 5, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl"))
 		{
 			//GiveItem(iClient, 402, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 5, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl"))
 		{
 			//GiveItem(iClient, 526, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 5, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/urinejar.mdl"))
 		{
 			//GiveItem(iClient, 58, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 5, 1);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bow/c_bow.mdl"))
 		{
 			//GiveItem(iClient, 56, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 5, 13, 0);
 		}
 	}
-
 	return true;
 }
 
-CreateWeapon(int client, int target, char[] classname, int itemindex, int level=-1)	// Modified from luki1412's GiveBotsWeapons
+CreateWeapon(int client, int target, char[] classname, int itemindex, int level=-1, int ammo=-1, int clip=-1)	// Modified from luki1412's GiveBotsWeapons
 {
-	AcceptEntityInput(target, "Kill")
+	AcceptEntityInput(target, "Kill");
 	int weapon = CreateEntityByName(classname);
 	
 	if(!IsValidEntity(weapon))
 	{
-		return false;
+		return -1;
 	}
 	
 	char entclass[64];
@@ -5952,7 +5969,7 @@ CreateWeapon(int client, int target, char[] classname, int itemindex, int level=
 
 	if(level<1)
 	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(1, 100));
+		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomInt(1, 100));
 		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
 	}
 	else if(level==1)
@@ -5964,17 +5981,42 @@ CreateWeapon(int client, int target, char[] classname, int itemindex, int level=
 	{
 		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
 		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
-	}	
+	}
 	
 	DispatchSpawn(weapon);
-	SDKCall(g_hWWeaponEquip, client, weapon);
+	SDKCall(g_hWeaponEquip, client, weapon);
+	SetAmmo(client, weapon, ammo, clip);
 
 	ClientCommand(client, "playgamesound ui/item_heavy_gun_pickup.wav");
 	ClientCommand(client, "playgamesound ui/item_heavy_gun_drop.wav");
 
-	if(RemoveOnPick)
+	if(szf_cvRemoveWeapon)
 	{
-		AcceptEntityInput(target, "Kill")
+		AcceptEntityInput(target, "Kill");
+	}
+	return weapon;
+}
+
+stock SetAmmo(client, weapon, ammo=-1, clip=-1)
+{
+	if(IsValidEntity(weapon))
+	{
+		if(clip>-1)
+		{
+			SetEntProp(weapon, Prop_Data, "m_iClip1", clip);
+		}
+
+		new ammoType=(ammo>-1 ? GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType") : -1);
+		if(ammoType!=-1)
+		{
+			SetEntProp(client, Prop_Data, "m_iAmmo", ammo, _, ammoType);
+		}
+		else if(ammo>-1)  //Only complain if we're trying to set ammo
+		{
+			decl String:classname[64];
+			GetEdictClassname(weapon, classname, sizeof(classname));
+			LogError("[SZF] Cannot give ammo to weapon %s!", classname);
+		}
 	}
 }
 
