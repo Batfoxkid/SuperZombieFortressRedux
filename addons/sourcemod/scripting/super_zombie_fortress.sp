@@ -42,7 +42,7 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Build-3"
+#define DEV_REVISION "Build-5"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
@@ -66,6 +66,8 @@ new bool:debugmode = true;
 Handle g_hWeaponEquip;
 Handle g_hWWeaponEquip;
 Handle g_hGameConfig;
+
+#define MAXATTRIBUTES 16
 
 public Plugin:myinfo = 
 {
@@ -106,19 +108,20 @@ new Handle:szf_tHoarde;
 new Handle:szf_tDataCollect;
 
 // Cvar Handles
-new Handle:szf_cvForceOn;
-new Handle:szf_cvRatio;
-new Handle:szf_cvAllowTeamPref;
-new Handle:szf_cvSwapOnPayload;
-new Handle:szf_cvSwapOnAttdef;
-new Handle:szf_cvTankHealth;
-new Handle:szf_cvTankHealthMin;
-new Handle:szf_cvTankHealthMax;
-new Handle:szf_cvTankTime;
-new Handle:szf_cvFrenzyChance;
-new Handle:szf_cvFrenzyTankChance;
-new Handle:szf_cvRemoveWeapon;
-new Handle:szf_cvTankOnce;
+new Handle:cvarForceOn;
+new Handle:cvarRatio;
+new Handle:cvarAllowTeamPref;
+new Handle:cvarSwapOnPayload;
+new Handle:cvarSwapOnAttdef;
+new Handle:cvarTankHealth;
+new Handle:cvarTankHealthMin;
+new Handle:cvarTankHealthMax;
+new Handle:cvarTankTime;
+new Handle:cvarFrenzyChance;
+new Handle:cvarFrenzyTankChance;
+new Handle:cvarRemoveWeapon;
+new Handle:cvarTankOnce;
+new Handle:cvarExtraClass;
 
 new Float:g_fZombieDamageScale = 1.0;
 
@@ -163,6 +166,7 @@ new g_iControlPointsInfo[20][2];
 new g_iControlPoints = 0;
 new bool:g_bCapturingLastPoint = false;
 new g_iCarryingItem[MAXPLAYERS+1] = -1;
+new bool:stripMap = false;
 
 #define GAMEMODE_DEFAULT	0
 #define GAMEMODE_NEW		1
@@ -270,6 +274,56 @@ new String:g_strSoundCritHit[][128] =
 	"player/crit_received3.wav"
 };
 
+new String:g_weaponModels[][128] =
+{
+	"models/weapons/c_models/c_dartgun.mdl",
+	"models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl",
+	"models/weapons/c_models/urinejar.mdl",
+	"models/weapons/c_models/c_bow/c_bow.mdl",
+	"models/weapons/c_models/c_leechgun/c_leechgun.mdl",
+	"models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl",
+	"models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl",
+	"models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl",
+	"models/weapons/w_models/w_stickybomb_launcher.mdl",
+	"models/weapons/w_models/w_grenadelauncher.mdl",
+	"models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl",
+	"models/weapons/c_models/c_flamethrower/c_flamethrower.mdl",
+	"models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl",
+	"models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl",
+	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",
+	"models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl",
+	"models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl",
+	"models/weapons/c_models/c_directhit/c_directhit.mdl",
+	"models/weapons/c_models/c_blackbox/c_blackbox.mdl",
+	"models/weapons/w_models/w_rocketlauncher.mdl",
+	"models/weapons/w_models/w_shotgun.mdl",
+	"models/weapons/c_models/c_shotgun/c_shotgun.mdl",
+	"models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl",
+	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",
+	"models/weapons/c_models/c_bugle/c_bugle.mdl",
+	"models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl",
+	"models/weapons/c_models/c_detonator/c_detonator.mdl",
+	"models/weapons/c_models/c_degreaser/c_degreaser.mdl",
+	"models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl",
+	"models/weapons/c_models/c_lochnload/c_lochnload.mdl",
+	"models/weapons/c_models/c_sticky_jumper.mdl",
+	"models/weapons/c_models/c_scottish_resistance.mdl",
+	"models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl",
+	"models/weapons/c_models/c_medigun/c_medigun.mdl",
+	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",
+	"models/weapons/w_models/w_syringegun.mdl",
+	"models/weapons/w_models/w_syringegun.mdl",
+	"models/weapons/w_models/w_smg.mdl",
+	"models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl",
+	"models/weapons/w_models/w_sniperrifle.mdl",
+	"models/weapons/w_models/w_frontierjustice.mdl",
+	"models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl",
+	"models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl",
+	"models/weapons/c_models/c_pistol.mdl",
+	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",
+	"models/weapons/c_models/c_wrangler.mdl"
+};
+
 ////////////////////////////////////////////////////////////
 //
 // Sourcemod Callbacks
@@ -315,19 +369,20 @@ public OnPluginStart()
 	
 	// Register cvars
 	CreateConVar("szf_version", PLUGIN_VERSION, "Current Zombie Fortress Version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY); 
-	szf_cvForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
-	szf_cvRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
-	szf_cvAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
-	szf_cvSwapOnPayload = CreateConVar("szf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
-	szf_cvSwapOnAttdef = CreateConVar("szf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
-	szf_cvTankHealth = CreateConVar("sszf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
-	szf_cvTankHealthMin = CreateConVar("sszf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
-	szf_cvTankHealthMax = CreateConVar("sszf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
-	szf_cvTankTime = CreateConVar("szf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
-	szf_cvFrenzyChance = CreateConVar("szf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
-	szf_cvFrenzyTankChance = CreateConVar("szf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
-	szf_cvRemoveWeapon = CreateConVar("szf_pickup_remove", "1.0", "0-Leave weapon, 1-Remove weapon once picked up", _, true, 0.0, true, 1.0);
-	szf_cvTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_szf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
+	cvarForceOn = CreateConVar("szf_force_on", "1", "<0/1> Activate ZF for non-ZF maps.", _, true, 0.0, true, 1.0);
+	cvarRatio = CreateConVar("szf_ratio", "0.8", "<0.01-1.00> Percentage of players that start as survivors.", _, true, 0.01, true, 1.0);
+	cvarAllowTeamPref = CreateConVar("szf_allowteampref", "0", "<0/1> Allow use of team preference criteria.", _, true, 0.0, true, 1.0);
+	cvarSwapOnPayload = CreateConVar("szf_swaponpayload", "1", "<0/1> Swap teams on non-ZF payload maps.", _, true, 0.0, true, 1.0);
+	cvarSwapOnAttdef = CreateConVar("szf_swaponattdef", "1", "<0/1> Swap teams on non-ZF attack/defend maps.", _, true, 0.0, true, 1.0);
+	cvarTankHealth = CreateConVar("sszf_tank_health", "400", "Amount of health the Tank gets per alive survivor", _, true, 10.0);
+	cvarTankHealthMin = CreateConVar("sszf_tank_health_min", "1000", "Minimum amount of health the Tank can spawn with", _, true, 0.0);
+	cvarTankHealthMax = CreateConVar("sszf_tank_health_max", "8000", "Maximum amount of health the Tank can spawn with", _, true, 0.0);
+	cvarTankTime = CreateConVar("szf_tank_time", "50.0", "Adjusts the damage the Tank takes per second. If the value is 70.0, the Tank will take damage that will make him die (if unhurt by survivors) after 70 seconds. 0 to disable.", _, true, 0.0);
+	cvarFrenzyChance = CreateConVar("szf_frenzy_chance", "5.0", "% Chance of a random frenzy", _, true, 0.0);
+	cvarFrenzyTankChance = CreateConVar("szf_frenzy_tank", "25.0", "% Chance of a Tank appearing instead of a frenzy", _, true, 0.0);
+	cvarRemoveWeapon = CreateConVar("szf_pickup_remove", "1", "0-Leave weapon, 1-Remove weapon once picked up", _, true, 0.0, true, 1.0);
+	cvarTankOnce = CreateConVar("szf_tank_once", "60.0", "Every round there is at least one Tank. If no Tank has appeared, a Tank will be manually created when there is sm_szf_tank_once time left. Ie. if the value is 60, the Tank will be spawned when there's 60% of the time left.", _, true, 0.0);
+	cvarExtraClass = CreateConVar("szf_pickup_more", "1", "0-Use TF2 logic, 1-Allow logic like Engineers and Reserve Shooter", _, true, 0.0, true, 1.0);
 
 	// Hook events
 	HookEvent("teamplay_round_start", OnRoundStart);
@@ -448,7 +503,7 @@ public OnConfigsExecuted()
 	}
 	else
 	{
-		GetConVarBool(szf_cvForceOn) ? zfEnable() : zfDisable();
+		GetConVarBool(cvarForceOn) ? zfEnable() : zfDisable();
 	} 
 
 	setRoundState(RoundInit1);
@@ -535,7 +590,7 @@ public OnPreThinkPost(client)
 		{
 			speed = 450.0;
 		}
-		setClientSpeed(client, speed);
+		//setClientSpeed(client, speed);
 	}
 	
 	UpdateClientCarrying(client);
@@ -951,8 +1006,9 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue; 
-	
-	RemovePhysicObjects();
+
+	SetupMapWeapons();
+	//RemovePhysicObjects();
 	DetermineControlPoints();
 	
 	new players[MAXPLAYERS+1] = -1;
@@ -1017,13 +1073,13 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 		players[0] = temp;		
 		
 		// Sort players using team preference criteria
-		if(GetConVarBool(szf_cvAllowTeamPref)) 
+		if(GetConVarBool(cvarAllowTeamPref)) 
 		{
 			SortCustom1D(players, playerCount, SortFunc1D:Sort_Preference);
 		}
 		
 		// Calculate team counts. At least one survivor must exist.	 
-		surCount = RoundToFloor(playerCount*GetConVarFloat(szf_cvRatio));
+		surCount = RoundToFloor(playerCount*GetConVarFloat(cvarRatio));
 		if((surCount==0) && (playerCount>0))
 		{
 			surCount = 1;
@@ -1087,6 +1143,283 @@ public Action:OnSetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	return Plugin_Continue;
 }
 
+SetupMapWeapons()
+{
+	if(!zf_bEnabled)
+		return;
+
+	int entity = -1;
+	int weaponcount;
+	char name[64];
+	while((entity = FindEntityByClassname2(entity, "info_target")) != -1)
+	{
+		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
+		if(!strcmp(name, "szf_mode_new", false))
+		{
+			stripMap = true;
+		}
+	}
+	while((entity = FindEntityByClassname2(entity, "prop_physics")) != -1)
+	{
+		weaponcount++;
+	}
+	PrintToChatAll("Found prop_physics %i times", weaponcount);
+	weaponcount=0;
+	//int type, flags;
+	while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
+	{
+		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
+		if(!strcmp(name, "szf_weapon", false))
+		{
+			weaponcount++;
+			//DispatchKeyValue(entity, "StartDisabled", "0");
+			//DispatchKeyValue(entity, "fademindist", "-1");
+			//DispatchKeyValue(entity, "fademaxdist", "0");
+			//DispatchKeyValue(entity, "lightingorigin", "0");
+			SetEntProp(entity, Prop_Send, "m_nSolidType", 0);
+			SetEntProp(entity, Prop_Send, "m_usSolidFlags", 4);
+			SetEntProp(entity, Prop_Send, "m_CollisionGroup", 0);
+			//SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.99);
+			//type=GetEntProp(entity, Prop_Send, "m_nSolidType");
+			//flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
+		}
+	}
+	PrintToChatAll("Found szf_weapon %i times", weaponcount);
+
+	if(stripMap)
+	{
+		while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
+		{
+			GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
+			if(!strcmp(name, "szf_weapon", false))
+			{
+				new weapon = CreateEntityByName("prop_physics");
+				if(!IsValidEntity(weapon))
+					return;
+
+				SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
+
+				if(GetRandomInt(0, 6)>4)
+				{
+					switch(GetRandomInt(0, 19))
+					{
+						case 0:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_dartgun.mdl");
+						}
+						case 1:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl");
+						}
+						case 2:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/urinejar.mdl");
+						}
+						case 3:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_bow/c_bow.mdl");
+						}
+						case 4:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_leechgun/c_leechgun.mdl");
+						}
+						case 5:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl");
+						}
+						case 6:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl");
+						}
+						case 7:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl");
+						}
+						case 8:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_stickybomb_launcher.mdl");
+						}
+						case 9:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_grenadelauncher.mdl");
+						}
+						case 10:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl");
+						}
+						case 11:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_flamethrower/c_flamethrower.mdl");
+						}
+						case 12:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl");
+						}
+						case 13:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl");
+						}
+						case 14:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_syringegun/c_syringegun.mdl");
+						}
+						case 15:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl");
+						}
+						case 16:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl");
+						}
+						case 17:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_directhit/c_directhit.mdl");
+						}
+						case 18:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_blackbox/c_blackbox.mdl");
+						}
+						case 19:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_rocketlauncher.mdl");
+						}
+					}
+				}
+				else if(GetRandomInt(0, 2)>0)
+				{
+					switch(GetRandomInt(0, 19))
+					{
+						case 0:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_shotgun.mdl");
+						}
+						case 1:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_shotgun/c_shotgun.mdl");
+						}
+						case 2:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl");
+						}
+						case 3:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl");
+						}
+						case 4:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_bugle/c_bugle.mdl");
+						}
+						case 5:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl");
+						}
+						case 6:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_detonator/c_detonator.mdl");
+						}
+						case 7:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_degreaser/c_degreaser.mdl");
+						}
+						case 8:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl");
+						}
+						case 9:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_lochnload/c_lochnload.mdl");
+						}
+						case 10:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_sticky_jumper.mdl");
+						}
+						case 11:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_scottish_resistance.mdl");
+						}
+						case 12:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl");
+						}
+						case 13:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_medigun/c_medigun.mdl");
+						}
+						case 14:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_syringegun/c_syringegun.mdl");
+						}
+						case 15:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_syringegun.mdl");
+						}
+						case 16:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_syringegun.mdl");
+						}
+						case 17:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_smg.mdl");
+						}
+						case 18:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl");
+						}
+						case 19:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_sniperrifle.mdl");
+						}
+					}
+				}
+				else
+				{
+					switch(GetRandomInt(0, 4))
+					{
+						case 0:
+						{
+							SetEntityModel(weapon, "models/weapons/w_models/w_frontierjustice.mdl");
+						}
+						case 1:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl");
+						}
+						case 2:
+						{
+							if(GetRandomInt(0, 4)>3)
+								SetEntityModel(weapon, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl");
+							else
+								SetEntityModel(weapon, "models/weapons/c_models/c_pistol.mdl");
+						}
+						case 3:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl");
+						}
+						case 4:
+						{
+							SetEntityModel(weapon, "models/weapons/c_models/c_wrangler.mdl");
+						}
+					}
+				}
+				static float angle[3];
+				GetEntPropVector(entity, Prop_Send, "m_angRotation", angle);
+
+				static float position[3];
+				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", position);
+
+				DispatchSpawn(weapon);
+				TeleportEntity(weapon, position, angle, NULL_VECTOR);
+				SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
+
+				SetEntProp(weapon, Prop_Send, "m_nSolidType", 6);
+				SetEntProp(weapon, Prop_Send, "m_usSolidFlags", 2);
+				SetEntProp(weapon, Prop_Send, "m_CollisionGroup", 5);
+			}
+		}
+	}
+
+	return;
+}
+
 EndGracePeriod()
 {
 	if(!zf_bEnabled || roundState()==RoundActive || roundState()==RoundPost)
@@ -1115,6 +1448,7 @@ public Action:OnRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	SetGlow();
 	UpdateZombieDamageScale();
 	g_bRoundActive = false;
+	stripMap = false;
 	
 	return Plugin_Continue;
 }
@@ -1162,17 +1496,17 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 				g_iSpecialInfected[client] = INFECTED_TANK;
 				
 				new iSurvivors = GetSurvivorCount();
-				new iHealth = GetConVarInt(szf_cvTankHealth) * iSurvivors;
-				if(iHealth < GetConVarInt(szf_cvTankHealthMin))
-					iHealth = GetConVarInt(szf_cvTankHealthMin);
-				if(iHealth > GetConVarInt(szf_cvTankHealthMax))
-					iHealth = GetConVarInt(szf_cvTankHealthMax);
+				new iHealth = GetConVarInt(cvarTankHealth) * iSurvivors;
+				if(iHealth < GetConVarInt(cvarTankHealthMin))
+					iHealth = GetConVarInt(cvarTankHealthMin);
+				if(iHealth > GetConVarInt(cvarTankHealthMax))
+					iHealth = GetConVarInt(cvarTankHealthMax);
 				g_iSuperHealth[client] = iHealth;
 				
 				new iSubtract = 0;
-				if(GetConVarFloat(szf_cvTankTime) > 0.0)
+				if(GetConVarFloat(cvarTankTime) > 0.0)
 				{
-					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(szf_cvTankTime));
+					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(cvarTankTime));
 					if(iSubtract < 3) iSubtract = 3;
 				}
 				g_iSuperHealthSubtract[client] = iSubtract;
@@ -2045,7 +2379,7 @@ zfSetTeams()
 	//
 	if(mapIsPL())
 	{
-		if(GetConVarBool(szf_cvSwapOnPayload)) 
+		if(GetConVarBool(cvarSwapOnPayload)) 
 		{			
 			survivorTeam = _:TFTeam_Blue;
 			zombieTeam = _:TFTeam_Red;
@@ -2058,7 +2392,7 @@ zfSetTeams()
 	//
 	if(mapIsCP())
 	{
-		if(GetConVarBool(szf_cvSwapOnAttdef))
+		if(GetConVarBool(cvarSwapOnAttdef))
 		{
 			new bool:isAttdef = true;
 			new index = -1;
@@ -2146,7 +2480,7 @@ public panel_PrintMain(client)
 	SetPanelTitle(panel, temp_string21);
 	Format(temp_string21, sizeof(temp_string21),"%T", "Help", client);
 	DrawPanelItem(panel, temp_string21);	
-	if(GetConVarBool(szf_cvAllowTeamPref)) 
+	if(GetConVarBool(cvarAllowTeamPref)) 
 	{
 		Format(temp_string21, sizeof(temp_string21),"%T", "Preferences", client);
 		DrawPanelItem(panel, temp_string21);
@@ -2179,7 +2513,7 @@ public panel_PrintPrefs(client)
 	decl String:temp_string1[256];
 	Format(temp_string1, sizeof(temp_string1),"%T", "ZF Preferences", client);
 	SetPanelTitle(panel, temp_string1);
-	if(GetConVarBool(szf_cvAllowTeamPref)) 
+	if(GetConVarBool(cvarAllowTeamPref)) 
 	{
 		Format(temp_string1, sizeof(temp_string1),"%T", "Team Preference", client);
 		DrawPanelItem(panel, temp_string1);	
@@ -2749,7 +3083,7 @@ UpdateZombieDamageScale()
 	
 	if(!g_bZombieRage && g_iZombieTank<=0 && !ZombiesHaveTank())
 	{
-		if(fTime<=GetConVarFloat(szf_cvTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale>=1.0)
+		if(fTime<=GetConVarFloat(cvarTankOnce)*0.01 && !g_bTankOnce && g_fZombieDamageScale>=1.0)
 		{
 			ZombieTank();
 		}
@@ -2757,9 +3091,9 @@ UpdateZombieDamageScale()
 		{
 			ZombieRage();
 		}
-		else if(g_fZombieDamageScale>=1.3 || (GetRandomInt(1, 100)<=GetConVarInt(szf_cvFrenzyChance) && g_fZombieDamageScale>=1.0))
+		else if(g_fZombieDamageScale>=1.3 || (GetRandomInt(1, 100)<=GetConVarInt(cvarFrenzyChance) && g_fZombieDamageScale>=1.0))
 		{
-			if(GetRandomInt(0, 100) <= GetConVarInt(szf_cvFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
+			if(GetRandomInt(0, 100) <= GetConVarInt(cvarFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
 			else ZombieRage();
 		}
 	}
@@ -2886,7 +3220,7 @@ public OnMapStart()
 	FastRespawnReset();
 	DetermineControlPoints();
 	
-	RemovePhysicObjects();
+	//RemovePhysicObjects();
 	
 	PrecacheParticle("asplode_hoodoo_green");
 	PrecacheSound2(SOUND_BONUS);
@@ -2902,7 +3236,13 @@ public OnMapStart()
 		PrecacheSound2(g_strSoundCritHit[i]);
 	}
 	
+	for (i = 0; i < sizeof(g_weaponModels); i++)
+	{
+		PrecacheModel(g_weaponModels[i]);
+	}
+
 	new Handle:hConvar = FindConVar("slag_map_has_music");
+
 	if(hConvar != INVALID_HANDLE)
 		SetConVarBool(hConvar, true);
 }
@@ -5277,9 +5617,9 @@ stock FindEntityByClassname2(startEnt, const String:classname[])
 
 stock bool:HasRazorback(iClient) {
 	new iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable")) != -1)
+	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_razorback")) != -1)
 	{
-		if(IsClassname(iEntity, "tf_wearable") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 57) return true;
+		if(IsClassname(iEntity, "tf_wearable_razorback") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 57) return true;
 	}
 	return false;
 }
@@ -5432,7 +5772,7 @@ PrecacheBonus(String:strPath[])
 	AddFileToDownloadsTable(strPath2);
 }
 
-RemovePhysicObjects()
+/*RemovePhysicObjects()
 {
 	if(g_iMode == GAMEMODE_NEW) return;
 	new index = -1; 
@@ -5440,7 +5780,7 @@ RemovePhysicObjects()
 	{
 		if(IsClassname(index, "prop_physics")) AcceptEntityInput(index, "Kill");
 	}
-}
+}*/
 
 GetActivePlayerCount()
 {
@@ -5618,13 +5958,29 @@ AttemptGrabItem(iClient)
 	new iTarget = GetClientPointVisible(iClient);
 	new iWeapon;
 	new String:strClassname[255];
-	if (iTarget > 0)
-		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
-	if (iTarget<=0 || !IsClassname(iTarget, "prop_dynamic"))
-		return false;
+	bool isWeapon;
+
+	GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
+	PrintToChat(iClient, "%s", strClassname);
+
+	//if(!IsClassname(iTarget, "prop_dynamic"))
+		//return false;
+
+	char name[64];
+	GetEntPropString(iTarget, Prop_Data, "m_iName", name, sizeof(name));
+	if(!strcmp(name, "szf_weapon", false) || !strcmp(name, "szf_weapon_spawn", false))
+	{
+		isWeapon = true;
+	}
+	PrintToChat(iClient, "iTarget: %i | Weapon: %i | Solid: %i (%i)", iTarget, isWeapon ? 1 : 0, GetEntProp(iTarget, Prop_Send, "m_nSolidType"), GetEntProp(iTarget, Prop_Send, "m_usSolidFlags"));
+	//if(iTarget<=0 || !isWeapon)
+	//{
+		//return false;
+	//}
 
 	decl String:strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
+	PrintToChat(iClient, "%s", strModel);
 
 	if(TF2_GetPlayerClass(iClient) == TFClass_Soldier) // Soldier Only Weapons
 	{
@@ -5632,73 +5988,85 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 10, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 10, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl") && cvarExtraClass)
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") && cvarExtraClass)
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
 		{
 			//GiveItem(iClient, 18, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1, 19, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_blackbox/c_blackbox.mdl"))
 		{
 			//GiveItem(iClient, 228, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 5, 18, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 18, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_directhit/c_directhit.mdl"))
 		{
 			//GiveItem(iClient, 127, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 5, 19, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl"))
 		{
 			//GiveItem(iClient, 513, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 5, 19, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
 			//GiveItem(iClient, 415, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 415, 5, 36, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl"))
 		{
 			//GiveItem(iClient, 442, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_raygun", 442, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_raygun", 442, 0, "5 ; 1.25 ; 96 ; 1.35", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl"))
 		{
 			//GiveItem(iClient, 414, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 5, 20, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 20, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl"))
 		{
 			//GiveItem(iClient, 441, iTarget) 
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 0, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl"))
 		{
 			//GiveItem(iClient, 354, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 354, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 354, 0, "57 ; 0 ; 190 ; 1 ; 319 ; 0.6", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bugle/c_bugle.mdl"))
 		{
 			//GiveItem(iClient, 129, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 0, "319 ; 0.6", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Pyro) // Pyro Only Weapons
@@ -5707,55 +6075,67 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 12, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5, 36, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 12, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 12, 5, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
+		}
+		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl") && cvarExtraClass)
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") && cvarExtraClass)
+		{
+			//GiveItem(iClient, 141, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl"))
 		{
 			//GiveItem(iClient, 39, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 5, 16);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 0, "", 0, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_detonator/c_detonator.mdl"))
 		{
 			//GiveItem(iClient, 351, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 5, 16);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 0, "", 0, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
 			//GiveItem(iClient, 415, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 5, 36, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_degreaser/c_degreaser.mdl"))
 		{
 			//GiveItem(iClient, 215, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 5, 100);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl"))
 		{
 			//GiveItem(iClient, 594, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 5, 100);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flamethrower/c_flamethrower.mdl"))
 		{
 			//GiveItem(iClient, 21, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1, 100);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl"))
 		{
 			//GiveItem(iClient, 595, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun_revenge", 595, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun_revenge", 595, 0, "", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_DemoMan) // Demoman Only Weapons
@@ -5764,34 +6144,33 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 19, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1, 15, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1, "77 ; 0.75", 0, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_scottish_resistance.mdl"))
 		{
 			//GiveItem(iClient, 130, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 5, 24, 0);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 0, "59 ; 0.5 ; 78 ; 1 ; 135 ; 0.5", 0, 32, 0);
 			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
 		{
 			//GiveItem(iClient, 308, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 5, 15, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 0, "77 ; 0.75", 0, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_stickybomb_launcher.mdl"))
 		{
 			//GiveItem(iClient, 20, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1, 24, 0);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1, "59 ; 0.5 ; 79 ; 0.75 ; 135 ; 0.5", 0, 24, 0);
 			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper.mdl"))
 		{
 			//GiveItem(iClient, 265, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 5, 48, 0);
-			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
+			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 0, "59 ; 0.65 ; 79 ; 0.75 ; 135 ; 0.5", 0, 48, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_targe/c_targe.mdl"))
 		{
@@ -5808,55 +6187,61 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 9, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 9, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_shotgun/c_dex_shotgun.mdl"))
 		{
 			//GiveItem(iClient, 527, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
+		}
+		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl") && cvarExtraClass)
+		{
+			//GiveItem(iClient, 415, iTarget)
+			TF2_RemoveWeaponSlot(iClient, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl"))
 		{
 			//GiveItem(iClient, 160, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 1, 60, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 0, "79 ; 0.24", 0, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl"))
 		{
 			//GiveItem(iClient, 141, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl"))
 		{
 			//GiveItem(iClient, 141, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 5, 38, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl"))
 		{
 			//GiveItem(iClient, 140, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_laser_pointer", 140, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_laser_pointer", 140, 0, "", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_pistol.mdl"))
 		{
 			//GiveItem(iClient, 22, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1, 60, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1, "79 ; 0.24", 0, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl"))
 		{
 			//GiveItem(iClient, 588, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_drg_pomson", 588, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_drg_pomson", 588, 0, "5 ; 1.2 ; 96 ; 1.35", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Medic) // Medic Only Weapons
@@ -5865,43 +6250,43 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 29, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 29, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 29, 1, "9 ; 0.2", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl"))
 		{
 			//GiveItem(iClient, 411, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 411, 5);
+			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 411, 0, "9 ; 0.2", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_syringegun/c_syringegun.mdl"))
 		{
 			//GiveItem(iClient, 17, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, 190, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_syringegun.mdl"))
 		{
 			//GiveItem(iClient, 17, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, 190, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl"))
 		{
 			//GiveItem(iClient, 412, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 5, 190, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 0, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl"))
 		{
 			//GiveItem(iClient, 305, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 5, 31, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 0, "", 0, 31, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_leechgun/c_leechgun.mdl"))
 		{
 			//GiveItem(iClient, 36, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 5, 190, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 0, "16 ; 1 ; 129 ; 0 ; 191 ; -2", 0, 190, 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Sniper) // Sniper Only Weapons
@@ -5910,91 +6295,123 @@ AttemptGrabItem(iClient)
 		{
 			//GiveItem(iClient, 14, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1, 25);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_smg.mdl"))
 		{
 			//GiveItem(iClient, 16, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1, 100, 0);
+			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1, "", 0, 100, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dartgun.mdl"))
 		{
 			//GiveItem(iClient, 230, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 5, 25);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl"))
 		{
 			//GiveItem(iClient, 402, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 5, 25);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl"))
 		{
 			//GiveItem(iClient, 526, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 5, 25);
+			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/urinejar.mdl"))
 		{
 			//GiveItem(iClient, 58, iTarget)
 			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 5, 1);
+			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 0, "249 ; 0.4", 0, 1);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bow/c_bow.mdl"))
 		{
 			//GiveItem(iClient, 56, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 5, 13, 0);
+			TF2_RemoveWeaponSlot(iClient, 0);// Index, Type, Att, Over, Ammo, Clip
+			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 0, "", 0, 13, 0); 
 		}
 	}
 	return true;
 }
 
-CreateWeapon(int client, int target, char[] classname, int itemindex, int level=-1, int ammo=-1, int clip=-1)	// Modified from luki1412's GiveBotsWeapons
+stock int CreateWeapon(int client, int target, char[] name, int index, int type, char[] att, int override=0, int ammo=-1, int clip=-1)
 {
-	AcceptEntityInput(target, "Kill");
-	int weapon = CreateEntityByName(classname);
-	
-	if(!IsValidEntity(weapon))
+	Handle hWeapon = TF2Items_CreateItem(OVERRIDE_ALL | FORCE_GENERATION);
+	if(hWeapon == INVALID_HANDLE)
 	{
 		return -1;
 	}
 	
-	char entclass[64];
-	GetEntityNetClass(weapon, entclass, sizeof(entclass));
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);	 
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
-
-	if(level<1)
+	TF2Items_SetClassname(hWeapon, name);
+	TF2Items_SetItemIndex(hWeapon, index);
+	if(type>1)
 	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomInt(1, 100));
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+		TF2Items_SetLevel(hWeapon, GetRandomInt(1, 100));
+		TF2Items_SetQuality(hWeapon, 6);
 	}
-	else if(level==1)
+	else if(type>0)
 	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 0);
+		TF2Items_SetLevel(hWeapon, 1);
+		TF2Items_SetQuality(hWeapon, 0);
 	}
 	else
 	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+		TF2Items_SetLevel(hWeapon, 5);
+		TF2Items_SetQuality(hWeapon, 6);
+	}
+	if(override<1)
+	{
+		TF2Items_SetFlags(hWeapon, PRESERVE_ATTRIBUTES);
+	}
+	char atts[32][32];
+	int count = ExplodeString(att, ";", atts, 32, 32);
+	
+	if(count % 2)
+	{
+		--count;
 	}
 	
-	DispatchSpawn(weapon);
-	SDKCall(g_hWeaponEquip, client, weapon);
-	SetAmmo(client, weapon, ammo, clip);
+	if(count>0)
+	{
+		TF2Items_SetNumAttributes(hWeapon, count / 2);
+		int i2;
+		for (int i; i<count; i+=2)
+		{
+			int attrib = StringToInt(atts[i]);
+			if (!attrib)
+			{
+				LogError("Bad weapon attribute passed: %s ; %s", atts[i], atts[i + 1]);
+				CloseHandle(hWeapon);
+				return -1;
+			}
+			
+			TF2Items_SetAttribute(hWeapon, i2, attrib, StringToFloat(atts[i + 1]));
+			i2++;
+		}
+	}
+	else
+	{
+		TF2Items_SetNumAttributes(hWeapon, 0);
+	}
+	
+	int entity = TF2Items_GiveNamedItem(client, hWeapon);
+	CloseHandle(hWeapon);
+	EquipPlayerWeapon(client, entity);
+
+	SetAmmo(client, entity, ammo, clip);
 
 	ClientCommand(client, "playgamesound ui/item_heavy_gun_pickup.wav");
 	ClientCommand(client, "playgamesound ui/item_heavy_gun_drop.wav");
 
-	if(szf_cvRemoveWeapon)
+	if(cvarRemoveWeapon)
 	{
 		AcceptEntityInput(target, "Kill");
 	}
-	return weapon;
+
+	return entity;
 }
 
 stock SetAmmo(client, weapon, ammo=-1, clip=-1)
