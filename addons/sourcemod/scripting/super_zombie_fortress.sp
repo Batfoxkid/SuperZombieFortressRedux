@@ -1334,7 +1334,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 	return Plugin_Continue;
 }
 
-EndGracePeriod()
+void EndGracePeriod()
 {
 	if(!zf_bEnabled || roundState()==RoundActive || roundState()==RoundPost)
 		return;
@@ -3838,8 +3838,7 @@ bool PerformFastRespawn2(int iClient)
 	if(iResult < 0)
 		return false;
 	
-	char fPosSpawn[3];
-	float fPosTarget[3], fAngle[3];
+	float fPosSpawn[3], fPosTarget[3], fAngle[3];
 	GetArrayArray(g_hFastRespawnArray, iResult, fPosSpawn);
 	GetClientAbsOrigin(iTarget, fPosTarget);
 	VectorTowards(fPosSpawn, fPosTarget, fAngle);
@@ -4023,8 +4022,7 @@ void SetValidSlot(int iClient)
 	int iOld = GetEntProp(iClient, Prop_Send, "m_hActiveWeapon");
 	if(iOld > 0)
 		return;
-	
-	int iSlot;
+
 	int iEntity;
 	for(int iSlot = 0; iSlot <= 5; iSlot++)
 	{
@@ -4104,8 +4102,8 @@ void SpitterGoo(int iClient, int iAttacker = 0)
 
 void GooDamageCheck()
 {
-	float fPosGoo[3]
-	int iEntry[5]
+	float fPosGoo[3];
+	int iEntry[5];
 	float fPosClient[3]; 
 	float fDistance;
 	int iAttacker;
@@ -4224,7 +4222,7 @@ public Action GooEffect(Handle hTimer, any iGoo)
 	if(g_hGoo == INVALID_HANDLE)
 		return Plugin_Stop;
 	
-	int iEntry[5]
+	int iEntry[5];
 	float fPos[3];
 	int iEntryId;
 	for(int i = 0; i < GetArraySize(g_hGoo); i++)
@@ -4509,7 +4507,7 @@ bool TankCanReplace(int iClient)
 	return true;
 }
 
-public Action command_tank_random(int client, intargs)
+public Action command_tank_random(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Handled;
@@ -4977,8 +4975,9 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	}
 
 	SetEntityRenderColor(client, 255, 255, 255, 255);
-	int index=-1;
-	int civilianCheck[MaxClients+1];
+	int index = -1;
+	int MAX = MaxClients+1
+	int civilianCheck[MAX];
 
 	if(validZom(client))
 	{
@@ -5259,7 +5258,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	return Plugin_Continue;
 }
 
-stock Handle PrepareItemHandle(Handle item, char[] name="", intindex=-1, const char[] att="", bool dontPreserve=false)
+stock Handle PrepareItemHandle(Handle item, char[] name="", int index=-1, const char[] att="", bool dontPreserve=false)
 {
 	static Handle weapon;
 	int addattribs;
@@ -5357,7 +5356,7 @@ stock Handle PrepareItemHandle(Handle item, char[] name="", intindex=-1, const c
 	return weapon;
 }
 
-stock int SpawnWeapon(int client, char[] name, int index, int level, intqual, char[] att)
+stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, char[] att)
 {
 	Handle hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
 	if(hWeapon==INVALID_HANDLE)
@@ -5439,10 +5438,11 @@ stock bool IsValidClient(int client, bool replaycheck = true)
 	return true;
 }
 
-stock int FindEntityByClassname2(int startEnt, const char[] classname[])
+stock int FindEntityByClassname2(int startEnt, const char[] classname)
 {
 	/* If startEnt isn't valid shifting it back to the nearest valid one */
-	while(startEnt > -1 && !IsValidEntity(startEnt)) startEnt--;
+	while(startEnt > -1 && !IsValidEntity(startEnt))
+		startEnt--;
 	return FindEntityByClassname(startEnt, classname);
 }
 
