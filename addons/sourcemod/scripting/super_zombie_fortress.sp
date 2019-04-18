@@ -43,30 +43,31 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Build-7"
+#define DEV_REVISION "Overhaul"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
 #endif
+#define BUILD_NUMBER "14"
 
 #if defined _steamtools_included
-new bool:steamtools = false;
+bool steamtools = false;
 #endif
 
 #if defined _tf2attributes_included
-new bool:tf2attributes = false;
+bool tf2attributes = false;
 #endif
 
 #if !defined DEV_REVISION
-new bool:debugmode = false;
+#define debugmode false;
 #else
-new bool:debugmode = true;
+#define debugmode true
 #endif
 
 #define MAXATTRIBUTES 16
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name		=	"Super Zombie Fortress Redux",
 	author		=	"Many many people",
@@ -88,85 +89,83 @@ public Plugin:myinfo =
 //
 
 // Global State
-new zf_bEnabled;
-new zf_bNewRound;
-new zf_spawnSurvivorsKilledCounter;
-new zf_spawnZombiesKilledCounter;
+int zf_bEnabled;
+int zf_bNewRound;
+int zf_spawnSurvivorsKilledCounter;
+int zf_spawnZombiesKilledCounter;
 // Client State
-new szf_critBonus[MAXPLAYERS+1];
-new zf_hoardeBonus[MAXPLAYERS+1];
-new zf_rageTimer[MAXPLAYERS+1];
+int szf_critBonus[MAXPLAYERS+1];
+int zf_hoardeBonus[MAXPLAYERS+1];
+int zf_rageTimer[MAXPLAYERS+1];
 
 // Global Timer Handles
-new Handle:szf_tMain;
-new Handle:szf_tMainFast;
-new Handle:szf_tMainSlow;
-new Handle:szf_tHoarde;
-new Handle:szf_tDataCollect;
+Handle szf_tMain;
+Handle szf_tMainFast;
+Handle szf_tMainSlow;
+Handle szf_tHoarde;
+Handle szf_tDataCollect;// Cvar Handles
+ConVar cvarForceOn;
+ConVar cvarRatio;
+ConVar cvarAllowTeamPref;
+ConVar cvarSwapOnPayload;
+ConVar cvarSwapOnAttdef;
+ConVar cvarTankHealth;
+ConVar cvarTankHealthMin;
+ConVar cvarTankHealthMax;
+ConVar cvarTankTime;
+ConVar cvarFrenzyChance;
+ConVar cvarFrenzyTankChance;
+ConVar cvarRemoveWeapon;
+ConVar cvarTankOnce;
+ConVar cvarExtraClass;
 
-// Cvar Handles
-new Handle:cvarForceOn;
-new Handle:cvarRatio;
-new Handle:cvarAllowTeamPref;
-new Handle:cvarSwapOnPayload;
-new Handle:cvarSwapOnAttdef;
-new Handle:cvarTankHealth;
-new Handle:cvarTankHealthMin;
-new Handle:cvarTankHealthMax;
-new Handle:cvarTankTime;
-new Handle:cvarFrenzyChance;
-new Handle:cvarFrenzyTankChance;
-new Handle:cvarRemoveWeapon;
-new Handle:cvarTankOnce;
-new Handle:cvarExtraClass;
+float g_fZombieDamageScale = 1.0;
 
-new Float:g_fZombieDamageScale = 1.0;
-
-new g_StartTime = 0;
-new g_AdditionalTime = 0;
+int g_StartTime = 0;
+int g_AdditionalTime = 0;
 
 // Sound system
-new Handle:g_hMusicArray = INVALID_HANDLE;
-new Handle:g_hFastRespawnArray = INVALID_HANDLE;
+Handle g_hMusicArray = INVALID_HANDLE;
+Handle g_hFastRespawnArray = INVALID_HANDLE;
 
-new Handle:hConfiguration = INVALID_HANDLE;
+Handle hConfiguration = INVALID_HANDLE;
 
-new Handle:hWeaponSandman = INVALID_HANDLE;
-new Handle:hWeaponWatch = INVALID_HANDLE;
-new Handle:hWeaponStickyLauncher = INVALID_HANDLE;
-new Handle:hWeaponRocketLauncher = INVALID_HANDLE;
-new Handle:hWeaponSword = INVALID_HANDLE;
-new Handle:hWeaponShovel = INVALID_HANDLE;
-new Handle:hWeaponFists = INVALID_HANDLE;
-new Handle:hWeaponSteelFists = INVALID_HANDLE;
-new Handle:hWeaponSyringe = INVALID_HANDLE;
-new Handle:hWeaponBonesaw = INVALID_HANDLE;
-new Handle:hWeaponLochNLoad = INVALID_HANDLE;
-new Handle:hWeaponFlareGun = INVALID_HANDLE;
-new Handle:hWeaponShotgunPyro = INVALID_HANDLE;
-new Handle:hWeaponShotgunSoldier = INVALID_HANDLE;
-new Handle:hWeaponBison = INVALID_HANDLE;
-new Handle:hWeaponTarge = INVALID_HANDLE;
+Handle hWeaponSandman = INVALID_HANDLE;
+Handle hWeaponWatch = INVALID_HANDLE;
+Handle hWeaponStickyLauncher = INVALID_HANDLE;
+Handle hWeaponRocketLauncher = INVALID_HANDLE;
+Handle hWeaponSword = INVALID_HANDLE;
+Handle hWeaponShovel = INVALID_HANDLE;
+Handle hWeaponFists = INVALID_HANDLE;
+Handle hWeaponSteelFists = INVALID_HANDLE;
+Handle hWeaponSyringe = INVALID_HANDLE;
+Handle hWeaponBonesaw = INVALID_HANDLE;
+Handle hWeaponLochNLoad = INVALID_HANDLE;
+Handle hWeaponFlareGun = INVALID_HANDLE;
+Handle hWeaponShotgunPyro = INVALID_HANDLE;
+Handle hWeaponShotgunSoldier = INVALID_HANDLE;
+Handle hWeaponBison = INVALID_HANDLE;
+Handle hWeaponTarge = INVALID_HANDLE;
 
-new bool:g_bBackstabbed[MAXPLAYERS+1] = false;
-new Handle:g_hBonus[MAXPLAYERS+1] = INVALID_HANDLE;
-new Handle:g_hBonusTimers[MAXPLAYERS+1] = INVALID_HANDLE;
-new g_iBonusCombo[MAXPLAYERS+1] = 0;
-new g_iHitBonusCombo[MAXPLAYERS+1] = 0;
-new bool:g_bBonusAlt[MAXPLAYERS+1] = false;
-new Float:g_fDamageTakenLife[MAXPLAYERS+1] = 0.0;
-new Float:g_fDamageDealtLife[MAXPLAYERS+1] = 0.0;
-new bool:g_bRoundActive = false;
+bool g_bBackstabbed[MAXPLAYERS+1] = false;
+Handle g_hBonus[MAXPLAYERS+1] = INVALID_HANDLE;
+Handle g_hBonusTimers[MAXPLAYERS+1] = INVALID_HANDLE;
+int g_iBonusCombo[MAXPLAYERS+1] = 0;
+int g_iHitBonusCombo[MAXPLAYERS+1] = 0;
+bool g_bBonusAlt[MAXPLAYERS+1] = false;
+float g_fDamageTakenLife[MAXPLAYERS+1] = 0.0;
+float g_fDamageDealtLife[MAXPLAYERS+1] = 0.0;
+bool g_bRoundActive = false;
 
-new g_iControlPointsInfo[20][2];
-new g_iControlPoints = 0;
-new bool:g_bCapturingLastPoint = false;
-new g_iCarryingItem[MAXPLAYERS+1] = -1;
-new bool:stripMap = false;
+int g_iControlPointsInfo[20][2];
+int g_iControlPoints = 0;
+bool g_bCapturingLastPoint = false;
+int g_iCarryingItem[MAXPLAYERS+1] = -1;
+bool stripMap = false;
 
 #define GAMEMODE_DEFAULT	0
 #define GAMEMODE_NEW		1
-new g_iMode = GAMEMODE_DEFAULT;
+int g_iMode = GAMEMODE_DEFAULT;
 
 #define MUSIC_DRUMS		0
 #define MUSIC_SLAYER_MILD	1
@@ -229,30 +228,30 @@ enum TFClassWeapon
 };
 
 
-new g_iMusicCount[MUSIC_MAX] = 0;
-new String:g_strMusicLast[MAXPLAYERS+1][MUSIC_MAX][PLATFORM_MAX_PATH];
-new g_iMusicLevel[MAXPLAYERS+1] = 0;
-new Handle:g_hMusicTimer[MAXPLAYERS+1] = INVALID_HANDLE;
-new g_iMusicRandom[MAXPLAYERS+1][2];
-new g_iMusicFull[MAXPLAYERS+1] = 0;
-new Handle:g_hGoo = INVALID_HANDLE;
+int g_iMusicCount[MUSIC_MAX] = 0;
+char g_strMusicLast[MAXPLAYERS+1][MUSIC_MAX][PLATFORM_MAX_PATH];
+int g_iMusicLevel[MAXPLAYERS+1] = 0;
+Handle g_hMusicTimer[MAXPLAYERS+1] = INVALID_HANDLE;
+int g_iMusicRandom[MAXPLAYERS+1][2];
+int g_iMusicFull[MAXPLAYERS+1] = 0;
+Handle g_hGoo = INVALID_HANDLE;
 
-new bool:g_bZombieRage = false;
-new g_iZombieTank = 0;
-new bool:g_bZombieRageAllowRespawn = false;
-new g_iGooId = 0;
-new g_iGooMultiplier[MAXPLAYERS+1] = 0;
-new bool:g_bGooified[MAXPLAYERS+1] = false;
-new bool:g_bHitOnce[MAXPLAYERS+1] = false;
+bool g_bZombieRage = false;
+int g_iZombieTank = 0;
+bool g_bZombieRageAllowRespawn = false;
+int g_iGooId = 0;
+int g_iGooMultiplier[MAXPLAYERS+1] = 0;
+bool g_bGooified[MAXPLAYERS+1] = false;
+bool g_bHitOnce[MAXPLAYERS+1] = false;
 
-new g_iSpecialInfected[MAXPLAYERS+1] = 0;
-new g_iDamage[MAXPLAYERS+1] = 0;
-new g_iKillsThisLife[MAXPLAYERS+1] = 0;
-new g_iSuperHealth[MAXPLAYERS+1] = 0;
-new g_iSuperHealthSubtract[MAXPLAYERS+1] = 0;
-new g_iStartSurvivors = 0;
+int g_iSpecialInfected[MAXPLAYERS+1] = 0;
+int g_iDamage[MAXPLAYERS+1] = 0;
+int g_iKillsThisLife[MAXPLAYERS+1] = 0;
+int g_iSuperHealth[MAXPLAYERS+1] = 0;
+int g_iSuperHealthSubtract[MAXPLAYERS+1] = 0;
+int g_iStartSurvivors = 0;
 
-new bool:g_bTankOnce = false;
+bool g_bTankOnce = false;
 
 new String:g_strSoundFleshHit[][128] =
 {
@@ -316,7 +315,7 @@ new String:g_weaponModels[][128] =
 // Sourcemod Callbacks
 //
 ////////////////////////////////////////////////////////////
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	#if defined _steamtools_included
 	MarkNativeAsOptional("Steam_SetGameDescription");
@@ -329,15 +328,14 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 
 }
-public OnPluginStart()
+
+public void OnPluginStart()
 {
 	// Check for necessary extensions
 	if(GetExtensionFileStatus("sdkhooks.ext") < 1)
 		SetFailState("SDK Hooks is not loaded.");
-	LoadTranslations("super_zombie_fortress.phrases");
-	// Add server tag.
-	AddServerTag("zf");
-	AddServerTag("szf");	
+
+	LoadTranslations("super_zombie_fortress.phrases");	
 
 	// Initialize global state
 	zf_bEnabled = false;
@@ -418,7 +416,7 @@ public OnPluginStart()
 	#endif
 }
 
-public OnLibraryAdded(const String:name[])
+public void OnLibraryAdded(const char[] name)
 {
 	#if defined _steamtools_included
 	if(!strcmp(name, "SteamTools", false))
@@ -435,7 +433,7 @@ public OnLibraryAdded(const String:name[])
 	#endif
 }
 
-public OnLibraryRemoved(const String:name[])
+public void OnLibraryRemoved(const char[] name)
 {
 	#if defined _steamtools_included
 	if(!strcmp(name, "SteamTools", false))
@@ -452,7 +450,7 @@ public OnLibraryRemoved(const String:name[])
 	#endif
 }
 
-public OnConfigsExecuted()
+public void OnConfigsExecuted()
 {
 	// Determine whether to enable ZF.
 	// + For "zf_" prefixed maps, enable ZF.
@@ -469,7 +467,7 @@ public OnConfigsExecuted()
 	setRoundState(RoundInit1);
 }	
 
-public OnMapEnd()
+public void OnMapEnd()
 {
 	// Close timer handles
 	if(szf_tMain != INVALID_HANDLE)
@@ -497,7 +495,7 @@ public OnMapEnd()
 	g_bRoundActive = false;
 }
 	
-public OnClientPostAdminCheck(client)
+public void OnClientPostAdminCheck(int client)
 {
 	if(!zf_bEnabled)
 		return;
@@ -512,10 +510,11 @@ public OnClientPostAdminCheck(client)
 	pref_OnClientConnect(client);
 }
 
-public OnClientDisconnect(client)
+public void OnClientDisconnect(int client)
 {
 	if(!zf_bEnabled)
 		return;
+
 	pref_OnClientDisconnect(client);
 	StopSoundSystem(client);
 	DropCarryingItem(client);
@@ -523,10 +522,11 @@ public OnClientDisconnect(client)
 		g_iZombieTank = 0;
 }
 
-public OnGameFrame()
+public void OnGameFrame()
 {
 	if(!zf_bEnabled)
 		return;	
+
 	handle_gameFrameLogic();
 }
 
@@ -535,38 +535,26 @@ public OnGameFrame()
 // SDKHooks Callbacks
 //
 ////////////////////////////////////////////////////////////
-public OnPreThinkPost(client)
+public void OnPreThinkPost(int client)
 {	
 	if(!zf_bEnabled)
 		return;
-	
-	//
-	// Handle speed bonuses.
-	//
-	if(validLivingClient(client) && !isSlowed(client) && !isDazed(client) && !isCharging(client))
-	{
-		new Float:speed = clientBaseSpeed(client) + clientBonusSpeed(client);
-		if(g_iSpecialInfected[client] == INFECTED_TANK && g_fDamageDealtLife[client] <= 0.0 && g_fDamageTakenLife[client] <= 0.0)
-		{
-			speed = 450.0;
-		}
-		//setClientSpeed(client, speed);
-	}
-	
+
 	UpdateClientCarrying(client);
 }
 
-#define DMGTYPE_MELEE					 134221952
-#define DMGTYPE_MELEE_CRIT				135270528
+#define DMGTYPE_MELEE		134221952
+#define DMGTYPE_MELEE_CRIT	135270528
 
-public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iDamagetype, &iWeapon, Float:fForce[3], Float:fForcePos[3])
+public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &fDamage, int &iDamagetype, int &iWeapon, float fForce[3], float fForcePos[3], int damagecustom)
 {  
 	if(!zf_bEnabled)
 		return Plugin_Continue;
+
 	if(!CanRecieveDamage(iVictim))
 		return Plugin_Continue;
 	
-	new bool:bChanged = false;
+	bool bChanged = false;
 	if(validClient(iVictim) && validClient(iAttacker))
 	{
 		g_bHitOnce[iVictim] = true;
@@ -582,9 +570,10 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 		g_iSuperHealth[iVictim] -= RoundFloat(fDamage);
 		if(g_iSuperHealth[iVictim] < 0)
 			g_iSuperHealth[iVictim] = 0;
+
 		bChanged = true;
 		
-		new iMaxHealth = RoundFloat(float(GetEntProp(iVictim, Prop_Data, "m_iMaxHealth"))*1.5);
+		int iMaxHealth = RoundFloat(float(GetEntProp(iVictim, Prop_Data, "m_iMaxHealth"))*1.5);
 		SetEntityHealth(iVictim, iMaxHealth);
 	}
 	if(iVictim != iAttacker)
@@ -593,10 +582,13 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 		{ 
 			if(validZom(iAttacker))
 				fDamage = fDamage * g_fZombieDamageScale * 0.7;
+
 			if(validSur(iAttacker))
 				fDamage = fDamage / g_fZombieDamageScale * 1.1;
+
 			if(fDamage > 200.0)
 				fDamage = 200.0;
+
 			bChanged = true;
 		}
 		if(validSur(iVictim) && validZom(iAttacker))
@@ -613,10 +605,10 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 					MusicHandleClient(iVictim);
 					bChanged = true;
 					
-					new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_NEARDEATH2]-1);
-					decl String:strPath[PLATFORM_MAX_PATH];
+					int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_NEARDEATH2]-1);
+					char strPath[PLATFORM_MAX_PATH];
 					MusicGetPath(MUSIC_NEARDEATH2, iRandom, strPath, sizeof(strPath));
-					for(new i=1; i<=MaxClients; i++)
+					for(int i=1; i<=MaxClients; i++)
 					{
 						if(validClient(i) && ShouldHearEventSounds(i) && i != iVictim)
 						{
@@ -639,17 +631,20 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 			fDamage *= 0.7;
 			if(fDamage > 100.0)
 				fDamage = 100.0;
+
 			bChanged = true; 
 		}
 		if(validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
 		{
-			new iDamage = RoundFloat(fDamage);
+			int iDamage = RoundFloat(fDamage);
 			if(iDamage > 300)
 				iDamage = 300;
+
 			g_iDamage[iAttacker] += iDamage;
-			new iPitch = g_iHitBonusCombo[iAttacker] * 10 + 50;
+			int iPitch = g_iHitBonusCombo[iAttacker] * 10 + 50;
 			if(iPitch > 250)
 				iPitch = 250;
+
 			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
 			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
 			EmitSoundToClient(iAttacker, SOUND_BONUS, _, _, SNDLEVEL_ROCKET, SND_CHANGEPITCH, _, iPitch);
@@ -664,7 +659,9 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 			g_fDamageDealtLife[iAttacker] += fDamage;
 		}
 	}
-	if(bChanged) return Plugin_Changed;
+	if(bChanged)
+		return Plugin_Changed;
+
 	return Plugin_Continue;
 }
 
@@ -673,7 +670,7 @@ public Action:OnTakeDamage(iVictim, &iAttacker, &iInflicter, &Float:fDamage, &iD
 // Admin Console Command Handlers
 //
 ////////////////////////////////////////////////////////////
-public Action:command_zfEnable(client, args)
+public Action command_zfEnable(int client, int args)
 {
 	ServerCommand("mp_restartgame 6");
 	CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Enabled");
@@ -684,7 +681,7 @@ public Action:command_zfEnable(client, args)
 	return Plugin_Continue;
 }
 
-public Action:command_zfDisable (client, args)
+public Action command_zfDisable(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -696,7 +693,7 @@ public Action:command_zfDisable (client, args)
 	return Plugin_Continue;
 }
 
-public Action:command_zfSwapTeams(client, args)
+public Action command_zfSwapTeams(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -716,64 +713,62 @@ public Action:command_zfSwapTeams(client, args)
 // Client Console / Chat Command Handlers
 //
 ////////////////////////////////////////////////////////////
-public Action:OnJoinTeam(client, const String:command[], argc)
+public Action OnJoinTeam(int client, const char[] command, int argc)
 {	
-	decl String:cmd1[32];
-	decl String:sSurTeam[16];	
-	decl String:sZomTeam[16];
-	decl String:sZomVgui[16];
+	char cmd1[32];
+	char sSurTeam[16];	
+	char sZomTeam[16];
+	char sZomVgui[16];
 	
 	if(!zf_bEnabled)
 		return Plugin_Continue;	
+
 	if(argc < 1)
 		return Plugin_Handled;
-	 
+
 	GetCmdArg(1, cmd1, sizeof(cmd1));
 	
-	if(roundState() >= RoundGrace)
+	// Assign team-specific strings
+	if(zomTeam() == view_as<int>(TFTeam_Blue))
 	{
-		// Assign team-specific strings
-		if(zomTeam() == _:TFTeam_Blue)
-		{
-			sSurTeam = "red";
-			sZomTeam = "blue";
-			sZomVgui = "class_blue";
-		}
-		else
-		{
-			sSurTeam = "blue";
-			sZomTeam = "red";
-			sZomVgui = "class_red";			
-		}
+		sSurTeam = "red";
+		sZomTeam = "blue";
+		sZomVgui = "class_blue";
+	}
+	else
+	{
+		sSurTeam = "blue";
+		sZomTeam = "red";
+		sZomVgui = "class_red";			
+	}
 			
-		// If client tries to join the survivor team or a random team
-		// during grace period or active round, place them on the zombie
-		// team and present them with the zombie class select screen.
-		if(StrEqual(cmd1, sSurTeam, false) || StrEqual(cmd1, "auto", false))
-		{
-			ChangeClientTeam(client, zomTeam());
-			ShowVGUIPanel(client, sZomVgui);
-			return Plugin_Handled;
-		}
-		// If client tries to join the zombie team or spectator
-		// during grace period or active round, let them do so.
-		else if(StrEqual(cmd1, sZomTeam, false) || StrEqual(cmd1, "spectate", false))
-		{
-			return Plugin_Continue;
-		}
-		// Prevent joining any other team.
-		else
-		{
-			return Plugin_Handled;
-		}
+	// If client tries to join the survivor team or a random team
+	// during grace period or active round, place them on the zombie
+	// team and present them with the zombie class select screen.
+	if(StrEqual(cmd1, sSurTeam, false) || StrEqual(cmd1, "auto", false))
+	{
+		ChangeClientTeam(client, zomTeam());
+		ShowVGUIPanel(client, sZomVgui);
+		return Plugin_Handled;
+	}
+	// If client tries to join the zombie team or spectator
+	// during grace period or active round, let them do so.
+	else if(StrEqual(cmd1, sZomTeam, false) || StrEqual(cmd1, "spectate", false))
+	{
+		return Plugin_Continue;
+	}
+	// Prevent joining any other team.
+	else
+	{
+		return Plugin_Handled;
 	}
 
 	return Plugin_Continue;
 }
 
-public Action:OnJoinClass(client, const String:command[], argc)
+public Action OnJoinClass(int client, const char[] command, int argc)
 {
-	decl String:cmd1[32];
+	char cmd1[32];
 	
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -818,9 +813,9 @@ public Action:OnJoinClass(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public Action:OnCallMedic(client, const String:command[], argc)
+public Action OnCallMedic(int client, const char[] command, int argc)
 {
-	decl String:cmd1[32], String:cmd2[32];
+	char cmd1[32], cmd2[32];
 	
 	if(!zf_bEnabled)
 		return Plugin_Continue;	
@@ -838,8 +833,8 @@ public Action:OnCallMedic(client, const String:command[], argc)
 	{
 		if(isZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
 		{		
-			new curH = GetClientHealth(client);
-			new maxH = GetEntProp(client, Prop_Data, "m_iMaxHealth");			 
+			int curH = GetClientHealth(client);
+			int maxH = GetEntProp(client, Prop_Data, "m_iMaxHealth");			 
 	
 			if((zf_rageTimer[client] == 0) && (curH >= maxH))
 			{
@@ -870,9 +865,9 @@ public Action:OnCallMedic(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public Action:CommandTeamPref(client, args)
+public Action CommandTeamPref(int client, int args)
 {
-	decl String:cmd[32];
+	char cmd[32];
 	
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -915,7 +910,7 @@ public Action:CommandTeamPref(client, args)
 	return Plugin_Handled;
 }
 
-public Action:CommandMenu(client, args)
+public Action CommandMenu(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue; 
@@ -929,7 +924,7 @@ public Action:CommandMenu(client, args)
 // TF2 Gameplay Event Handlers
 //
 ////////////////////////////////////////////////////////////
-public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
+public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname, bool &result)
 {	
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -962,24 +957,23 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 //
 // Round Start Event
 //
-public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue; 
 
 	CreateTimer(1.0, SetupMapWeapons, true, TIMER_FLAG_NO_MAPCHANGE);
-	//RemovePhysicObjects();
+	RemovePhysicObjects();
 	DetermineControlPoints();
 	
-	new players[MAXPLAYERS+1] = -1;
-	decl playerCount;
-	decl surCount;
+	int players[MAXPLAYERS+1] = -1;
+	int playerCount;
+	int surCount;
  
 	g_StartTime = GetTime();
 	g_AdditionalTime = 0;
 	
-	new i;
-	for(i=1; i<=MaxClients; i++)
+	for(int i=1; i<=MaxClients; i++)
 	{
 		g_iDamage[i] = 0;
 		g_iKillsThisLife[i] = 0;
@@ -1014,7 +1008,7 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 	{
 		// Find all active players.
 		playerCount = 0;
-		for(i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && (GetClientTeam(i)>1))
 			{
@@ -1027,15 +1021,15 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 		SortIntegers(players, playerCount, Sort_Random);
 		// NOTE: As of SM 1.3.1, SortIntegers w/ Sort_Random doesn't 
 		//			 sort the first element of the array. Temp fix below.	
-		new idx = GetRandomInt(0,playerCount-1);
-		new temp = players[idx];
+		int idx = GetRandomInt(0,playerCount-1);
+		int temp = players[idx];
 		players[idx] = players[0];
 		players[0] = temp;		
 		
 		// Sort players using team preference criteria
 		if(GetConVarBool(cvarAllowTeamPref)) 
 		{
-			SortCustom1D(players, playerCount, SortFunc1D:Sort_Preference);
+			SortCustom1D(players, playerCount, view_as<SortFunc1D>(Sort_Preference));
 		}
 		
 		// Calculate team counts. At least one survivor must exist.	 
@@ -1047,14 +1041,14 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 			
 		// Assign active players to survivor and zombie teams.
 		g_iStartSurvivors = 0;
-		new bool:bSurvivors[MAXPLAYERS+1] = false;
-		i = 1;
+		bool bSurvivors[MAXPLAYERS+1] = false;
+		int i = 1;
 		while(surCount>0 && i<=playerCount)
 		{
-			new iClient = players[i];
+			int iClient = players[i];
 			if(validClient(iClient))
 			{
-				new bool:bGood = true;
+				bool bGood = true;
 				if(bGood)
 				{
 					spawnClient(iClient, surTeam());
@@ -1089,7 +1083,7 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 //
 // Setup End Event
 //
-public Action:OnSetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnSetupEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -1409,9 +1403,10 @@ EndGracePeriod()
 //
 // Round End Event
 //
-public Action:OnRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnRoundEnd(Handle:event, const char[] name, bool dontBroadcast)
 {
-	if(!zf_bEnabled) return Plugin_Continue;
+	if(!zf_bEnabled)
+		return Plugin_Continue;
 	
 	//
 	// Prepare for a completely new round, if
@@ -1432,12 +1427,12 @@ public Action:OnRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 //
 // Player Spawn Event
 //
-public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {	 
 	if(!zf_bEnabled)
 		return Plugin_Continue;	
 			
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	//StartSoundSystem(client, MUSIC_NONE);
 	
 	g_iSuperHealth[client] = 0;
@@ -1471,15 +1466,15 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 				g_iZombieTank = 0;
 				g_iSpecialInfected[client] = INFECTED_TANK;
 				
-				new iSurvivors = GetSurvivorCount();
-				new iHealth = GetConVarInt(cvarTankHealth) * iSurvivors;
+				int iSurvivors = GetSurvivorCount();
+				int iHealth = GetConVarInt(cvarTankHealth) * iSurvivors;
 				if(iHealth < GetConVarInt(cvarTankHealthMin))
 					iHealth = GetConVarInt(cvarTankHealthMin);
 				if(iHealth > GetConVarInt(cvarTankHealthMax))
 					iHealth = GetConVarInt(cvarTankHealthMax);
 				g_iSuperHealth[client] = iHealth;
 				
-				new iSubtract = 0;
+				int iSubtract = 0;
 				if(GetConVarFloat(cvarTankTime) > 0.0)
 				{
 					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(cvarTankTime));
@@ -1497,7 +1492,7 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 				
 				MusicHandleAll();
 				
-				for (new i = 1; i <= MaxClients; i++)
+				for(int i = 1; i <= MaxClients; i++)
 				{
 					if(validClient(i)) CPrintToChat(i, "{olive}[SZF]{default} %t", "Tank");
 				}
@@ -1506,7 +1501,7 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 		}
 	}
 	
-	new TFClassType:clientClass = TF2_GetPlayerClass(client);
+	TFClassType clientClass = TF2_GetPlayerClass(client);
 	
 
 	resetClientState(client);
@@ -1557,13 +1552,13 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 //
 // Player Death Event
 //
-public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
 
-	decl killers[2];
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int killers[2];
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	killers[0] = GetClientOfUserId(GetEventInt(event, "attacker")); 
 	killers[1] = GetClientOfUserId(GetEventInt(event, "assister"));  
 
@@ -1601,7 +1596,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 	if(validZom(victim))
 	{
 		// Remove dropped ammopacks from zombies.
-		new index = -1; 
+		int index = -1; 
 		while((index = FindEntityByClassname(index, "tf_ammo_pack"))!=-1)
 		{
 			if(GetEntPropEnt(index, Prop_Send, "m_hOwnerEntity") == victim)
@@ -1628,7 +1623,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 		// check if he's the last
 		CreateTimer(0.1, CheckLastPlayer);
 		
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
+		int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
 		decl String:strPath[PLATFORM_MAX_PATH];
 		MusicGetPath(MUSIC_DEAD, iRandom, strPath, sizeof(strPath));
 		EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
@@ -1642,7 +1637,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 		if(validSur(killers[0]))
 			zf_spawnZombiesKilledCounter--;
 
-		for(new i = 0; i < 2; i++)
+		for(int i = 0; i < 2; i++)
 		{								 
 			if(validLivingClient(killers[i]))
 			{
@@ -1650,7 +1645,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 				// + Soldiers receive 2 rockets per kill.
 				// + Demomen receive 2 pipes per kill.
 				// + Snipers receive 5 rifle / 2 arrows per kill.
-				new TFClassType:killerClass = TF2_GetPlayerClass(killers[i]);				
+				TFClassType killerClass = TF2_GetPlayerClass(killers[i]);				
 				switch(killerClass)
 				{
 					case TFClass_Soldier: addResAmmo(killers[i], 0, 2);
@@ -1666,15 +1661,15 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 
 				// Handle morale bonuses.
 				// + Each kill grants a small health bonus and increases current crit bonus.
-				new curH = GetClientHealth(killers[i]);
-				new maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
+				int curH = GetClientHealth(killers[i]);
+				int maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
 				if(curH < maxH)
 				{
 					curH += (szf_critBonus[killers[i]] * 2);
 					curH = min(curH, maxH);				
 					//SetEntityHealth(killers[i], curH);
 				}
-				//szf_critBonus[killers[i]] = min(100, szf_critBonus[killers[i]] + 5); 
+				szf_critBonus[killers[i]] = min(100, szf_critBonus[killers[i]] + 5); 
 									 
 			} // if				 
 		} // for 
@@ -1690,13 +1685,13 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 //
 // Object Built Event
 //
-/*public Action:OnPlayerBuiltObject(Handle:event, const String:name[], bool:dontBroadcast)
+/*public Action OnPlayerBuiltObject(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
 
-	new index = GetEventInt(event, "index");
-	new building = GetEventInt(event, "object");
+	int index = GetEventInt(event, "index");
+	int building = GetEventInt(event, "object");
 
 	// 1. Handle dispenser rules.
 	//		Disable dispensers when they begin construction.
@@ -1715,7 +1710,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 // Periodic Timer Callbacks
 //
 ////////////////////////////////////////////////////////////
-public Action:timer_main(Handle:timer) // 1Hz
+public Action timer_main(Handle timer) // 1Hz
 {		 
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -1727,7 +1722,7 @@ public Action:timer_main(Handle:timer) // 1Hz
 	}
 	else
 	{
-		new Float:fDelay = 0.0;
+		float fDelay = 0.0;
 		if(g_fZombieDamageScale < 1.0)
 		{
 			fDelay = 1.0 - g_fZombieDamageScale;
@@ -1743,7 +1738,7 @@ public Action:timer_main(Handle:timer) // 1Hz
 	{
 		handle_winCondition();
 		
-		for (new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
 			{
@@ -1753,11 +1748,12 @@ public Action:timer_main(Handle:timer) // 1Hz
 				}
 				else
 				{
-					new iHealth = GetClientHealth(i);
+					int iHealth = GetClientHealth(i);
 					if(iHealth > 1)
 					{
 						iHealth -= g_iSuperHealthSubtract[i];
-						if(iHealth < 1) iHealth = 1;
+						if(iHealth < 1)
+							iHealth = 1;
 						SetEntityHealth(i, iHealth);
 					}
 					else
@@ -1772,7 +1768,7 @@ public Action:timer_main(Handle:timer) // 1Hz
 	return Plugin_Continue;
 }
 
-public Action:timer_mainSlow(Handle:timer) // 4 min
+public Action timer_mainSlow(Handle timer) // 4 min
 { 
 	if(!zf_bEnabled)
 		return Plugin_Continue;	
@@ -1781,7 +1777,7 @@ public Action:timer_mainSlow(Handle:timer) // 4 min
 	return Plugin_Continue;
 }
 
-public Action:timer_mainFast(Handle:timer)
+public Action timer_mainFast(Handle timer)
 { 
 	if(!zf_bEnabled)
 		return Plugin_Continue;	
@@ -1790,7 +1786,7 @@ public Action:timer_mainFast(Handle:timer)
 	return Plugin_Continue;
 }
 
-public Action:timer_hoarde(Handle:timer) // 1/5th Hz
+public Action timer_hoarde(Handle timer) // 1/5th Hz
 {	
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -1799,7 +1795,7 @@ public Action:timer_hoarde(Handle:timer) // 1/5th Hz
 	return Plugin_Continue;	
 }
 
-public Action:timer_datacollect(Handle:timer) // 1/5th Hz
+public Action timer_datacollect(Handle timer) // 1/5th Hz
 {	
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -1813,10 +1809,10 @@ public Action:timer_datacollect(Handle:timer) // 1/5th Hz
 // Aperiodic Timer Callbacks
 //
 ////////////////////////////////////////////////////////////
-public Action:timer_graceStartPost(Handle:timer)
+public Action timer_graceStartPost(Handle timer)
 { 
 	// Disable all resupply cabinets.
-	new index = -1;
+	int index = -1;
 	while((index = FindEntityByClassname(index, "func_regenerate")) != -1)
 		AcceptEntityInput(index, "Disable");
 		
@@ -1850,10 +1846,10 @@ public Action:timer_graceStartPost(Handle:timer)
 		}
 	}
 	
-	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_PREPARE]-1);
-	decl String:strPath[PLATFORM_MAX_PATH];
+	int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_PREPARE]-1);
+	char trPath[PLATFORM_MAX_PATH];
 	MusicGetPath(MUSIC_PREPARE, iRandom, strPath, sizeof(strPath));
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i) && !isZom(i) && ShouldHearEventSounds(i))
 		{
@@ -1864,14 +1860,14 @@ public Action:timer_graceStartPost(Handle:timer)
 	return Plugin_Continue; 
 }
 
-public Action:timer_graceEnd(Handle:timer)
+public Action timer_graceEnd(Handle timer)
 {
 	EndGracePeriod();
 
 	return Plugin_Continue;	
 }
 
-public Action:timer_initialHelp(Handle:timer, any:client)
+public Action timer_initialHelp(Handle timer, any client)
 {		
 	// Wait until client is in game before printing initial help text.
 	if(IsClientInGame(client))
@@ -1886,7 +1882,7 @@ public Action:timer_initialHelp(Handle:timer, any:client)
 	return Plugin_Continue; 
 }
 
-public Action:timer_postSpawn(Handle:timer, any:client)
+public Action timer_postSpawn(Handle timer, any client)
 {
 	if(validClient(client) && IsPlayerAlive(client))
 	{
@@ -1901,7 +1897,7 @@ public Action:timer_postSpawn(Handle:timer, any:client)
 	return Plugin_Continue; 
 }
 
-public Action:timer_zombify(Handle:timer, any:client)
+public Action timer_zombify(Handle timer, any client)
 {	 
 	if(roundState() != RoundActive)
 		return Plugin_Continue;
@@ -1919,18 +1915,18 @@ public Action:timer_zombify(Handle:timer, any:client)
 // Handling Functionality
 //
 ////////////////////////////////////////////////////////////
-handle_gameFrameLogic()
+void handle_gameFrameLogic()
 {
-	new iCount = GetSurvivorCount();
+	int iCount = GetSurvivorCount();
 	// 1. Limit spy cloak to 80% of max.
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
 		{
 			if(getCloak(i) > 80.0) 
 				setCloak(i, 80.0);
 		}
-		if(roundState() == RoundActive)
+		/*if(roundState() == RoundActive)
 		{
 			if(validClient(i) && IsPlayerAlive(i) && isSur(i) && iCount == 1)
 			{
@@ -1943,15 +1939,15 @@ handle_gameFrameLogic()
 					TF2_RemoveCondition(i, TFCond_Kritzkrieged);
 				}
 			}
-		}
+		}*/
 	}
 }
 	
-handle_winCondition()
+void handle_winCondition()
 {	
 	// 1. Check for any survivors that are still alive.
-	new bool:anySurvivorAlive = false;
-	for(new i = 1; i <= MaxClients; i++)
+	bool anySurvivorAlive = false;
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
 		{
@@ -1968,14 +1964,12 @@ handle_winCondition()
 	}
 }
 
-handle_zombieAbilities()
+void handle_zombieAbilities()
 {
-	decl TFClassType:clientClass;
-	decl curH;
-	decl maxH; 
-	decl bonus;
+	TFClassType clientClass;
+	int curH, maxH, bonus;
 	
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i) && g_iSpecialInfected[i] != INFECTED_TANK)
 		{	 
@@ -2042,22 +2036,22 @@ handle_zombieAbilities()
 	} //for
 }
 
-handle_hoardeBonus()
+void handle_hoardeBonus()
 { 
-	decl playerCount;
-	decl player[MAXPLAYERS];
-	decl playerHoardeId[MAXPLAYERS];
-	decl Float:playerPos[MAXPLAYERS][3];
+	int playerCount;
+	int player[MAXPLAYERS];
+	int playerHoardeId[MAXPLAYERS];
+	float playerPos[MAXPLAYERS][3];
 	
-	decl hoardeSize[MAXPLAYERS];
+	int hoardeSize[MAXPLAYERS];
 
-	decl curPlayer;
-	decl curHoarde;
-	decl Handle:hStack;
+	int curPlayer;
+	int curHoarde;
+	Handle hStack;
 	
 	// 1. Find all active zombie players.
 	playerCount = 0;
-	for(new i=1; i<=MaxClients; i++)
+	for(int i=1; i<=MaxClients; i++)
 	{	
 		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
 		{							
@@ -2074,7 +2068,7 @@ handle_hoardeBonus()
 	//		primary decision criteria.
 	curHoarde = 0;
 	hStack = CreateStack();	
-	for(new i = 0; i < playerCount; i++)
+	for(int i = 0; i < playerCount; i++)
 	{
 		// 2a. Create new hoarde group.
 		if(playerHoardeId[i] == -1)
@@ -2088,7 +2082,7 @@ handle_hoardeBonus()
 		//		 Use a depth-first adjacency search.
 		while(PopStackCell(hStack, curPlayer))
 		{						
-			for(new j = i+1; j < playerCount; j++)
+			for(int j = i+1; j < playerCount; j++)
 			{
 				if(playerHoardeId[j] == -1)
 				{
@@ -2105,9 +2099,9 @@ handle_hoardeBonus()
 	}
 	
 	// 3. Set hoarde bonuses.
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 		zf_hoardeBonus[i] = 0;		
-	for(new i = 0; i < playerCount; i++)
+	for(int i = 0; i < playerCount; i++)
 		zf_hoardeBonus[player[i]] = hoardeSize[playerHoardeId[i]] - 1;
 		
 	CloseHandle(hStack);		
@@ -2118,7 +2112,7 @@ handle_hoardeBonus()
 // ZF Logic Functionality
 //
 ////////////////////////////////////////////////////////////
-zfEnable()
+void zfEnable()
 {		 
 	zf_bEnabled = true;
 	zf_bNewRound = true;
@@ -2126,7 +2120,7 @@ zfEnable()
 	
 	zfSetTeams();
 		
-	for(new i = 0; i <= MAXPLAYERS; i++)
+	for(int i = 0; i <= MAXPLAYERS; i++)
 		resetClientState(i);
 		
 	// Adjust gameplay CVars.
@@ -2169,20 +2163,20 @@ zfEnable()
 	#if defined _steamtools_included
 	if(steamtools)
 	{
-		decl String:gameDesc[64];
+		char gameDesc[64];
 		Format(gameDesc, sizeof(gameDesc), "Super Zombie Fortress (%s)", PLUGIN_VERSION);
 		Steam_SetGameDescription(gameDesc);
 	}
 	#endif
 }
 
-zfDisable()
+void zfDisable()
 {	
 	zf_bEnabled = false;
 	zf_bNewRound = true;
 	setRoundState(RoundInit2);
 	
-	for(new i = 0; i <= MAXPLAYERS; i++)
+	for(int i = 0; i <= MAXPLAYERS; i++)
 		resetClientState(i);
 		
 	// Adjust gameplay CVars.
@@ -2225,7 +2219,7 @@ zfDisable()
 	}
 
 	// Enable resupply lockers.
-	new index = -1;
+	int index = -1;
 	while((index = FindEntityByClassname(index, "func_regenerate")) != -1)
 		AcceptEntityInput(index, "Enable");
 
@@ -2237,14 +2231,14 @@ zfDisable()
 	#endif
 }
 
-zfSetTeams()
+void zfSetTeams()
 {
 	//
 	// Determine team roles.
 	// + By default, survivors are RED and zombies are BLU.
 	//
-	new survivorTeam = _:TFTeam_Red;
-	new zombieTeam = _:TFTeam_Blue;
+	int survivorTeam = view_as<int>(TFTeam_Red);
+	int zombieTeam = view_as<int>(TFTeam_Blue);
 	
 	//
 	// Determine whether to swap teams on payload maps.
@@ -2267,8 +2261,8 @@ zfSetTeams()
 	{
 		if(GetConVarBool(cvarSwapOnAttdef))
 		{
-			new bool:isAttdef = true;
-			new index = -1;
+			int bool:isAttdef = true;
+			int index = -1;
 			while((index = FindEntityByClassname(index, "team_control_point")) != -1)
 			{
 				if(GetEntProp(index, Prop_Send, "m_iTeamNum") != _:TFTeam_Red)
@@ -2280,8 +2274,8 @@ zfSetTeams()
 			
 			if(isAttdef)
 			{
-				survivorTeam = _:TFTeam_Blue;
-				zombieTeam = _:TFTeam_Red;
+				survivorTeam = view_as<int>(TFTeam_Blue);
+				zombieTeam = view_as<int>(TFTeam_Red);
 			}
 		}
 	}
@@ -2291,10 +2285,10 @@ zfSetTeams()
 	setZomTeam(zombieTeam);
 }
 
-zfSwapTeams()
+void zfSwapTeams()
 {
-	new survivorTeam = surTeam();
-	new zombieTeam = zomTeam();
+	int survivorTeam = surTeam();
+	int zombieTeam = zomTeam();
 	
 	// Swap team roles.
 	setSurTeam(zombieTeam);
@@ -2306,15 +2300,15 @@ zfSwapTeams()
 // Utility Functionality
 //
 ////////////////////////////////////////////////////////////
-public Sort_Preference(client1, client2, const array[], Handle:hndl)
+public int Sort_Preference(int client1, int client2, const int array[], Handle hndl)
 {	
  // Used during round start to sort using client team preference.
-	new prefCli1 = IsFakeClient(client1) ? ZF_TEAMPREF_NONE : prefGet(client1, TeamPref);
-	new prefCli2 = IsFakeClient(client2) ? ZF_TEAMPREF_NONE : prefGet(client2, TeamPref);	
+	int prefCli1 = IsFakeClient(client1) ? ZF_TEAMPREF_NONE : prefGet(client1, TeamPref);
+	int prefCli2 = IsFakeClient(client2) ? ZF_TEAMPREF_NONE : prefGet(client2, TeamPref);	
 	return (prefCli1 < prefCli2) ? -1 : (prefCli1 > prefCli2) ? 1 : 0;
 }
 
-resetClientState(client)
+void resetClientState(int client)
 { 
 	szf_critBonus[client] = 0;
 	zf_hoardeBonus[client] = 0;
@@ -2326,7 +2320,7 @@ resetClientState(client)
 // Help Functionality
 //
 ////////////////////////////////////////////////////////////
-public help_printZFInfoChat(client)
+public void help_printZFInfoChat(int client)
 {
 	if(client == 0)
 	{
@@ -2345,10 +2339,10 @@ public help_printZFInfoChat(client)
 // Main Menu Functionality
 //
 ////////////////////////////////////////////////////////////
-public panel_PrintMain(client)
+public void panel_PrintMain(int client)
 {
-	new Handle:panel = CreatePanel();
-	decl String:temp_string21[256];
+	Handle panel = CreatePanel();
+	char temp_string21[256];
 	Format(temp_string21, sizeof(temp_string21),"%T", "SZF Main Menu", client);
 	SetPanelTitle(panel, temp_string21);
 	Format(temp_string21, sizeof(temp_string21),"%T", "Help", client);
@@ -2364,7 +2358,7 @@ public panel_PrintMain(client)
 	CloseHandle(panel);
 }
 
-public panel_HandleMain(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleMain(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2380,10 +2374,10 @@ public panel_HandleMain(Handle:menu, MenuAction:action, param1, param2)
 //
 // Main.Preferences Menus
 //
-public panel_PrintPrefs(client)
+public void panel_PrintPrefs(int client)
 {
-	new Handle:panel = CreatePanel();
-	decl String:temp_string1[256];
+	Handle panel = CreatePanel();
+	char temp_string1[256];
 	Format(temp_string1, sizeof(temp_string1),"%T", "ZF Preferences", client);
 	SetPanelTitle(panel, temp_string1);
 	if(GetConVarBool(cvarAllowTeamPref)) 
@@ -2397,7 +2391,7 @@ public panel_PrintPrefs(client)
 	CloseHandle(panel);
 }
 
-public panel_HandlePrefs(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandlePrefs(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2409,10 +2403,10 @@ public panel_HandlePrefs(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-public panel_PrintPrefs00(client)
+public void panel_PrintPrefs00(int client)
 {
-	new Handle:panel = CreatePanel();
-	decl String:temp_string2[512];
+	Handle panel = CreatePanel();
+	char temp_string2[512];
 	Format(temp_string2, sizeof(temp_string2),"%T", "SZF Team Preference", client);
 	SetPanelTitle(panel, temp_string2);
 	
@@ -2454,7 +2448,7 @@ public panel_PrintPrefs00(client)
 	CloseHandle(panel);
 }
 
-public panel_HandlePrefTeam(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandlePrefTeam(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2471,11 +2465,11 @@ public panel_HandlePrefTeam(Handle:menu, MenuAction:action, param1, param2)
 //
 // Main.Help Menu
 //
-public panel_PrintHelp(client)
+public void panel_PrintHelp(int client)
 {
-	new Handle:panel = CreatePanel();
+	Handle panel = CreatePanel();
 	
-	decl String:temp_string3[1024];
+	char temp_string3[1024];
 	Format(temp_string3, sizeof(temp_string3),"%T", "SZF Help", client);
 	SetPanelTitle(panel, temp_string3);
 	Format(temp_string3, sizeof(temp_string3),"%T", "SZF Overview", client);
@@ -2494,7 +2488,7 @@ public panel_PrintHelp(client)
 	CloseHandle(panel);
 }
 
-public panel_HandleHelp(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleHelp(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2513,11 +2507,11 @@ public panel_HandleHelp(Handle:menu, MenuAction:action, param1, param2)
 //
 // Main.Help.Overview Menus
 //
-public panel_PrintOverview(client)
+public void panel_PrintOverview(int client)
 {
-	new Handle:panel = CreatePanel();
+	Handle panel = CreatePanel();
 	
-	decl String:temp_string4[1024];
+	char temp_string4[1024];
 	Format(temp_string4, sizeof(temp_string4),"%T", "SZF Overview", client);
 	SetPanelTitle(panel, temp_string4);
 	DrawPanelText(panel, "-------------------------------------------");
@@ -2535,7 +2529,7 @@ public panel_PrintOverview(client)
 	CloseHandle(panel);
 }
 
-public panel_HandleOverview(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleOverview(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2550,12 +2544,12 @@ public panel_HandleOverview(Handle:menu, MenuAction:action, param1, param2)
 //
 // Main.Help.Team Menus
 //
-public panel_PrintTeam(client, team)
+public void panel_PrintTeam(int client, int team)
 {
-	new Handle:panel = CreatePanel();
+	Handle panel = CreatePanel();
 	if(team == _:surTeam())
 	{
-		decl String:temp_string5[1024];
+		char temp_string5[1024];
 		Format(temp_string5, sizeof(temp_string5),"%T", "SZF Survivor Team", client);
 		SetPanelTitle(panel, temp_string5);
 		DrawPanelText(panel, "-------------------------------------------");
@@ -2573,7 +2567,7 @@ public panel_PrintTeam(client, team)
 	}
 	else if(team == _:zomTeam())
 	{
-		decl String:temp_string6[2048];
+		char temp_string6[2048];
 		Format(temp_string6, sizeof(temp_string6),"%T", "SZF Zombie Team", client);
 		SetPanelTitle(panel, temp_string6);
 		DrawPanelText(panel, "-------------------------------------------");
@@ -2593,7 +2587,7 @@ public panel_PrintTeam(client, team)
 		DrawPanelText(panel, temp_string6);
 		DrawPanelText(panel, "-------------------------------------------");
 	}
-	decl String:temp_string7[512];
+	char temp_string7[512];
 	Format(temp_string7, sizeof(temp_string7),"%T", "Return to Help Menu", client);
 	DrawPanelItem(panel, temp_string7);
 	Format(temp_string7, sizeof(temp_string7),"%T", "Close Menu", client);
@@ -2602,7 +2596,7 @@ public panel_PrintTeam(client, team)
 	CloseHandle(panel);
 }
 
-public panel_HandleTeam(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleTeam(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2617,11 +2611,11 @@ public panel_HandleTeam(Handle:menu, MenuAction:action, param1, param2)
 //
 // Main.Help.Class Menus
 //
-public panel_PrintSurClass(client)
+public void panel_PrintSurClass(int client)
 {
-	new Handle:panel = CreatePanel();
+	Handle panel = CreatePanel();
 	
-	decl String:temp_string8[512];
+	char temp_string8[512];
 	Format(temp_string8, sizeof(temp_string8),"%T", "SZF Survivor Classes", client);
 	SetPanelTitle(panel, temp_string8);
 	Format(temp_string8, sizeof(temp_string8),"%T", "Soldier", client);
@@ -2642,7 +2636,7 @@ public panel_PrintSurClass(client)
 	CloseHandle(panel);
 }
 
-public panel_HandleSurClass(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleSurClass(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2659,10 +2653,10 @@ public panel_HandleSurClass(Handle:menu, MenuAction:action, param1, param2)
 	} 
 }
 			
-public panel_PrintZomClass(client)
+public void panel_PrintZomClass(int client)
 {
-	new Handle:panel = CreatePanel();
-	decl String:temp_string9[512];
+	Handle panel = CreatePanel();
+	char temp_string9[512];
 	Format(temp_string9, sizeof(temp_string9),"%T", "SZF Zombie Classes", client);
 	SetPanelTitle(panel, temp_string9);
 	Format(temp_string9, sizeof(temp_string9),"%T", "Scout", client);
@@ -2677,7 +2671,7 @@ public panel_PrintZomClass(client)
 	CloseHandle(panel);
 }
 
-public panel_HandleZomClass(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleZomClass(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2691,14 +2685,14 @@ public panel_HandleZomClass(Handle:menu, MenuAction:action, param1, param2)
 	} 
 }
 
-public panel_PrintClass(client, TFClassType:class)
+public void panel_PrintClass(int client, TFClassType class)
 {
-	new Handle:panel = CreatePanel();
+	Handle panel = CreatePanel();
 	switch(class)
 	{
 		case TFClass_Soldier:
 		{
-			decl String:temp_string10[1024];
+			char temp_string10[1024];
 			Format(temp_string10, sizeof(temp_string10),"%T", "Soldier Human 1", client);
 			SetPanelTitle(panel, temp_string10);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2708,7 +2702,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Pyro:
 		{
-			decl String:temp_string11[512];
+			char temp_string11[512];
 			Format(temp_string11, sizeof(temp_string11),"%T", "Pyro Human 1", client);
 			SetPanelTitle(panel, temp_string11);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2720,7 +2714,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_DemoMan:
 		{
-			decl String:temp_string12[1024];
+			char temp_string12[1024];
 			Format(temp_string12, sizeof(temp_string12),"%T", "Demoman Human 1", client);
 			SetPanelTitle(panel, temp_string12);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2730,7 +2724,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Engineer:
 		{
-			decl String:temp_string13[2048];
+			char temp_string13[2048];
 			Format(temp_string13, sizeof(temp_string13),"%T", "Engineer Human 1", client);
 			SetPanelTitle(panel, temp_string13);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2748,7 +2742,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Medic:
 		{
-			decl String:temp_string14[2048];
+			char temp_string14[2048];
 			Format(temp_string14, sizeof(temp_string14),"%T", "Medic Human 1", client);
 			SetPanelTitle(panel, temp_string14);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2764,7 +2758,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Sniper:
 		{
-			decl String:temp_string15[1024];
+			char temp_string15[1024];
 			Format(temp_string15, sizeof(temp_string15),"%T", "Sniper Human 1", client);
 			SetPanelTitle(panel, temp_string15);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2776,7 +2770,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}	  
 		case TFClass_Scout:
 		{
-			decl String:temp_string16[1024];
+			char temp_string16[1024];
 			Format(temp_string16, sizeof(temp_string16),"%T", "Scout Zombie 1", client);
 			SetPanelTitle(panel, temp_string16);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2792,7 +2786,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Heavy:
 		{
-			decl String:temp_string17[1024];
+			char temp_string17[1024];
 			Format(temp_string17, sizeof(temp_string17),"%T", "Heavy Zombie 1", client);
 			SetPanelTitle(panel, temp_string17);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2806,7 +2800,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}
 		case TFClass_Spy:
 		{
-			decl String:temp_string18[1024];
+			char temp_string18[1024];
 			Format(temp_string18, sizeof(temp_string18),"%T", "Spy Zombie 1", client);
 			SetPanelTitle(panel, temp_string18);
 			DrawPanelText(panel, "-------------------------------------------");
@@ -2822,7 +2816,7 @@ public panel_PrintClass(client, TFClassType:class)
 		}		
 		default:
 		{
-			decl String:temp_string19[1024];
+			char temp_string19[1024];
 			Format(temp_string19, sizeof(temp_string19),"%T", "Unassigned", client);
 			SetPanelTitle(panel, temp_string19);
 			DrawPanelText(panel, "-------------------------------------------"); 
@@ -2831,7 +2825,7 @@ public panel_PrintClass(client, TFClassType:class)
 			DrawPanelText(panel, "-------------------------------------------");
 		}
 	}
-	decl String:temp_string20[512];
+	char temp_string20[512];
 	Format(temp_string20, sizeof(temp_string20),"%T", "Return to Help Menu", client);
 	DrawPanelItem(panel, temp_string20);
 	Format(temp_string20, sizeof(temp_string20),"%T", "Close Menu", client);
@@ -2840,7 +2834,7 @@ public panel_PrintClass(client, TFClassType:class)
 	CloseHandle(panel);
 }
 
-public panel_HandleClass(Handle:menu, MenuAction:action, param1, param2)
+public int panel_HandleClass(Handle menu, MenuAction action, int param1, int param2)
 {
 	if(action == MenuAction_Select)
 	{
@@ -2852,20 +2846,21 @@ public panel_HandleClass(Handle:menu, MenuAction:action, param1, param2)
 	} 
 }
 
-public dummy_PanelHandler(Handle:menu, MenuAction:action, param1, param2)
+public int dummy_PanelHandler(Handle menu, MenuAction action, int param1, int param2)
 {
 	return;
 }
 
-SetGlow()
+void SetGlow()
 {
-	new iCount = GetSurvivorCount();
-	new iGlow = 0;
-	new iGlow2;
+	int iCount = GetSurvivorCount();
+	int iGlow = 0;
+	int iGlow2;
 	
-	if(iCount >= 1 && iCount <= 3) iGlow = 1;
+	if(iCount >= 1 && iCount <= 3)
+		iGlow = 1;
 	
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i))
 		{
@@ -2879,10 +2874,10 @@ SetGlow()
 	}
 }
 
-stock GetPlayerCount()
+stock int GetPlayerCount()
 {
-	new playerCount = 0;
-	for(new i = 1; i <= MaxClients; i++)
+	int playerCount = 0;
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && (GetClientTeam(i) > 1))
 		{
@@ -2892,10 +2887,10 @@ stock GetPlayerCount()
 	return playerCount;
 }
 
-stock GetSurvivorCount()
+stock int GetSurvivorCount()
 {
-	new iCount = 0;
-	for(new i = 1; i <= MaxClients; i++)
+	int iCount = 0;
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validLivingSur(i))
 		{
@@ -2905,7 +2900,7 @@ stock GetSurvivorCount()
 	return iCount;
 }
 
-public OnSlagChange(iClient, iFeature, bool:bEnabled)
+public void OnSlagChange(int iClient, int iFeature, bool bEnabled)	// ??? Damn private features
 {
 	if(!bEnabled)
 		return;
@@ -2919,19 +2914,19 @@ public OnSlagChange(iClient, iFeature, bool:bEnabled)
 	}
 }
 
-UpdateZombieDamageScale()
+void UpdateZombieDamageScale()
 {
 	g_fZombieDamageScale = 1.0;
 	if(!zf_bEnabled || g_iStartSurvivors<=0 || roundState()!=RoundActive)
 		return;	
 
-	new Float:fTime = 1.0 - GetTimePercentage();
+	float fTime = 1.0 - GetTimePercentage();
 	if(fTime <= 0.0)
 		return;
 
-	new iCurrentSurvivors = GetSurvivorCount();
-	new iExpectedSurvivors = RoundFloat(float(g_iStartSurvivors) * (SquareRoot(fTime) + fTime)*0.5);
-	new iSurvivorDifference = iCurrentSurvivors - iExpectedSurvivors;
+	int iCurrentSurvivors = GetSurvivorCount();
+	int iExpectedSurvivors = RoundFloat(float(g_iStartSurvivors) * (SquareRoot(fTime) + fTime)*0.5);
+	int iSurvivorDifference = iCurrentSurvivors - iExpectedSurvivors;
 	
 	// Calculating from survivor difference
 	g_fZombieDamageScale = (float(iSurvivorDifference) / float(g_iStartSurvivors)) + 1.0;
@@ -2949,7 +2944,7 @@ UpdateZombieDamageScale()
 	if(g_fZombieDamageScale > 4.0)
 		g_fZombieDamageScale = 4.0;
 	
-	//decl String:strInput[255];
+	//char strInput[255];
 	//Format(strInput, sizeof(strInput), "%d %d {3} {4} message_1", fTime, iExpectedSurvivors, iCurrentSurvivors, g_fZombieDamageScale*100.0);
 	//if(g_bCapturingLastPoint) Format(strInput, sizeof(strInput), "{1} message_2", strInput);
 	//ShowDebug(strInput);
@@ -2966,13 +2961,15 @@ UpdateZombieDamageScale()
 		}
 		else if(g_fZombieDamageScale>=1.3 || (GetRandomInt(1, 100)<=GetConVarInt(cvarFrenzyChance) && g_fZombieDamageScale>=1.0))
 		{
-			if(GetRandomInt(0, 100) <= GetConVarInt(cvarFrenzyTankChance) && g_fZombieDamageScale > 1.0) ZombieTank();
-			else ZombieRage();
+			if(GetRandomInt(0, 100) <= GetConVarInt(cvarFrenzyTankChance) && g_fZombieDamageScale > 1.0)
+				ZombieTank();
+			else
+				ZombieRage();
 		}
 	}
 }
 
-public Action:RespawnPlayer(Handle:hTimer, any:iClient)
+public Action RespawnPlayer(Handle hTimer, any iClient)
 {
 	if(IsClientInGame(iClient) && !IsPlayerAlive(iClient))
 	{
@@ -2981,12 +2978,12 @@ public Action:RespawnPlayer(Handle:hTimer, any:iClient)
 	}
 }
 
-public Action:CheckLastPlayer(Handle:hTimer)
+public Action CheckLastPlayer(Handle hTimer)
 {
-	new iCount = GetSurvivorCount();
+	int iCount = GetSurvivorCount();
 	if(iCount == 1)
 	{
-		for (new iLoop=1; iLoop<=MaxClients; iLoop++)
+		for(int iLoop=1; iLoop<=MaxClients; iLoop++)
 		{
 			if(IsClientInGame(iLoop) && IsPlayerAlive(iLoop) && isSur(iLoop))
 			{
@@ -2995,32 +2992,33 @@ public Action:CheckLastPlayer(Handle:hTimer)
 				SetEntityHealth(iLoop, 255);
 				CPrintToChat(iLoop, "{olive}[SZF]{default} %t", "Last Mann", iLoop);
 				MusicHandleClient(iLoop);
-				return;
+				break;
 			}
 		}
 	}
+	return;
 }
 
-public Action:OnTimeAdded(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnTimeAdded(Handle event, const char[] name, bool dontBroadcast)
 {
-	new iAddedTime = GetEventInt(event, "seconds_added");
+	int iAddedTime = GetEventInt(event, "seconds_added");
 	g_AdditionalTime = g_AdditionalTime + iAddedTime;
 }
 
-stock GetSecondsLeft()
+stock int GetSecondsLeft()
 {
 	//Get round time that the round started with
-	new ent = FindEntityByClassname(MaxClients+1, "team_round_timer");
-	new Float:RoundStartLength = GetEntPropFloat(ent, Prop_Send, "m_flTimeRemaining");
-	new iRoundStartLength = RoundToZero(RoundStartLength);
-	new TimeBuffer = iRoundStartLength + g_AdditionalTime;
+	int ent = FindEntityByClassname(MaxClients+1, "team_round_timer");
+	float RoundStartLength = GetEntPropFloat(ent, Prop_Send, "m_flTimeRemaining");
+	int iRoundStartLength = RoundToZero(RoundStartLength);
+	int TimeBuffer = iRoundStartLength + g_AdditionalTime;
 
 	if(g_StartTime <= 0)
 		return TimeBuffer;
 	
-	new SecElapsed = GetTime() - g_StartTime;
+	int SecElapsed = GetTime() - g_StartTime;
 	
-	new iTimeLeft = TimeBuffer-SecElapsed;
+	int iTimeLeft = TimeBuffer-SecElapsed;
 	if(iTimeLeft < 0)
 		iTimeLeft = 0;
 	if(iTimeLeft > TimeBuffer)
@@ -3029,28 +3027,28 @@ stock GetSecondsLeft()
 	return iTimeLeft;
 }  
 
-stock Float:GetTimePercentage()
+stock float GetTimePercentage()
 {
 	//Alright bitch, play tiemz ovar
 	if(g_StartTime <= 0)
 		return 0.0;
-	new SecElapsed = GetTime() - g_StartTime;
+	int SecElapsed = GetTime() - g_StartTime;
 	//PrintToChatAll("%i Seconds have elapsed since the round started", SecElapsed)
 	
 	//Get round time that the round started with
-	new ent = FindEntityByClassname(MaxClients+1, "team_round_timer");
-	new Float:RoundStartLength = GetEntPropFloat(ent, Prop_Send, "m_flTimeRemaining");
+	int ent = FindEntityByClassname(MaxClients+1, "team_round_timer");
+	float RoundStartLength = GetEntPropFloat(ent, Prop_Send, "m_flTimeRemaining");
 	//PrintToChatAll("Float:RoundStartLength == %f", RoundStartLength)
-	new iRoundStartLength = RoundToZero(RoundStartLength);
+	int iRoundStartLength = RoundToZero(RoundStartLength);
 	
 	
 	//g_AdditionalTime = time added this round
 	//PrintToChatAll("TimeAdded This Round: %i", g_AdditionalTime)
 	
-	new TimeBuffer = iRoundStartLength + g_AdditionalTime;
-	//new TimeLeft = TimeBuffer - SecElapsed;
+	int TimeBuffer = iRoundStartLength + g_AdditionalTime;
+	//int TimeLeft = TimeBuffer - SecElapsed;
 	
-	new Float:TimePercentage = float(SecElapsed) / float(TimeBuffer);
+	float TimePercentage = float(SecElapsed) / float(TimeBuffer);
 	//PrintToChatAll("TimeLeft Sec: %i", TimeLeft)
 	
 	if(TimePercentage < 0.0)
@@ -3072,10 +3070,10 @@ public Action OnBroadcast(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue;
 }
 
-CreateZombieSkin(iClient)
+void CreateZombieSkin(int iClient)
 {   
 	// Add a new model
-	decl String:strModel[PLATFORM_MAX_PATH];
+	char strModel[PLATFORM_MAX_PATH];
 	Format(strModel, sizeof(strModel), "");
 
 	//if(TF2_GetPlayerClass(iClient) == TFClass_Heavy)
@@ -3097,7 +3095,7 @@ CreateZombieSkin(iClient)
 	}
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	PrecacheZombieModels();
 	LoadSoundSystem();
@@ -3109,29 +3107,28 @@ public OnMapStart()
 	PrecacheParticle("asplode_hoodoo_green");
 	PrecacheSound2(SOUND_BONUS);
 	
-	new i;
-	for (i = 0; i < sizeof(g_strSoundFleshHit); i++)
+	for(int i = 0; i < sizeof(g_strSoundFleshHit); i++)
 	{
 		PrecacheSound2(g_strSoundFleshHit[i]);
 	}
 	
-	for (i = 0; i < sizeof(g_strSoundCritHit); i++)
+	for(int i = 0; i < sizeof(g_strSoundCritHit); i++)
 	{
 		PrecacheSound2(g_strSoundCritHit[i]);
 	}
 	
-	for (i = 0; i < sizeof(g_weaponModels); i++)
+	for(int i = 0; i < sizeof(g_weaponModels); i++)
 	{
 		PrecacheModel(g_weaponModels[i]);
 	}
 
-	new Handle:hConvar = FindConVar("slag_map_has_music");
+	Handle hConvar = FindConVar("slag_map_has_music");
 
 	if(hConvar != INVALID_HANDLE)
 		SetConVarBool(hConvar, true);
 }
 
-PrecacheZombieModels()
+void PrecacheZombieModels()
 {
 	if(FileExists("materials/left4fortress/goo.vmt", true))
 	{
@@ -3171,9 +3168,9 @@ PrecacheZombieModels()
 	*/
 }
 
-/*ShowDebug(String:strInput[])
+/*void ShowDebug(char[] strInput)
 {
-	new iClient = GetMecha();
+	int iClient = GetMecha();
 	if(iClient > 0)
 	{
 		SetHudTextParams(0.04, 0.3, 10.0, 50, 255, 50, 255);
@@ -3181,27 +3178,27 @@ PrecacheZombieModels()
 	}
 }*/
 
-stock GetMecha()	// VSH and SZF did it.. .w. I get you want debug mode but make it for server owners too
+stock int GetMecha()	// VSH and SZF did it.. .w. I get you want debug mode but make it for server owners too
 {
 	return -1;
 }
 
-LoadSoundSystem()
+void LoadSoundSystem()
 {
 	if(g_hMusicArray != INVALID_HANDLE)
 		CloseHandle(g_hMusicArray);
 	g_hMusicArray = CreateArray();
 	
-	for (new iLoop = 0; iLoop < sizeof(g_iMusicCount); iLoop++)
+	for(int iLoop = 0; iLoop < sizeof(g_iMusicCount); iLoop++)
 	{
 		g_iMusicCount[iLoop] = 0;
 	}
 	
-	new Handle:hKeyvalue = CreateKeyValues("music");
+	Handle hKeyvalue = CreateKeyValues("music");
 	
-	decl String:strValue[PLATFORM_MAX_PATH];
+	char strValue[PLATFORM_MAX_PATH];
 	
-	decl String:strPath[PLATFORM_MAX_PATH];
+	char strPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, strPath, sizeof(strPath), "data/superzombiefortress.txt");
 	//LogMessage("Loading sound system: %s", strPath);
 	FileToKeyValues(hKeyvalue, strPath);
@@ -3210,7 +3207,7 @@ LoadSoundSystem()
 	KvGotoFirstSubKey(hKeyvalue);
 	do
 	{
-		new Handle:hEntry = CreateArray(PLATFORM_MAX_PATH);
+		Handle hEntry = CreateArray(PLATFORM_MAX_PATH);
 		KvGetString(hKeyvalue, "path", strValue, sizeof(strValue), "error");
 		PushArrayString(hEntry, strValue);
 		
@@ -3220,7 +3217,7 @@ LoadSoundSystem()
 		KvGetString(hKeyvalue, "category", strValue, sizeof(strValue), "error");
 		PushArrayString(hEntry, strValue);
 		
-		new iCategory = MusicCategoryToNumber(strValue);
+		int iCategory = MusicCategoryToNumber(strValue);
 		//LogMessage("Category: %s (%d)", strValue, iCategory);
 		if(iCategory < 0)
 		{
@@ -3241,7 +3238,7 @@ LoadSoundSystem()
 	CloseHandle(hKeyvalue);
 }
 
-MusicCategoryToNumber(String:strCategory[])
+int MusicCategoryToNumber(char[] strCategory)
 {
 	if(StrEqual(strCategory, "drums", false))
 		return MUSIC_DRUMS;
@@ -3287,7 +3284,7 @@ MusicCategoryToNumber(String:strCategory[])
 	return -1;
 }
 
-MusicChannel(iMusic)
+int MusicChannel(int iMusic)
 {
 	switch(iMusic)
 	{
@@ -3303,14 +3300,14 @@ MusicChannel(iMusic)
 	return CHANNEL_MUSIC_DRUMS;
 }
 
-MusicGetPath(iCategory = MUSIC_DRUMS, iNumber, String:strInput[], iMaxSize)
+void MusicGetPath(int iCategory = MUSIC_DRUMS, int iNumber, char[] strInput, int iMaxSize)
 {
 	//PrintToChatAll("Attempting to get path for category %d (num %d)", iCategory, iNumber);
-	new iCount = 0;
-	new iEntryCategory;
-	decl String:strValue[PLATFORM_MAX_PATH];
-	new Handle:hEntry;
-	for (new i = 0; i < GetArraySize(g_hMusicArray); i++)
+	int iCount = 0;
+	int iEntryCategory;
+	chr strValue[PLATFORM_MAX_PATH];
+	Handle hEntry;
+	for(int i = 0; i < GetArraySize(g_hMusicArray); i++)
 	{
 		hEntry = GetArrayCell(g_hMusicArray, i);
 		GetArrayString(hEntry, 1, strValue, sizeof(strValue));
@@ -3330,15 +3327,15 @@ MusicGetPath(iCategory = MUSIC_DRUMS, iNumber, String:strInput[], iMaxSize)
 	return;
 }
 
-public OnPluginEnd()
+public void OnPluginEnd()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i)) StopSoundSystem(i);
 	}
 }
 
-StopSoundSystem(iClient, bool:bLogic = true, bool:bMusic = true, bool:bConsiderFull = false, iLevel = MUSIC_NONE)
+void StopSoundSystem(int iClient, bool bLogic = true, bool bMusic = true, bool bConsiderFull = false, int iLevel = MUSIC_NONE)
 {
 	if(bMusic)
 	{
@@ -3369,7 +3366,7 @@ StopSoundSystem(iClient, bool:bLogic = true, bool:bMusic = true, bool:bConsiderF
 	if(bLogic)
 	{
 		//PrintToChatAll("Killed timer");
-		new Handle:hTimer = g_hMusicTimer[iClient];
+		Handle hTimer = g_hMusicTimer[iClient];
 		g_hMusicTimer[iClient] = INVALID_HANDLE;
 		g_iMusicLevel[iClient] = MUSIC_NONE;
 		
@@ -3386,18 +3383,18 @@ StopSoundSystem(iClient, bool:bLogic = true, bool:bMusic = true, bool:bConsiderF
 	}
 }
 
-StopSound2(iClient, iMusic)
+void StopSound2(int iClient, int iMusic)
 {
 	if(StrEqual(g_strMusicLast[iClient][iMusic], ""))
 		return;
 	
-	new iChannel = MusicChannel(iMusic);
+	int iChannel = MusicChannel(iMusic);
 	StopSound(iClient, iChannel, g_strMusicLast[iClient][iMusic]);
 	
 	Format(g_strMusicLast[iClient][iMusic], PLATFORM_MAX_PATH, "");
 }
 
-StartSoundSystem(iClient, iLevel = -1)
+void StartSoundSystem(int iClient, int iLevel = -1)
 {
 	if(iLevel == -1)
 		iLevel = g_iMusicLevel[iClient];
@@ -3439,7 +3436,7 @@ StartSoundSystem(iClient, iLevel = -1)
 	}
 	if(iLevel == MUSIC_INTENSE)
 	{
-		new iRandom = GetClientRandom(iClient, 0, 0, 1);
+		int iRandom = GetClientRandom(iClient, 0, 0, 1);
 		StartSoundSystem2(iClient, MUSIC_SLAYER);
 		if(iRandom == 0)
 			StartSoundSystem2(iClient, MUSIC_BANJO);
@@ -3448,8 +3445,8 @@ StartSoundSystem(iClient, iLevel = -1)
 	}
 	if(iLevel == MUSIC_MILD)
 	{
-		new iRandom = GetClientRandom(iClient, 0, 0, 1);
-		new iRandom2 = GetClientRandom(iClient, 1, 0, 1);
+		int iRandom = GetClientRandom(iClient, 0, 0, 1);
+		int iRandom2 = GetClientRandom(iClient, 1, 0, 1);
 		
 		if(iRandom == 0)
 			StartSoundSystem2(iClient, MUSIC_SLAYER_MILD);
@@ -3477,7 +3474,7 @@ StartSoundSystem(iClient, iLevel = -1)
 	g_iMusicFull[iClient]++;
 }
 
-public Action:SoundSystemRepeat(Handle:hTimer, any:iClient)
+public Action SoundSystemRepeat(Handle hTimer, any iClient)
 {
 	if(!IsClientInGame(iClient))
 	{
@@ -3488,7 +3485,7 @@ public Action:SoundSystemRepeat(Handle:hTimer, any:iClient)
 	return Plugin_Continue;
 }
 
-StartSoundSystem2(iClient, iMusic)
+void StartSoundSystem2(int iClient, int iMusic)
 {
 	if(g_iMusicFull[iClient] % 2 != 0)
 	{
@@ -3506,16 +3503,16 @@ StartSoundSystem2(iClient, iMusic)
 			return;
 	}
 	
-	new iRandom = GetRandomInt(0, g_iMusicCount[iMusic]-1);
-	decl String:strPath[PLATFORM_MAX_PATH];
+	int iRandom = GetRandomInt(0, g_iMusicCount[iMusic]-1);
+	char strPath[PLATFORM_MAX_PATH];
 	MusicGetPath(iMusic, iRandom, strPath, sizeof(strPath));
 	//PrintToChatAll("Emitting: %s", strPath);
-	new iChannel = MusicChannel(iMusic);
+	int iChannel = MusicChannel(iMusic);
 	EmitSoundToClient(iClient, strPath, _, iChannel, _, _, 1.0);
 	Format(g_strMusicLast[iClient][iMusic], PLATFORM_MAX_PATH, "%s", strPath);
 }
 
-bool:ShouldHearEventSounds(iClient)
+bool ShouldHearEventSounds(int iClient)
 {
 	if(g_iMusicLevel[iClient]==MUSIC_INTENSE || g_iMusicLevel[iClient]==MUSIC_MILD)
 		return false;
@@ -3523,25 +3520,25 @@ bool:ShouldHearEventSounds(iClient)
 	return true;
 }
 
-GetClientRandom(iClient, iNumber, iMin, iMax)
+int GetClientRandom(int iClient, int iNumber, int iMin, int iMax)
 {
 	if(g_iMusicRandom[iClient][iNumber] >= 0)
 		return g_iMusicRandom[iClient][iNumber];
-	new iRandom = GetRandomInt(iMin, iMax);
+	int iRandom = GetRandomInt(iMin, iMax);
 	g_iMusicRandom[iClient][iNumber] = iRandom;
 	return iRandom;
 }
 
-stock PrecacheSound2(String:strSound[])
+stock void PrecacheSound2(char[] strSound)
 {
-	decl String:strPath[PLATFORM_MAX_PATH];
+	char strPath[PLATFORM_MAX_PATH];
 	Format(strPath, sizeof(strPath), "sound/%s", strSound);
 	
 	PrecacheSound(strSound, true);
 	AddFileToDownloadsTable(strPath);
 }
 
-ZombieRage(bool:bBeginning = false)
+void ZombieRage(bool bBeginning = false)
 {
 	if(roundState() != RoundActive)
 		return;
@@ -3560,10 +3557,10 @@ ZombieRage(bool:bBeginning = false)
 	
 	if(!bBeginning)
 	{
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_INCOMING]-1);
-		decl String:strPath[PLATFORM_MAX_PATH];
+		int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_INCOMING]-1);
+		char strPath[PLATFORM_MAX_PATH];
 		MusicGetPath(MUSIC_INCOMING, iRandom, strPath, sizeof(strPath));
-		for (new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i))
 			{
@@ -3585,14 +3582,14 @@ ZombieRage(bool:bBeginning = false)
 	}
 }
 
-public Action:StopZombieRage(Handle:hTimer)
+public Action StopZombieRage(Handle hTimer)
 {
 	g_bZombieRage = false;
 	UpdateZombieDamageScale();
 	
 	if(roundState() == RoundActive)
 	{
-		for (new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && isZom(i))
 			{
@@ -3602,17 +3599,17 @@ public Action:StopZombieRage(Handle:hTimer)
 	}
 }
 
-public Action:SpookySound(Handle:hTimer)
+public Action SpookySound(Handle hTimer)
 {
 	if(roundState() != RoundActive)
 		return;
 	
-	new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_RABIES]-1);
+	int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_RABIES]-1);
 	decl String:strPath[PLATFORM_MAX_PATH];
 	MusicGetPath(MUSIC_RABIES, iRandom, strPath, sizeof(strPath));
 	
-	new iTarget = -1;
-	new iFail = 0;
+	int iTarget = -1;
+	int iFail = 0;
 	do
 	{
 		iTarget = GetRandomInt(1, MaxClients);
@@ -3622,26 +3619,26 @@ public Action:SpookySound(Handle:hTimer)
 	
 	if(IsClientInGame(iTarget) && IsPlayerAlive(iTarget) && validActivePlayer(iTarget))
 	{
-		for(new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && ShouldHearEventSounds(i) && i != iTarget && !isZom(i)) EmitSoundToClient(i, strPath, iTarget);
 		}
 	}
 }
 
-stock EmitSoundFromOrigin(const String:sound[],const Float:orig[3], iLevel = SNDLEVEL_NORMAL)
+stock void EmitSoundFromOrigin(const char[] sound, const float orig[3], int iLevel = SNDLEVEL_NORMAL)
 {
 	EmitSoundToAll(sound, SOUND_FROM_WORLD, SNDCHAN_AUTO, iLevel, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, -1, orig, NULL_VECTOR, true, 0.0);
 }
 
-Float:GetZombieNumber(iClient)
+float GetZombieNumber(int iClient)
 {
-	decl Float:fPosClient[3];
-	decl Float:fPosZombie[3];
+	float fPosClient[3];
+	float fPosZombie[3];
 	GetClientEyePosition(iClient, fPosClient);
-	new Float:fDistance;
-	new Float:fZombieNumber = 0.0;
-	for(new z=1; z<=MaxClients; z++)
+	float fDistance;
+	float fZombieNumber = 0.0;
+	for(int z=1; z<=MaxClients; z++)
 	{
 		if(IsClientInGame(z) && IsPlayerAlive(z) && isZom(z))
 		{
@@ -3661,22 +3658,22 @@ Float:GetZombieNumber(iClient)
 	return fZombieNumber;
 }
 
-MusicHandleAll()
+void MusicHandleAll()
 {
-	for(new iClient = 1; iClient <= MaxClients; iClient++)
+	for(int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		MusicHandleClient(iClient);
 	}
 }
 
-MusicHandleClient(iClient)
+void MusicHandleClient(int iClient)
 {
 	if(!validClient(iClient))
 		return;
 	
 	if(GetClientTeam(iClient) == 1)
 	{
-		new iTarget = GetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget");
+		int iTarget = GetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget");
 		if(validActivePlayer(iTarget))
 		{
 			StartSoundSystem(iClient, g_iMusicLevel[iTarget]);
@@ -3707,21 +3704,21 @@ MusicHandleClient(iClient)
 			
 			Scared = ZombieNum * 3 / Health% + Rage*20
 		*/
-		new iCurrentHealth = GetClientHealth(iClient);
-		new iMaxHealth = GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
-		new Float:fHealth = float(iCurrentHealth) / float(iMaxHealth);
+		int iCurrentHealth = GetClientHealth(iClient);
+		int iMaxHealth = GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
+		float fHealth = float(iCurrentHealth) / float(iMaxHealth);
 		if(fHealth < 0.5)
 			fHealth = 0.5;
 		if(fHealth > 1.1)
 			fHealth = 1.1;
 		
-		new Float:fRage = 0.0;
+		float fRage = 0.0;
 		if(g_bZombieRage)
 			fRage = 1.0;
 		
-		new Float:fZombies = GetZombieNumber(iClient);
+		float fZombies = GetZombieNumber(iClient);
 		
-		new Float:fScared = fZombies / fHealth + fRage * 20.0;
+		float fScared = fZombies / fHealth + fRage * 20.0;
 		
 		/*
 		if(IsMecha(iClient))
@@ -3733,7 +3730,7 @@ MusicHandleClient(iClient)
 		}
 		*/
 		
-		new iMusic = MUSIC_NONE;
+		int iMusic = MUSIC_NONE;
 		if(isSur(iClient))
 		{
 			if(g_bRoundActive)
@@ -3780,7 +3777,7 @@ MusicHandleClient(iClient)
 	}
 }
 
-public Action:command_rabies(client, args)
+public Action command_rabies(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -3791,7 +3788,7 @@ public Action:command_rabies(client, args)
 	return Plugin_Continue;
 }
 
-public Action:command_goo(client, args)
+public Action command_goo(int client, int args)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -3801,33 +3798,33 @@ public Action:command_goo(client, args)
 	return Plugin_Continue;
 }
 
-FastRespawnReset()
+void FastRespawnReset()
 {
 	if(g_hFastRespawnArray != INVALID_HANDLE)
 		CloseHandle(g_hFastRespawnArray);
 	g_hFastRespawnArray = CreateArray(3);
 }
 
-FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
+int FastRespawnNearby(int iClient, float fDistance, bool bMustBeInvisible = true)
 {
 	if(g_hFastRespawnArray == INVALID_HANDLE)
 		return -1;
 	
-	new Handle: hTombola = CreateArray();
+	Handle hTombola = CreateArray();
 	
-	decl Float:fPosClient[3];
-	decl Float:fPosEntry[3];
-	decl Float:fPosEntry2[3];
-	new Float:fEntryDistance;
+	float fPosClient[3];
+	float fPosEntry[3];
+	float fPosEntry2[3];
+	float fEntryDistance;
 	GetClientAbsOrigin(iClient, fPosClient);
-	for (new i = 0; i < GetArraySize(g_hFastRespawnArray); i++)
+	for(int i = 0; i < GetArraySize(g_hFastRespawnArray); i++)
 	{
 		GetArrayArray(g_hFastRespawnArray, i, fPosEntry);
 		fPosEntry2[0] = fPosEntry[0];
 		fPosEntry2[1] = fPosEntry[1];
 		fPosEntry2[2] = fPosEntry[2] += 90.0;
 		
-		new bool:bAllow = true;
+		bool bAllow = true;
 		
 		fEntryDistance = GetVectorDistance(fPosClient, fPosEntry);
 		fEntryDistance /= 50.0;
@@ -3836,7 +3833,7 @@ FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
 		// check if survivors can see it
 		if(bMustBeInvisible && bAllow)
 		{
-			for (new iSurvivor = 1; iSurvivor <= MaxClients; iSurvivor++)
+			for(int iSurvivor = 1; iSurvivor <= MaxClients; iSurvivor++)
 			{
 				if(validLivingSur(iSurvivor))
 				{
@@ -3854,8 +3851,8 @@ FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
 	
 	if(GetArraySize(hTombola) > 0)
 	{
-		new iRandom = GetRandomInt(0, GetArraySize(hTombola)-1);
-		new iResult = GetArrayCell(hTombola, iRandom);
+		int iRandom = GetRandomInt(0, GetArraySize(hTombola)-1);
+		int iResult = GetArrayCell(hTombola, iRandom);
 		CloseHandle(hTombola);
 		return iResult;
 	}
@@ -3866,7 +3863,7 @@ FastRespawnNearby(iClient, Float:fDistance, bool:bMustBeInvisible = true)
 	return -1;
 }
 
-bool:PerformFastRespawn(iClient)
+bool PerformFastRespawn(int iClient)
 {
 	if(!g_bZombieRage || !g_bZombieRageAllowRespawn)
 		return false;
@@ -3874,11 +3871,11 @@ bool:PerformFastRespawn(iClient)
 	return PerformFastRespawn2(iClient);
 }
 
-bool:PerformFastRespawn2(iClient)
+bool PerformFastRespawn2(int iClient)
 {	
 	// first let's find a target
-	new Handle:hTombola = CreateArray();
-	for (new i = 1; i <= MaxClients; i++)
+	Handle hTombola = CreateArray();
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validLivingSur(i))
 			PushArrayCell(hTombola, i);
@@ -3890,10 +3887,10 @@ bool:PerformFastRespawn2(iClient)
 		return false;
 	}
 	
-	new iTarget = GetArrayCell(hTombola, GetRandomInt(0, GetArraySize(hTombola)-1));
+	int iTarget = GetArrayCell(hTombola, GetRandomInt(0, GetArraySize(hTombola)-1));
 	CloseHandle(hTombola);
 	
-	new iResult = FastRespawnNearby(iTarget, 7.0);
+	int iResult = FastRespawnNearby(iTarget, 7.0);
 	if(iResult < 0)
 		return false;
 	
@@ -3906,12 +3903,12 @@ bool:PerformFastRespawn2(iClient)
 	return true;
 }
 
-FastRespawnDataCollect()
+void FastRespawnDataCollect()
 {
 	if(g_hFastRespawnArray == INVALID_HANDLE) FastRespawnReset();
 	
-	decl Float:fPos[3];
-	for (new iClient=1; iClient<=MaxClients; iClient++)
+	float fPos[3];
+	for(int iClient=1; iClient<=MaxClients; iClient++)
 	{
 		if(IsClientInGame(iClient) && validActivePlayer(iClient) && FastRespawnNearby(iClient, 1.0, false)<0 && !(GetEntityFlags(iClient) & FL_DUCKING == FL_DUCKING) && (GetEntityFlags(iClient) & FL_ONGROUND == FL_ONGROUND))
 		{
@@ -3921,9 +3918,9 @@ FastRespawnDataCollect()
 	}
 }
 
-stock VectorTowards(Float:vOrigin[3], Float:vTarget[3], Float:vAngle[3])
+stock void VectorTowards(float vOrigin[3], float vTarget[3], float vAngle[3])
 {
-	decl Float:vResults[3];
+	float vResults[3];
 	
 	MakeVectorFromPoints(vOrigin, vTarget, vResults);
 	GetVectorAngles(vResults, vAngle);
