@@ -49,16 +49,13 @@
 #else
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
 #endif
-#define BUILD_NUMBER "15"
+
+#define BUILD_NUMBER "20"
+
+#define debugmode true
 
 #if defined _steamtools_included
 bool steamtools = false;
-#endif
-
-#if !defined DEV_REVISION
-#define debugmode false;
-#else
-#define debugmode true
 #endif
 
 #define MAXATTRIBUTES 16
@@ -5609,7 +5606,7 @@ int GetAverageDamage()
 	return RoundFloat(float(iTotalDamage) / float(iCount));
 }
 
-void PrecacheBonus(String:strPath[])
+void PrecacheBonus(char[] strPath)
 {
 	char strPath2[PLATFORM_MAX_PATH];
 	Format(strPath2, sizeof(strPath2), "materials/left4fortress/%s.vmt", strPath);
@@ -5801,20 +5798,19 @@ TFClassWeapon GetWeaponInfoFromModel(char[] strModel, int &iSlot, int &iSwitchSl
 	return iClass;
 }
 
-bool AttemptGrabItem(iClient)
+bool AttemptGrabItem(int iClient)
 {
 	int iTarget = GetClientPointVisible(iClient);
 	char strClassname[255];
 	bool isWeapon;
 
-	if(debugmode)
-	{
-		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
-		PrintToChat(iClient, "%s", strClassname);
-	}
-
-	if(!IsClassname(iTarget, "prop_dynamic") && !debugmode)
+	#if debugmode
+	GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
+	PrintToChat(iClient, "%s", strClassname);
+	#else
+	if(!IsClassname(iTarget, "prop_dynamic"))
 		return false;
+	#endif
 
 	char name[64];
 	GetEntPropString(iTarget, Prop_Data, "m_iName", name, sizeof(name));
@@ -5822,12 +5818,14 @@ bool AttemptGrabItem(iClient)
 	{
 		isWeapon = true;
 	}
-	if(debugmode)
-		PrintToChat(iClient, "iTarget: %i | Weapon: %i | Solid: %i (%i)", iTarget, isWeapon ? 1 : 0, GetEntProp(iTarget, Prop_Send, "m_nSolidType"), GetEntProp(iTarget, Prop_Send, "m_usSolidFlags"));
-	if((iTarget<=0 || !isWeapon) && !debugmode)
+	#if debugmode
+	PrintToChat(iClient, "iTarget: %i | Weapon: %i | Solid: %i (%i)", iTarget, isWeapon ? 1 : 0, GetEntProp(iTarget, Prop_Send, "m_nSolidType"), GetEntProp(iTarget, Prop_Send, "m_usSolidFlags"));
+	#else
+	if((iTarget<=0 || !isWeapon))
 	{
 		return false;
 	}
+	#endif
 
 	char strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
@@ -6181,7 +6179,7 @@ stock void SetAmmo(int client, int weapon, int ammo=-1, int clip=-1)
 	}
 }
 
-void GetModelPath(intiIndex, char[] strModel, int iMaxSize)
+void GetModelPath(int intiIndex, char[] strModel, int iMaxSize)
 {
 	int iTable = FindStringTable("modelprecache");
 	ReadStringTable(iTable, iIndex, strModel, iMaxSize);
@@ -6275,7 +6273,7 @@ TFClassWeapon GetWeaponClass(char[] strModel)
 	int iSlot = -1;
 	int iSwitchSlot = -1;
 	bool bWearable = false;
-	chr strName[255];
+	char strName[255];
 	
 	TFClassWeapon iWeaponClass = GetWeaponInfoFromModel(strModel, iSlot, iSwitchSlot, hWeapon, bWearable, strName, sizeof(strName));
 	
@@ -6409,3 +6407,5 @@ stock bool IsEntityStuck(int iEntity)
 	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_SOLID, TraceDontHitEntity, iEntity);
 	return (TR_DidHit());
 }
+
+#file "Super Zombie Fortress"
