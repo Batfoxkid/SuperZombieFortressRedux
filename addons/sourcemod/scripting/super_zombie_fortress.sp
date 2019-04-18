@@ -4976,11 +4976,10 @@ public Action Timer_CheckItems(Handle timer, any userid)
 
 	SetEntityRenderColor(client, 255, 255, 255, 255);
 	int index = -1;
-	int MAX = MaxClients+1
-	int civilianCheck[MAX];
+	int[] civilianCheck = new int[MaxClients+1];
 
 	if(validZom(client))
-	{
+	{/*
 		float FireRate=1.0,	// 5 / 6	Any
 		Jump=1.0,		// 443		Any
 		Bleed=0.0,		// 149		Any
@@ -5181,7 +5180,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 			}
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-		}
+		}*/
 	}
 	else
 	{
@@ -5504,7 +5503,7 @@ stock bool IsClassname(int iEntity, char[] strClassname)
 	return false;
 }
 
-void GiveBonus(int iClient, char[] strBonus[])
+void GiveBonus(int iClient, char[] strBonus)
 {
 	if(iClient <= 0)
 		return;
