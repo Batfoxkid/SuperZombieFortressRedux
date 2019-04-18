@@ -1074,7 +1074,6 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 		return Plugin_Continue;
 
 	int entity = -1;
-	int weaponcount;
 	char name[64];
 	int method = 3;
 	// 0 = Nothing
@@ -1103,7 +1102,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 	{
 		method = 0;
 	}
-	else if(!StrContains(map, "szf_labs_remake", false))
+	else if(!StrContains(map, "szf_labs_remake", false) || !StrContains(map, "szf_4way", false))
 	{
 		method = 1;
 	}
@@ -2440,8 +2439,8 @@ public int panel_HandleHelp(Handle menu, MenuAction action, int param1, int para
 		switch(param2)
 		{
 			case 1: panel_PrintOverview(param1);
-			case 2: panel_PrintTeam(param1, view<as>int(surTeam()));
-			case 3: panel_PrintTeam(param1, view<as>int(zomTeam()));
+			case 2: panel_PrintTeam(param1, view_as<int>(surTeam()));
+			case 3: panel_PrintTeam(param1, view_as<int>(zomTeam()));
 			case 4: panel_PrintSurClass(param1);
 			case 5: panel_PrintZomClass(param1);
 			default: return;	 
@@ -2492,7 +2491,7 @@ public int panel_HandleOverview(Handle menu, MenuAction action, int param1, int 
 public void panel_PrintTeam(int client, int team)
 {
 	Handle panel = CreatePanel();
-	if(team == view<as>int(surTeam()))
+	if(team == view_as<int>(surTeam()))
 	{
 		char temp_string5[1024];
 		Format(temp_string5, sizeof(temp_string5),"%T", "SZF Survivor Team", client);
@@ -2510,7 +2509,7 @@ public void panel_PrintTeam(int client, int team)
 		DrawPanelText(panel, temp_string5);
 		DrawPanelText(panel, "-------------------------------------------");
 	}
-	else if(team == view<as>int(zomTeam()))
+	else if(team == view_as<int>(zomTeam()))
 	{
 		char temp_string6[2048];
 		Format(temp_string6, sizeof(temp_string6),"%T", "SZF Zombie Team", client);
