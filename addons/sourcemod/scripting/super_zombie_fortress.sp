@@ -1089,29 +1089,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 			stripMap = true;
 		}
 	}
-	/*while((entity = FindEntityByClassname2(entity, "prop_physics")) != -1)
-	{
-		weaponcount++;
-	}
-	PrintToChatAll("Found prop_physics %i times", weaponcount);
-	weaponcount=0;
-	int type, flags;
-	while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
-	{
-		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
-		if(starter && StrEqual(name, "szf_weapon_spawn", false))
-		{
-			weaponcount++;
-			type=GetEntProp(entity, Prop_Send, "m_nSolidType");
-			flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
-		}
-		else if(!starter && !StrEqual(name, "szf_weapon_spawn", false) && StrEqual(name, "szf_weapon", false))
-		{
-			weaponcount++;
-			type=GetEntProp(entity, Prop_Send, "m_nSolidType");
-			flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
-		}
-	}*/
+
 	char map[PLATFORM_MAX_PATH];
 	GetCurrentMap(map, sizeof(map));
 	if(!StrContains(map, "szf_expedition", false))
@@ -1133,9 +1111,6 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 	{
 		method = 2;
 	}
-
-	//PrintToChatAll("Found szf_weapon %i times", weaponcount);
-	//PrintToChatAll("Type: %i | Flags: %i | Map: %i", type, flags, method);
 
 	int weapon;
 	char model[255];
@@ -1373,7 +1348,7 @@ EndGracePeriod()
 //
 // Round End Event
 //
-public Action OnRoundEnd(Handle:event, const char[] name, bool dontBroadcast)
+public Action OnRoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
@@ -2465,8 +2440,8 @@ public int panel_HandleHelp(Handle menu, MenuAction action, int param1, int para
 		switch(param2)
 		{
 			case 1: panel_PrintOverview(param1);
-			case 2: panel_PrintTeam(param1, _:surTeam());
-			case 3: panel_PrintTeam(param1, _:zomTeam());
+			case 2: panel_PrintTeam(param1, view<as>int(surTeam()));
+			case 3: panel_PrintTeam(param1, view<as>int(zomTeam()));
 			case 4: panel_PrintSurClass(param1);
 			case 5: panel_PrintZomClass(param1);
 			default: return;	 
@@ -2517,7 +2492,7 @@ public int panel_HandleOverview(Handle menu, MenuAction action, int param1, int 
 public void panel_PrintTeam(int client, int team)
 {
 	Handle panel = CreatePanel();
-	if(team == _:surTeam())
+	if(team == view<as>int(surTeam()))
 	{
 		char temp_string5[1024];
 		Format(temp_string5, sizeof(temp_string5),"%T", "SZF Survivor Team", client);
@@ -2535,7 +2510,7 @@ public void panel_PrintTeam(int client, int team)
 		DrawPanelText(panel, temp_string5);
 		DrawPanelText(panel, "-------------------------------------------");
 	}
-	else if(team == _:zomTeam())
+	else if(team == view<as>int(zomTeam()))
 	{
 		char temp_string6[2048];
 		Format(temp_string6, sizeof(temp_string6),"%T", "SZF Zombie Team", client);
@@ -4174,15 +4149,16 @@ void GooDamageCheck()
 						DealDamage(iClient, iDamage, iAttacker, _, "projectile_stun_ball");
 						g_bGooified[iClient] = true;
 						
+						int random;
 						if(fDamage >= 7.0)
 						{
-							int iRandom = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
-							EmitSoundToClient(iClient, g_strSoundCritHit[iRandom], _, SNDLEVEL_AIRCRAFT);
+							random = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
+							EmitSoundToClient(iClient, g_strSoundCritHit[random], _, SNDLEVEL_AIRCRAFT);
 						}
 						else
 						{
-							int iRandom = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
-							EmitSoundToClient(iClient, g_strSoundFleshHit[iRandom], _, SNDLEVEL_AIRCRAFT);
+							random = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
+							EmitSoundToClient(iClient, g_strSoundFleshHit[random], _, SNDLEVEL_AIRCRAFT);
 						}
 					}
 				}
@@ -4268,7 +4244,7 @@ public Action GooEffect(Handle hTimer, any iGoo)
 	return Plugin_Stop;
 }
 
-public void OnEntityCreated(intiEntity, const char[] strClassname)
+public void OnEntityCreated(int iEntity, const char[] strClassname)
 {
 	if(StrEqual(strClassname, "tf_projectile_stun_ball", false))
 	{
@@ -4410,7 +4386,7 @@ int GetMostDamageZom()
 		}
 	}
 	
-	for(inti = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validZom(i) && g_iDamage[i] >= iHighest)
 		{
@@ -4446,17 +4422,20 @@ void ZombieTank(int iCaller = 0)
 	
 	if(ZombiesHaveTank())
 	{
-		if(validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t", "Tank Deny Active");
+		if(validClient(iCaller))
+			CPrintToChat(iCaller, "{olive}[SZF]{default} %t", "Tank Deny Active");
 		return;
 	}
 	if(g_iZombieTank > 0)
 	{   
-		if(validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Ready");
+		if(validClient(iCaller))
+			CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Ready");
 		return;
 	}
 	if(g_bZombieRage)
 	{
-		if(validClient(iCaller)) CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Frenzy");
+		if(validClient(iCaller))
+			CPrintToChat(iCaller, "{olive}[SZF]{default} %t","Tank Deny Frenzy");
 		return;
 	}
 	
