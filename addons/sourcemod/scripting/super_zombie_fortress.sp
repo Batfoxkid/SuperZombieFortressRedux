@@ -11,7 +11,7 @@
             Updated again by Mecha the Slag
  https://forums.alliedmods.net/showthread.php?p=1467101
 
-                 Revamped by Batfoxkid
+                Revamped by Batfoxkid
 
 */
 
@@ -26,6 +26,7 @@
 #include <tf2_stocks>
 #include <morecolors>
 #include <tf2items>
+//#include <super_zombie_fortress>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamtools>
 #define REQUIRE_EXTENSIONS
@@ -42,7 +43,7 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Build-5"
+#define DEV_REVISION "Build-7"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
@@ -62,10 +63,6 @@ new bool:debugmode = false;
 #else
 new bool:debugmode = true;
 #endif
-
-Handle g_hWeaponEquip;
-Handle g_hWWeaponEquip;
-Handle g_hGameConfig;
 
 #define MAXATTRIBUTES 16
 
@@ -133,7 +130,6 @@ new Handle:g_hMusicArray = INVALID_HANDLE;
 new Handle:g_hFastRespawnArray = INVALID_HANDLE;
 
 new Handle:hConfiguration = INVALID_HANDLE;
-new Handle:hEquipWearable = INVALID_HANDLE;
 
 new Handle:hWeaponSandman = INVALID_HANDLE;
 new Handle:hWeaponWatch = INVALID_HANDLE;
@@ -284,8 +280,6 @@ new String:g_weaponModels[][128] =
 	"models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl",
 	"models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl",
 	"models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl",
-	"models/weapons/w_models/w_stickybomb_launcher.mdl",
-	"models/weapons/w_models/w_grenadelauncher.mdl",
 	"models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl",
 	"models/weapons/c_models/c_flamethrower/c_flamethrower.mdl",
 	"models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl",
@@ -295,8 +289,6 @@ new String:g_weaponModels[][128] =
 	"models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl",
 	"models/weapons/c_models/c_directhit/c_directhit.mdl",
 	"models/weapons/c_models/c_blackbox/c_blackbox.mdl",
-	"models/weapons/w_models/w_rocketlauncher.mdl",
-	"models/weapons/w_models/w_shotgun.mdl",
 	"models/weapons/c_models/c_shotgun/c_shotgun.mdl",
 	"models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl",
 	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",
@@ -311,12 +303,7 @@ new String:g_weaponModels[][128] =
 	"models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl",
 	"models/weapons/c_models/c_medigun/c_medigun.mdl",
 	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",
-	"models/weapons/w_models/w_syringegun.mdl",
-	"models/weapons/w_models/w_syringegun.mdl",
-	"models/weapons/w_models/w_smg.mdl",
 	"models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl",
-	"models/weapons/w_models/w_sniperrifle.mdl",
-	"models/weapons/w_models/w_frontierjustice.mdl",
 	"models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl",
 	"models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl",
 	"models/weapons/c_models/c_pistol.mdl",
@@ -389,6 +376,7 @@ public OnPluginStart()
 	HookEvent("teamplay_setup_finished", OnSetupEnd);
 	HookEvent("teamplay_round_win", OnRoundEnd);
 	HookEvent("teamplay_timer_time_added", OnTimeAdded);
+	HookEvent("teamplay_broadcast_audio", OnBroadcast, EventHookMode_Pre);
 	HookEvent("player_spawn", OnPlayerSpawn);	
 	HookEvent("player_death", OnPlayerDeath);
 	
@@ -416,36 +404,8 @@ public OnPluginStart()
 	RegConsoleCmd("szf_menu", CommandMenu);
 	RegConsoleCmd("szf_pref", CommandTeamPref);
 	
-	g_hGameConfig = LoadGameConfigFile("szf_gamedata");
-	
-	if(!g_hGameConfig)
-	{
-		SetFailState("Failed to find szf_gamedata.txt gamedata! Can't continue.");
-	}	
-	
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(g_hGameConfig, SDKConf_Virtual, "WeaponEquip");
-	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	g_hWeaponEquip = EndPrepSDKCall();
-	
-	if(!g_hWeaponEquip)
-	{
-		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
-	}
-	
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(g_hGameConfig, SDKConf_Virtual, "EquipWearable");
-	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	g_hWWeaponEquip = EndPrepSDKCall();
-	
-	if(!g_hWWeaponEquip)
-	{
-		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
-	}
-	
 	CreateTimer(10.0, SpookySound, 0, TIMER_REPEAT);
 	
-	SetupSDK();
 	SetupWeapons();
 	CheckStartWeapons();
 
@@ -1007,7 +967,7 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 	if(!zf_bEnabled)
 		return Plugin_Continue; 
 
-	SetupMapWeapons();
+	CreateTimer(1.0, SetupMapWeapons, true, TIMER_FLAG_NO_MAPCHANGE);
 	//RemovePhysicObjects();
 	DetermineControlPoints();
 	
@@ -1133,7 +1093,8 @@ public Action:OnSetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if(!zf_bEnabled)
 		return Plugin_Continue;
-		 
+
+	CreateTimer(1.0, SetupMapWeapons, false, TIMER_FLAG_NO_MAPCHANGE);
 	EndGracePeriod();
 	
 	g_StartTime = GetTime();
@@ -1143,105 +1104,142 @@ public Action:OnSetupEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	return Plugin_Continue;
 }
 
-SetupMapWeapons()
+public Action SetupMapWeapons(Handle timer, bool starter)
 {
 	if(!zf_bEnabled)
-		return;
+		return Plugin_Continue;
 
 	int entity = -1;
 	int weaponcount;
 	char name[64];
+	int method = 3;
+	// 0 = Nothing
+	// 1 = Remodel
+	// 2 = Replace
+	// 3 = Replace & Remodel
 	while((entity = FindEntityByClassname2(entity, "info_target")) != -1)
 	{
 		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
-		if(!strcmp(name, "szf_mode_new", false))
+		if(!StrContains(name, "szf_mode_new", false))
 		{
 			stripMap = true;
 		}
 	}
-	while((entity = FindEntityByClassname2(entity, "prop_physics")) != -1)
+	/*while((entity = FindEntityByClassname2(entity, "prop_physics")) != -1)
 	{
 		weaponcount++;
 	}
 	PrintToChatAll("Found prop_physics %i times", weaponcount);
 	weaponcount=0;
-	//int type, flags;
+	int type, flags;
 	while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
 	{
 		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
-		if(!strcmp(name, "szf_weapon", false))
+		if(starter && StrEqual(name, "szf_weapon_spawn", false))
 		{
 			weaponcount++;
-			//DispatchKeyValue(entity, "StartDisabled", "0");
-			//DispatchKeyValue(entity, "fademindist", "-1");
-			//DispatchKeyValue(entity, "fademaxdist", "0");
-			//DispatchKeyValue(entity, "lightingorigin", "0");
-			SetEntProp(entity, Prop_Send, "m_nSolidType", 0);
-			SetEntProp(entity, Prop_Send, "m_usSolidFlags", 4);
-			SetEntProp(entity, Prop_Send, "m_CollisionGroup", 0);
-			//SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.99);
-			//type=GetEntProp(entity, Prop_Send, "m_nSolidType");
-			//flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
+			type=GetEntProp(entity, Prop_Send, "m_nSolidType");
+			flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
 		}
+		else if(!starter && !StrEqual(name, "szf_weapon_spawn", false) && StrEqual(name, "szf_weapon", false))
+		{
+			weaponcount++;
+			type=GetEntProp(entity, Prop_Send, "m_nSolidType");
+			flags=GetEntProp(entity, Prop_Send, "m_usSolidFlags");
+		}
+	}*/
+	char map[PLATFORM_MAX_PATH];
+	GetCurrentMap(map, sizeof(map));
+	if(!StrContains(map, "szf_expedition", false))
+	{
+		if(starter)
+			method = 0;
+		else
+			method = 1;
 	}
-	PrintToChatAll("Found szf_weapon %i times", weaponcount);
+	else if(!StrContains(map, "szf_fort", false))
+	{
+		method = 0;
+	}
+	else if(!StrContains(map, "szf_labs_remake", false))
+	{
+		method = 1;
+	}
+	else if(!StrContains(map, "szf_volcanoevac", false))
+	{
+		method = 2;
+	}
 
-	if(stripMap)
+	//PrintToChatAll("Found szf_weapon %i times", weaponcount);
+	//PrintToChatAll("Type: %i | Flags: %i | Map: %i", type, flags, method);
+
+	int weapon;
+	char model[255];
+	if(stripMap && method!=0)
 	{
 		while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
 		{
 			GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
-			if(!strcmp(name, "szf_weapon", false))
+			if((starter && StrEqual(name, "szf_weapon_spawn", false)) ||
+			   (!starter && !StrEqual(name, "szf_weapon_spawn", false) && StrEqual(name, "szf_weapon", false)))
 			{
-				new weapon = CreateEntityByName("prop_physics");
-				if(!IsValidEntity(weapon))
-					return;
-
-				SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
-
-				if(GetRandomInt(0, 6)>4)
+				if(method>1)
 				{
-					switch(GetRandomInt(0, 19))
+					weapon = CreateEntityByName("prop_dynamic");
+					if(!IsValidEntity(weapon))
 					{
-						case 0:
+						return Plugin_Continue;
+					}
+					SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
+					//SetEntityRenderMode(entity, RENDER_NONE); 
+					//SetEntityRenderColor(entity, 0, 0, 0, 0);
+					//SetEntProp(entity, Prop_Send, "m_nSolidType", 0);
+					//SetEntProp(entity, Prop_Send, "m_usSolidFlags", 4);
+					//SetEntProp(entity, Prop_Send, "m_CollisionGroup", 0);
+				}
+				else
+					weapon = entity;
+
+				if(method==2)
+				{
+					GetEntityModel(entity, model, sizeof(model));
+					SetEntityModel(weapon, model);
+				}
+				else if(GetRandomInt(0, 6)>4 && !starter)
+				{
+					switch(GetRandomInt(2, 18))
+					{
+						case 2:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_dartgun.mdl");
 						}
-						case 1:
+						case 3:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl");
 						}
-						case 2:
+						case 4:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/urinejar.mdl");
 						}
-						case 3:
+						case 5:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_bow/c_bow.mdl");
 						}
-						case 4:
+						case 6:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_leechgun/c_leechgun.mdl");
 						}
-						case 5:
+						case 7:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl");
 						}
-						case 6:
+						case 8:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl");
 						}
-						case 7:
-						{
-							SetEntityModel(weapon, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl");
-						}
-						case 8:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_stickybomb_launcher.mdl");
-						}
 						case 9:
 						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_grenadelauncher.mdl");
+							SetEntityModel(weapon, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl");
 						}
 						case 10:
 						{
@@ -1279,20 +1277,12 @@ SetupMapWeapons()
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_blackbox/c_blackbox.mdl");
 						}
-						case 19:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_rocketlauncher.mdl");
-						}
 					}
 				}
 				else if(GetRandomInt(0, 2)>0)
 				{
-					switch(GetRandomInt(0, 19))
+					switch(GetRandomInt(1, 15))
 					{
-						case 0:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_shotgun.mdl");
-						}
 						case 1:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_shotgun/c_shotgun.mdl");
@@ -1351,34 +1341,14 @@ SetupMapWeapons()
 						}
 						case 15:
 						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_syringegun.mdl");
-						}
-						case 16:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_syringegun.mdl");
-						}
-						case 17:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_smg.mdl");
-						}
-						case 18:
-						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl");
-						}
-						case 19:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_sniperrifle.mdl");
 						}
 					}
 				}
 				else
 				{
-					switch(GetRandomInt(0, 4))
+					switch(GetRandomInt(1, 4))
 					{
-						case 0:
-						{
-							SetEntityModel(weapon, "models/weapons/w_models/w_frontierjustice.mdl");
-						}
 						case 1:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl");
@@ -1400,24 +1370,30 @@ SetupMapWeapons()
 						}
 					}
 				}
-				static float angle[3];
-				GetEntPropVector(entity, Prop_Send, "m_angRotation", angle);
+				if(method>1)
+				{
+					static float angle[3];
+					GetEntPropVector(entity, Prop_Send, "m_angRotation", angle);
 
-				static float position[3];
-				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", position);
+					static float position[3];
+					GetEntPropVector(entity, Prop_Send, "m_vecOrigin", position);
 
-				DispatchSpawn(weapon);
-				TeleportEntity(weapon, position, angle, NULL_VECTOR);
-				SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
+					DispatchSpawn(weapon);
+					TeleportEntity(weapon, position, angle, NULL_VECTOR);
+					SetEntProp(weapon, Prop_Data, "m_takedamage", 0);
 
-				SetEntProp(weapon, Prop_Send, "m_nSolidType", 6);
-				SetEntProp(weapon, Prop_Send, "m_usSolidFlags", 2);
-				SetEntProp(weapon, Prop_Send, "m_CollisionGroup", 5);
+					SetEntProp(weapon, Prop_Send, "m_nSolidType", 6);
+					SetEntProp(weapon, Prop_Send, "m_usSolidFlags", 2);
+					SetEntProp(weapon, Prop_Send, "m_CollisionGroup", 5);
+					//SetEntPropString(weapon, Prop_Data, "m_iName", name);
+
+					AcceptEntityInput(entity, "Kill");
+				}
 			}
 		}
 	}
 
-	return;
+	return Plugin_Continue;
 }
 
 EndGracePeriod()
@@ -1744,7 +1720,6 @@ public Action:timer_main(Handle:timer) // 1Hz
 	if(!zf_bEnabled)
 		return Plugin_Continue;
 	
-	handle_survivorAbilities();
 	handle_zombieAbilities();	 
 	if(g_bZombieRage)
 	{
@@ -1991,108 +1966,6 @@ handle_winCondition()
 	{
 		endRound(zomTeam());
 	}
-}
-
-handle_survivorAbilities()
-{
-	/*decl clipAmmo;
-	decl resAmmo;
-	decl ammoAdj;
-		
-	for(new i = 1; i <= MaxClients; i++)
-	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
-		{
-			// 1. Handle survivor weapon rules.
-			//		SMG doesn't have to reload. 
-			//		Syringe gun / blutsauger don't have to reload. 
-			//		Flamethrower / backburner ammo limited to 125.
-			switch(TF2_GetPlayerClass(i))
-			{
-				case TFClass_Sniper:
-				{
-					if(isEquipped(i, ZFWEAP_SMG))
-					{
-						clipAmmo = getClipAmmo(i, 1);
-						resAmmo = getResAmmo(i, 1);						
-						ammoAdj = min((25 - clipAmmo), resAmmo);
-						if(ammoAdj > 0)
-						{
-							setClipAmmo(i, 1, (clipAmmo + ammoAdj));
-							setResAmmo(i, 1, (resAmmo - ammoAdj));
-						}
-					}
-				}
-				
-				case TFClass_Medic: 
-				{
-					if(isEquipped(i, ZFWEAP_SYRINGEGUN) || isEquipped(i, ZFWEAP_BLUTSAUGER))
-					{
-						clipAmmo = getClipAmmo(i, 0);
-						resAmmo = getResAmmo(i, 0);
-						ammoAdj = min((40 - clipAmmo), resAmmo);
-						if(ammoAdj > 0)
-						{
-							setClipAmmo(i, 0, (clipAmmo + ammoAdj));
-							setResAmmo(i, 0, (resAmmo - ammoAdj));
-						}
-					}					 
-				}
-				
-				case TFClass_Pyro:
-				{
-					resAmmo = getResAmmo(i, 0);
-					if(resAmmo > 125)
-					{
-						ammoAdj = max((resAmmo - 10),125);
-						setResAmmo(i, 0, ammoAdj);
-					}		
-				}					
-			} //switch
-			
-			// 2. Handle survivor crit bonus rules.
-			//		Decrement morale bonus.
-			szf_critBonus[i] = max(0, szf_critBonus[i] - 1);
-			
-		} //if
-	} //for
-	
-	// 3. Handle sentry rules.
-	//		+ Norm sentry starts with 60 ammo and decays to 10.
-	//		+ Mini sentry starts with 60 ammo and decays to 0, then self destructs.
-	//		+ No sentry can be upgraded.
-	new index = -1;
-	while ((index = FindEntityByClassname(index, "obj_sentrygun")) != -1)
-	{		
-		new bool:sentBuilding = GetEntProp(index, Prop_Send, "m_bBuilding") == 1;
-		new bool:sentPlacing = GetEntProp(index, Prop_Send, "m_bPlacing") == 1;
-		new bool:sentCarried = GetEntProp(index, Prop_Send, "m_bCarried") == 1;
-		new bool:sentIsMini = GetEntProp(index, Prop_Send, "m_bMiniBuilding") == 1;
-		if(!sentBuilding && !sentPlacing && !sentCarried)
-		{	
-			new sentAmmo = GetEntProp(index, Prop_Send, "m_iAmmoShells");
-			if(sentAmmo > 0)
-			{
-				if(sentIsMini || (sentAmmo > 10))
-				{
-					sentAmmo = min(60, (sentAmmo - 1));
-					SetEntProp(index, Prop_Send, "m_iAmmoShells", sentAmmo);					
-				}
-			}
-			else
-			{
-				SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
-				AcceptEntityInput(index, "RemoveHealth");
-			}
-		}
-		
-		new sentLevel = GetEntProp(index, Prop_Send, "m_iHighestUpgradeLevel");
-		if(sentLevel > 1)
-		{
-			SetVariantInt(GetEntProp(index, Prop_Send, "m_iMaxHealth"));
-			AcceptEntityInput(index, "RemoveHealth");		
-		}
-	}*/
 }
 
 handle_zombieAbilities()
@@ -3117,7 +2990,7 @@ public Action:CheckLastPlayer(Handle:hTimer)
 		{
 			if(IsClientInGame(iLoop) && IsPlayerAlive(iLoop) && isSur(iLoop))
 			{
-				TF2_RegeneratePlayer(iLoop);
+				//TF2_RegeneratePlayer(iLoop);
 				HandleClientInventory(iLoop);
 				SetEntityHealth(iLoop, 255);
 				CPrintToChat(iLoop, "{olive}[SZF]{default} %t", "Last Mann", iLoop);
@@ -3186,7 +3059,18 @@ stock Float:GetTimePercentage()
 		TimePercentage = 1.0;
 
 	return TimePercentage;
-}  
+}
+
+public Action OnBroadcast(Handle event, const char[] name, bool dontBroadcast)
+{
+	char sound[PLATFORM_MAX_PATH];
+	GetEventString(event, "sound", sound, sizeof(sound));
+	if(!StrContains(sound, "Game.Your", false) || StrEqual(sound, "Game.Stalemate", false))
+	{
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
 
 CreateZombieSkin(iClient)
 {   
@@ -4276,16 +4160,6 @@ SetValidSlot(iClient)
 	}
 }
 
-SetupSDK()
-{
-	/*hConfiguration = LoadGameConfigFile("mechatheslag_global");
-
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hConfiguration, SDKConf_Virtual, "EquipWearable");
-	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	hEquipWearable = EndPrepSDKCall();*/
-}
-
 SetupWeapons()
 {
 	// Scout's Special Stun Bat
@@ -4843,200 +4717,239 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		return Plugin_Continue;
 	}
 
-	switch(iItemDefinitionIndex)
+	if(validZom(client))
 	{
-		case 36:	// Blutsauger
+	}
+	else
+	{
+		switch(iItemDefinitionIndex)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "16 ; 1 ; 129 ; 0 ; 191 ; -2");
-			// 16: On Hit: Gain up to +1 health
-			// 129:	0 health drained per second on wearer
-			// 191:	-2 health drained per second on wearer
+			case 36:	// Blutsauger
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "16 ; 1");
+				// 16: On Hit: Gain up to +1 health
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 129, 1001:	// Buff Banner
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "319 ; 0.6");
+				// 319:	-40% buff duration
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 132, 266, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
+				// 54:	-25% slower move speed on wearer
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 133:	// Gunboats
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 0.7");
+				// 58:	+50% self damage force
+				// 135:	-30% blast damage from rocket jumps
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 142:	// Gunslinger
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0");
+				// 26:	+0 max health on wearer
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 155:	// Southern Hospitality
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "61 ; 1 ; 412 ; 1.1");
+				// 61: 0% fire damage vulnerability on wearer
+				// 412: 10% damage vulnerability on wearer
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 226:	// Battalion's Backup
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
+				// 26:	+0 max health on wearer
+				// 140:	+10 max health on wearer
+				// 319:	-40% buff duration
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 228:	// Black Box
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "741 ; 5");
+				// 741:	On Hit: Gain up to +5 health per attack
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 237:	// Rocket Jumper
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 77 ; 0.75 ; 135 ; 0.5");
+				// 58:	+30% self damage force
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 265:	// Sticky Jumper
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 79 ; 0.75 ; 135 ; 0.5");
+				// 58:	+30% self damage force
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 304:	// Amputator
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
+				// 57:	+2 health regenerated per second on wearer
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 354:	// Concheror
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2 ; 319 ; 0.6");
+				// 57:	+2 health regenerated per second on wearer
+				// 319:	-40% buff duration
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 404:	// Persian Persuader
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "778 ; 1.15");
+				// 58:	Melee hits refill 15% of your charge meter
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 405, 608:	// Ali Baba's Wee Booties & Bootlegger
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 20");
+				// 26:	+0 max health on wearer
+				// 140:	+20 max health on wearer
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 444:	// Mantreads
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+				// 58:	+50% self damage force
+				// 135:	+30% blast damage from rocket jumps
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+			case 642:	// Cozy Camper
+			{
+				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
+		}
+		if(!StrContains(classname, "tf_weapon_shovel") ||
+		   !StrContains(classname, "tf_weapon_fireaxe") ||
+		   !StrContains(classname, "tf_weapon_breakable_sign") ||
+		   !StrContains(classname, "tf_weapon_slap") ||
+		   !StrContains(classname, "tf_weapon_bottle") ||
+		   !StrContains(classname, "tf_weapon_sword") ||
+		   !StrContains(classname, "tf_weapon_katana") ||
+		   !StrContains(classname, "tf_weapon_wrench") ||
+		   !StrContains(classname, "tf_weapon_robot_arm") ||
+		   !StrContains(classname, "tf_weapon_club"))			// Melees
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
+			// 28:	-50% random critical hit chance
+			// 69:	-90% health from healers on wearer
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 129);
-			}
-			#endif
 		}
-		case 129, 1001:	// Buff Banner
+		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "319 ; 0.6");
-			// 319:	-40% buff duration
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
+			// 59:	-50% self damage force
+			// 77:	-25% max primary ammo on wearer
+			// 135:	-50% blast damage from rocket jumps
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
 		}
-		case 132, 266, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
+		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
-			// 54:	-25% slower move speed on wearer
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
+			// 5:	-35% slower fire rate
+			// 59:	-50% self damage force
+			// 72:	-50% afterburn damage penalty
+			// 77:	-25% max primary ammo on wearer
+			// 96:	+50% slower reload time
+			// 135:	-50% blast damage from rocket jumps
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
 		}
-		case 133:	// Gunboats
+		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 0.7");
-			// 58:	+50% self damage force
-			// 135:	-30% blast damage from rocket jumps
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_SetByDefIndex(client, 58, 1.5);
-				TF2Attrib_SetByDefIndex(client, 135, 0.7);
-			}
-			#endif
-		}
-		case 142:	// Gunslinger
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0");
-			// 26:	+0 max health on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 26);
-			}
-			#endif
-		}
-		case 155:	// Southern Hospitality
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "61 ; 1 ; 412 ; 1.1");
-			// 61: 0% fire damage vulnerability on wearer
-			// 412: 10% damage vulnerability on wearer
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
+			// 5:	-25% slower fire rate
+			// 96:	+35% slower reload time
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
 		}
-		case 226:	// Battalion's Backup
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
-			// 26:	+0 max health on wearer
-			// 140:	+10 max health on wearer
-			// 319:	-40% buff duration
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 26);
-			}
-			#endif
-		}
-		case 228:	// Black Box
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "741 ; 5");
-			// 741:	On Hit: Gain up to +5 health per attack
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 237, 265:	// Rocket Jumper & Sticky Jumper
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.3");
-			// 58:	+30% self damage force
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 304:	// Amputator
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1");
-			// 57:	+0 health regenerated per second on wearer
-			// 190:	+1 health regenerated per second on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 57);
-			}
-			#endif
-		}
-		case 354:	// Concheror
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1 ; 319 ; 0.6");
-			// 57:	+0 health regenerated per second on wearer
-			// 190:	+1 health regenerated per second on wearer
-			// 319:	-40% buff duration
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 57);
-			}
-			#endif
-		}
-		case 404:	// Persian Persuader
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "778 ; 1.15");
-			// 58:	Melee hits refill 15% of your charge meter
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 405, 608:	// Ali Baba's Wee Booties & Bootlegger
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 20");
-			// 26:	+0 max health on wearer
-			// 140:	+20 max health on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_RemoveByDefIndex(client, 26);
-				TF2Attrib_SetByDefIndex(client, 140, 20.0);
-			}
-			#endif
-		}
-		case 444:	// Mantreads
+		if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
 			// 58:	+50% self damage force
@@ -5046,298 +4959,202 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_SetByDefIndex(client, 58, 1.5);
-				TF2Attrib_SetByDefIndex(client, 135, 1.3);
-			}
-			#endif
 		}
-		case 642:	// Cozy Camper
+		if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 0 ; 190 ; 1");
-			// 57:	+0 health regenerated per second on wearer
-			// 190:	+1 health regenerated per second on wearer
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
+			// 220:	Gain 15% of base health on kill
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-
-			#if defined _tf2attributes_included
-			if(tf2attributes)
+		}
+		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
+		{
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
+			// 77:	-50% max primary ammo on wearer
+			// 869:	Minicrits whenever it would normally crit
+			if(itemOverride!=INVALID_HANDLE)
 			{
-				TF2Attrib_RemoveByDefIndex(client, 57);
-				TF2Attrib_SetByDefIndex(client, 190, 1.0);
+				item=itemOverride;
+				return Plugin_Changed;
 			}
-			#endif
 		}
-	}
-	if(!StrContains(classname, "tf_weapon_shovel") ||
-	   !StrContains(classname, "tf_weapon_fireaxe") ||
-	   !StrContains(classname, "tf_weapon_breakable_sign") ||
-	   !StrContains(classname, "tf_weapon_slap") ||
-	   !StrContains(classname, "tf_weapon_bottle") ||
-	   !StrContains(classname, "tf_weapon_sword") ||
-	   !StrContains(classname, "tf_weapon_katana") ||
-	   !StrContains(classname, "tf_weapon_wrench") ||
-	   !StrContains(classname, "tf_weapon_robot_arm") ||
-	   !StrContains(classname, "tf_weapon_club"))			// Melees
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
-		// 28:	-50% random critical hit chance
-		// 69:	-90% health from healers on wearer
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
+			// 795:	-40% damage bonus vs burning players
+			// 869:	Minicrits whenever it would normally crit
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
-		// 59:	-50% self damage force
-		// 77:	-25% max primary ammo on wearer
-		// 135:	-50% blast damage from rocket jumps
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
+			// 2059:	
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
-		// 5:	-35% slower fire rate
-		// 59:	-50% self damage force
-		// 72:	-50% afterburn damage penalty
-		// 77:	-25% max primary ammo on wearer
-		// 96:	+50% slower reload time
-		// 135:	-50% blast damage from rocket jumps
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+			// 77:	-25% max primary ammo on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
-		// 5:	-25% slower fire rate
-		// 96:	+35% slower reload time
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5");
+			// 59:	-75% self damage force
+			// 79:	-25% max secondary ammo on wearer
+			// 135:	-50% blast damage from rocket jumps
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
-		// 58:	+50% self damage force
-		// 135:	+30% blast damage from rocket jumps
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
+			// 249:	-50% increase in charge recharge rate
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
-		// 220:	Gain 15% of base health on kill
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
+			// 28: -75% random critical hit chance
+			// 734:	-90% less healing from all sources
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
-		// 77:	-50% max primary ammo on wearer
-		// 869:	Minicrits whenever it would normally crit
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
+			// 869:	Minicrits whenever it would normally crit
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
-		// 795:	-40% damage bonus vs burning players
-		// 869:	Minicrits whenever it would normally crit
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
+			// 5:	-20% slower fire rate
+			// 96:	+35% slower reload time
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
-		// 2059:	
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+			// 77:	-25% max primary ammo on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
-		// 77:	-25% max primary ammo on wearer
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
+			// 79:	-76% max secondary ammo on wearer
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 79 ; 0.75 ; 135 ; 0.5");
-		// 59:	-50% self damage force
-		// 79:	-25% max secondary ammo on wearer
-		// 135:	-50% blast damage from rocket jumps
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
+			// 20:	100% critical hit vs burning players
+			// 408:	100% critical hit vs non-burning players
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
-		// 249:	-50% increase in charge recharge rate
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
+			// 286:	-50% max building health
+			// 287:	-35% Sentry Gun damage bonus
+			// 464: Sentry build speed increased by -50%
+			// 465: Increases teleporter build speed by -50%
+			// 790: +900% metal cost when constructing or upgrading teleporters
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
-		// 28: -75% random critical hit chance
-		// 734:	-90% less healing from all sources
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
+			// 2:	+200% damage bonus
+			// 77:	-80% max primary ammo on wearer
+			// 138:	-67% damage vs players
+			// 775:	-67% damage penalty vs buildings
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
-		// 869:	Minicrits whenever it would normally crit
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
+			// 9:	-80% ÜberCharge rate
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
-		// 5:	-20% slower fire rate
-		// 96:	+35% slower reload time
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
 		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
+			// 28:	-70% random critical hit chance
+			// 69:	-85% health from healers on wearer
+			// 131:	-300% natural regen rate
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
-		// 77:	-25% max primary ammo on wearer
-		if(itemOverride!=INVALID_HANDLE)
+		if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
 		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
-		// 79:	-76% max secondary ammo on wearer
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
-		// 20:	100% critical hit vs burning players
-		// 408:	100% critical hit vs non-burning players
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
-		// 286:	-50% max building health
-		// 287:	-35% Sentry Gun damage bonus
-		// 464: Sentry build speed increased by -50%
-		// 465: Increases teleporter build speed by -50%
-		// 790: +900% metal cost when constructing or upgrading teleporters
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
-		// 2:	+200% damage bonus
-		// 77:	-80% max primary ammo on wearer
-		// 138:	-67% damage vs players
-		// 775:	-67% damage penalty vs buildings
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
-		// 9:	-80% ÜberCharge rate
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
-		// 28:	-70% random critical hit chance
-		// 69:	-85% health from healers on wearer
-		// 131:	-300% natural regen rate
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	}
-	if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
-	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
-		// 249:	-60% increase in charge recharge rate
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
+			// 249:	-60% increase in charge recharge rate
+			if(itemOverride!=INVALID_HANDLE)
+			{
+				item=itemOverride;
+				return Plugin_Changed;
+			}
 		}
 	}
 	return Plugin_Continue;
@@ -5355,73 +5172,280 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 	new index=-1;
 	new civilianCheck[MaxClients+1];
 
-	new weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
-	if(IsValidEntity(weapon))
+	if(validZom(client))
 	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
+		float FireRate=1.0,	// 5 / 6	Any
+		Jump=1.0,		// 443		Any
+		Bleed=0.0,		// 149		Any
+		HealthOnKill=0.0,	// 220		Any
+		HealthOnHit=0.0,	// 16		Any
+		Damage=1.0,		// 1 / 2	Any
+		Speed=1.0,		// 442		Any
+		SlowBy40=0.0,		// 182		Any
+		DamageVsPlayers=1.0,	// 138		Any
+		DamageVsBurning=1.0,	// 795		Any
+		SlowChance=0.0,		// 32		Any
+		RandomCrits=1.0;	// 15 / 28	Any
+
+		int Health=0,		// 125 / 26	Any
+		Knockback=0,		// 216		Any
+		CritsAreMini=0,		// 869		Any
+		CritsOnBack=0,		// 362		Any
+		NoDisguises=1,		// 155		Spy
+		NoCloak=0,		// Custom	Spy
+		SilentCloak=0,		// 160		Spy
+		CloakOnHit=0,		// 166		Spy
+		CloakOnKill=100;	// 158		Spy
+
+		int weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		if(IsValidEntity(weapon))
 		{
-			case 527:  // Windowmaker
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
 			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "");
+				// Scout
+				case 45, 1078:  // Force-A-Nature
+				{
+					Knockback=1;
+					SlowChance=1.0;
+					FireRate=1.25;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 220:  // Shortstop
+				{
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+					SpawnWeapon(client, "tf_weapon_handgun_scout", 220, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
+				}
+				case 448:  // Soda Popper
+				{
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+					//SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 818 ; 1");
+				}
+				case 772:  // Baby Face's Blaster
+				{
+					Speed=0.9;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
+				}
+				case 1103:  // Back Scatter
+				{
+					FireRate=1.15;
+					CritsOnBack=1;
+					CritsAreMini=1;
+					RandomCrits=0.0;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				// Heavy
+				case 41:  // Natascha
+				{
+					FireRate=1.25;
+					DamageVsPlayers=0.75;
+					Health=30;
+					SlowBy40=5.0;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 312:  // Brass Beast
+				{
+					FireRate=1.3;
+					Damage=1.25;
+					Health=30;
+					Speed=0.75;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 424:  // Tomislav
+				{
+					FireRate=1.1;
+					Speed=1.1;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 811, 832:  // Huo-Long Heater
+				{
+					//DamageVsBurning=1.2;
+					//DamageVsPlayers=0.75;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				// Spy
+				case 61, 1006:  // Ambassador
+				{
+					FireRate=1.2;
+					Damage=0.85;
+					DamageVsPlayers=1.25;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 224:  // L'Etranger
+				{
+					CloakOnHit=30;
+					DamageVsPlayers=0.9;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 460:  // Enforcer
+				{
+					NoDisguises=0;
+					NoCloak=1;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				case 525:  // Diamondback
+				{
+					Damage=0.85;
+					DamageVsPlayers=1.2;
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+				}
+				default:
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 			}
+		}
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+		if(IsValidEntity(weapon))
+		{
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
+			{
+				// Scout
+				case 46, 1145:  // Bonk! Atomic Punch
+				{
+					Health-=100;
+					TF2_AddCondition(client, TFCond_DodgeChance, -1.0);
+				}
+				case 163:  // Crit-a-Cola
+				{
+					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+				}
+				case 222, 1121:  // Mad Milk
+				{
+					//DamageVsPlayers-=0.5;
+				}
+				case 449:  // Winger
+				{
+					FireRate*=0.9;
+					Jump*=1.15;
+				}
+				case 773:  // Pretty Boy's Pocket Pistol
+				{
+					FireRate*=1.1;
+					HealthOnHit+=6;
+				}
+				case 812, 833:  // Flying Guillotine
+				{
+					FireRate*=1.15;
+					Bleed+=1.0;
+				}
+				// Heavy
+				case 42, 863, 1002:  // Sandvich
+				{
+					Health+=150;
+					Speed*=0.7;
+				}
+				case 159, 433:  // Dalokohs Bar
+				{
+					Health+=50;
+					Speed*=0.9;
+				}
+				case 311:  // Buffalo Steak Sandvich
+				{
+					Speed*=1.3;
+					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+				}
+				case 425:  // Family Business
+				{
+					FireRate*=0.85;
+					Speed*=0.95;
+				}
+				case 1153:  // Panic Attack
+				{
+					Health-=100;
+					Speed*=1.5;
+					Jump*=1.15;
+					DamageVsPlayers*=0.9;
+					FireRate*=1.1;
+				}
+				case 1190:  // Second Banana
+				{
+					Health+=100;
+					Speed*=0.8;
+				}
+				// Spy
+				case 810, 831:  // Red-Tape Recorder
+				{
+					FireRate=1.35;
+					Speed=1.25;
+					DamageVsPlayers=0.65;
+				}
+			}
+			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 		}
 	}
 	else
 	{
-		civilianCheck[client]++;
-	}
-
-	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
-	if(IsValidEntity(weapon))
-	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
+		new weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		if(IsValidEntity(weapon))
 		{
-			case 998:	// Vaccinator
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
 			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-				SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");
+				case 527:  // Windowmaker
+				{
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
+					SpawnWeapon(client, "tf_weapon_shotgun_primary", 9, 1, 0, "");
+				}
 			}
 		}
-
-		if(TF2_GetPlayerClass(client)==TFClass_Medic)
+		else
 		{
-			if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
+			civilianCheck[client]++;
+		}
+
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+		if(IsValidEntity(weapon))
+		{
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
 			{
-				SetEntityRenderMode(weapon, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(weapon, 255, 255, 255, 75);
+				case 998:	// Vaccinator
+				{
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
+					SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");
+				}
+			}
+
+			if(TF2_GetPlayerClass(client)==TFClass_Medic)
+			{
+				if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
+				{
+					SetEntityRenderMode(weapon, RENDER_TRANSCOLOR);
+					SetEntityRenderColor(weapon, 255, 255, 255, 75);
+				}
 			}
 		}
-	}
-	else
-	{
-		civilianCheck[client]++;
-	}
-
-	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
-	if(IsValidEntity(weapon))
-	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
+		else
 		{
-			case 589:	// Eureka Effect
+			civilianCheck[client]++;
+		}
+
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
+		if(IsValidEntity(weapon))
+		{
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
 			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-				SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.5 ; 69 ; 0.1");
+				case 589:	// Eureka Effect
+				{
+					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
+					SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.5 ; 69 ; 0.1");
+				}
 			}
 		}
-	}
-	else
-	{
-		civilianCheck[client]++;
-	}
+		else
+		{
+			civilianCheck[client]++;
+		}
 
-	if(civilianCheck[client]==3)
-	{
-		civilianCheck[client]=0;
-		TF2_RespawnPlayer(client);
+		if(civilianCheck[client]==3)
+		{
+			civilianCheck[client]=0;
+			TF2_RespawnPlayer(client);
+		}
 	}
 	civilianCheck[client]=0;
 	return Plugin_Continue;
@@ -5738,10 +5762,10 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 		if(g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
 	}
 	
-	new Handle:event=CreateEvent("player_escort_score", true);
-	SetEventInt(event, "player", iClient);
-	SetEventInt(event, "points", 5);
-	FireEvent(event);
+	//new Handle:event=CreateEvent("player_escort_score", true);
+	//SetEventInt(event, "player", iClient);
+	//SetEventInt(event, "points", 5);
+	//FireEvent(event);
 	
 	g_bBonusAlt[iClient] = !g_bBonusAlt[iClient];
 	
@@ -5956,27 +5980,30 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 AttemptGrabItem(iClient)
 {
 	new iTarget = GetClientPointVisible(iClient);
-	new iWeapon;
 	new String:strClassname[255];
 	bool isWeapon;
 
-	GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
-	PrintToChat(iClient, "%s", strClassname);
+	if(debugmode)
+	{
+		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
+		PrintToChat(iClient, "%s", strClassname);
+	}
 
-	//if(!IsClassname(iTarget, "prop_dynamic"))
-		//return false;
+	if(!IsClassname(iTarget, "prop_dynamic") && !debugmode)
+		return false;
 
 	char name[64];
 	GetEntPropString(iTarget, Prop_Data, "m_iName", name, sizeof(name));
-	if(!strcmp(name, "szf_weapon", false) || !strcmp(name, "szf_weapon_spawn", false))
+	if(!StrContains(name, "szf_weapon", false))
 	{
 		isWeapon = true;
 	}
-	PrintToChat(iClient, "iTarget: %i | Weapon: %i | Solid: %i (%i)", iTarget, isWeapon ? 1 : 0, GetEntProp(iTarget, Prop_Send, "m_nSolidType"), GetEntProp(iTarget, Prop_Send, "m_usSolidFlags"));
-	//if(iTarget<=0 || !isWeapon)
-	//{
-		//return false;
-	//}
+	if(debugmode)
+		PrintToChat(iClient, "iTarget: %i | Weapon: %i | Solid: %i (%i)", iTarget, isWeapon ? 1 : 0, GetEntProp(iTarget, Prop_Send, "m_nSolidType"), GetEntProp(iTarget, Prop_Send, "m_usSolidFlags"));
+	if((iTarget<=0 || !isWeapon) && !debugmode)
+	{
+		return false;
+	}
 
 	decl String:strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
@@ -5986,358 +6013,248 @@ AttemptGrabItem(iClient)
 	{
 		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 10, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 10, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl") && cvarExtraClass)
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") && cvarExtraClass)
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
 		{
-			//GiveItem(iClient, 18, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 18, 1, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher", 18, 1, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_blackbox/c_blackbox.mdl"))
 		{
-			//GiveItem(iClient, 228, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 228, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 18, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher", 228, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 18, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_directhit/c_directhit.mdl"))
 		{
-			//GiveItem(iClient, 127, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher_directhit", 127, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher_directhit", 127, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl"))
 		{
-			//GiveItem(iClient, 513, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 513, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher", 513, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
-			//GiveItem(iClient, 415, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_soldier", 415, 0, "", 0, 36, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl"))
 		{
-			//GiveItem(iClient, 442, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_raygun", 442, 0, "5 ; 1.25 ; 96 ; 1.35", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_raygun", 442, 0, "5 ; 1.25 ; 96 ; 1.35", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl"))
 		{
-			//GiveItem(iClient, 414, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_rocketlauncher", 414, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 20, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher", 414, 0, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 20, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl"))
 		{
-			//GiveItem(iClient, 441, iTarget) 
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 0, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5", 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_particle_cannon", 441, 0, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl"))
 		{
-			//GiveItem(iClient, 354, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 354, 0, "57 ; 0 ; 190 ; 1 ; 319 ; 0.6", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_buff_item", 354, 0, "57 ; 0 ; 190 ; 1 ; 319 ; 0.6", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bugle/c_bugle.mdl"))
 		{
-			//GiveItem(iClient, 129, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_buff_item", 129, 0, "319 ; 0.6", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_buff_item", 129, 0, "319 ; 0.6", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Pyro) // Pyro Only Weapons
 	{
 		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 12, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 12, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_pyro", 12, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl") && cvarExtraClass)
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") && cvarExtraClass)
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_pyro", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl"))
 		{
-			//GiveItem(iClient, 39, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 39, 0, "", 0, 16);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_flaregun", 39, 0, "", 0, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_detonator/c_detonator.mdl"))
 		{
-			//GiveItem(iClient, 351, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun", 351, 0, "", 0, 16);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_flaregun", 351, 0, "", 0, 16);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl"))
 		{
-			//GiveItem(iClient, 415, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun", 415, 0, "", 0, 36, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_degreaser/c_degreaser.mdl"))
 		{
-			//GiveItem(iClient, 215, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 215, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_flamethrower", 215, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl"))
 		{
-			//GiveItem(iClient, 594, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 594, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_flamethrower", 594, 0, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_flamethrower/c_flamethrower.mdl"))
 		{
-			//GiveItem(iClient, 21, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flamethrower", 21, 1, "77 ; 0.5 ; 869 ; 1", 0, 100);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_flamethrower", 21, 1, "77 ; 0.5 ; 869 ; 1", 0, 100);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl"))
 		{
-			//GiveItem(iClient, 595, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_flaregun_revenge", 595, 0, "", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_flaregun_revenge", 595, 0, "", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_DemoMan) // Demoman Only Weapons
 	{
 		if(StrEqual(strModel, "models/weapons/w_models/w_grenadelauncher.mdl"))
 		{
-			//GiveItem(iClient, 19, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 19, 1, "77 ; 0.75", 0, 15, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_grenadelauncher", 19, 1, "77 ; 0.75", 0, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_scottish_resistance.mdl"))
 		{
-			//GiveItem(iClient, 130, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 130, 0, "59 ; 0.5 ; 78 ; 1 ; 135 ; 0.5", 0, 32, 0);
-			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pipebomblauncher", 130, 0, "59 ; 0.25 ; 78 ; 1 ; 135 ; 0.5", 0, 32, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
 		{
-			//GiveItem(iClient, 308, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_grenadelauncher", 308, 0, "77 ; 0.75", 0, 15, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_grenadelauncher", 308, 0, "77 ; 0.75", 0, 15, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_stickybomb_launcher.mdl"))
 		{
-			//GiveItem(iClient, 20, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 20, 1, "59 ; 0.5 ; 79 ; 0.75 ; 135 ; 0.5", 0, 24, 0);
-			TF2Attrib_SetByDefIndex(iWeapon, 59, 0.5);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pipebomblauncher", 20, 1, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5", 0, 24, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper.mdl"))
 		{
-			//GiveItem(iClient, 265, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			iWeapon = CreateWeapon(iClient, iTarget, "tf_weapon_pipebomblauncher", 265, 0, "59 ; 0.65 ; 79 ; 0.75 ; 135 ; 0.5", 0, 48, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pipebomblauncher", 265, 0, "59 ; 0.35 ; 79 ; 0.75 ; 135 ; 0.5", 0, 48, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_targe/c_targe.mdl"))
 		{
-			//GiveItem(iClient, 131, iTarget)
+			
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_persian_shield/c_persian_shield.mdl"))
 		{
-			//GiveItem(iClient, 406, iTarget)
+			
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Engineer) // Engineer Only Weapons
 	{
 		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 9, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 9, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_shotgun/c_dex_shotgun.mdl"))
 		{
-			//GiveItem(iClient, 527, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_shotgun_primary", 9, 1, "", 0, 38, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl") && cvarExtraClass)
 		{
-			//GiveItem(iClient, 415, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_shotgun_primary", 415, 0, "", 0, 36, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_shotgun_primary", 415, 0, "", 0, 36, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl"))
 		{
-			//GiveItem(iClient, 160, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 160, 0, "79 ; 0.24", 0, 60, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pistol", 160, 0, "79 ; 0.24", 0, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl"))
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl"))
 		{
-			//GiveItem(iClient, 141, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl"))
 		{
-			//GiveItem(iClient, 140, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_laser_pointer", 140, 0, "", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_laser_pointer", 140, 0, "", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_pistol.mdl"))
 		{
-			//GiveItem(iClient, 22, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_pistol", 22, 1, "79 ; 0.24", 0, 60, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pistol", 22, 1, "79 ; 0.24", 0, 60, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl"))
 		{
-			//GiveItem(iClient, 588, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_drg_pomson", 588, 0, "5 ; 1.2 ; 96 ; 1.35", 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_drg_pomson", 588, 0, "5 ; 1.2 ; 96 ; 1.35", 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Medic) // Medic Only Weapons
 	{
 		if(StrEqual(strModel, "models/weapons/c_models/c_medigun/c_medigun.mdl"))
 		{
-			//GiveItem(iClient, 29, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 29, 1, "9 ; 0.2", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_medigun", 29, 1, "9 ; 0.2", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl"))
 		{
-			//GiveItem(iClient, 411, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_medigun", 411, 0, "9 ; 0.2", 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_medigun", 411, 0, "9 ; 0.2", 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_syringegun/c_syringegun.mdl"))
 		{
-			//GiveItem(iClient, 17, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_syringegun.mdl"))
 		{
-			//GiveItem(iClient, 17, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_syringegun_medic", 17, 1, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl"))
 		{
-			//GiveItem(iClient, 412, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 412, 0, "", 0, 190, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_syringegun_medic", 412, 0, "", 0, 190, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl"))
 		{
-			//GiveItem(iClient, 305, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_crossbow", 305, 0, "", 0, 31, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_crossbow", 305, 0, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333", 0, 31, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_leechgun/c_leechgun.mdl"))
 		{
-			//GiveItem(iClient, 36, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_syringegun_medic", 36, 0, "16 ; 1 ; 129 ; 0 ; 191 ; -2", 0, 190, 0);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_syringegun_medic", 36, 0, "16 ; 1 ; 129 ; 0 ; 191 ; -2", 0, 190, 0);
 		}
 	}
 	else if(TF2_GetPlayerClass(iClient) == TFClass_Sniper) // Sniper Only Weapons
 	{
 		if(StrEqual(strModel, "models/weapons/w_models/w_sniperrifle.mdl"))
 		{
-			//GiveItem(iClient, 14, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrife", 14, 1, "", 0, 25);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrife", 14, 1, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/w_models/w_smg.mdl"))
 		{
-			//GiveItem(iClient, 16, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_smg", 16, 1, "", 0, 100, 0);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_smg", 16, 1, "", 0, 100, 0);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dartgun.mdl"))
 		{
-			//GiveItem(iClient, 230, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 230, 0, "", 0, 25);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrifle", 230, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl"))
 		{
-			//GiveItem(iClient, 402, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 402, 0, "", 0, 25);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrifle", 402, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl"))
 		{
-			//GiveItem(iClient, 526, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);
-			CreateWeapon(iClient, iTarget, "tf_weapon_sniperrifle", 526, 0, "", 0, 25);
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrifle", 526, 0, "", 0, 25);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/urinejar.mdl"))
 		{
-			//GiveItem(iClient, 58, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 1);
-			CreateWeapon(iClient, iTarget, "tf_weapon_jar", 58, 0, "249 ; 0.4", 0, 1);
+			CreateWeapon(iClient, iTarget, 1, "tf_weapon_jar", 58, 0, "249 ; 0.4", 0, 1);
 		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bow/c_bow.mdl"))
 		{
-			//GiveItem(iClient, 56, iTarget)
-			TF2_RemoveWeaponSlot(iClient, 0);// Index, Type, Att, Over, Ammo, Clip
-			CreateWeapon(iClient, iTarget, "tf_weapon_compound_bow", 56, 0, "", 0, 13, 0); 
+			CreateWeapon(iClient, iTarget, 0, "tf_weapon_compound_bow", 56, 0, "", 0, 13, 0); 
 		}
 	}
 	return true;
 }
 
-stock int CreateWeapon(int client, int target, char[] name, int index, int type, char[] att, int override=0, int ammo=-1, int clip=-1)
+stock int CreateWeapon(int client, int target, int slot, char[] name, int index, int type, char[] att, int override=0, int ammo=-1, int clip=-1)
 {
 	Handle hWeapon = TF2Items_CreateItem(OVERRIDE_ALL | FORCE_GENERATION);
 	if(hWeapon == INVALID_HANDLE)
@@ -6396,17 +6313,20 @@ stock int CreateWeapon(int client, int target, char[] name, int index, int type,
 	{
 		TF2Items_SetNumAttributes(hWeapon, 0);
 	}
+
+	TF2_RemoveWeaponSlot(client, slot);
 	
 	int entity = TF2Items_GiveNamedItem(client, hWeapon);
 	CloseHandle(hWeapon);
+
 	EquipPlayerWeapon(client, entity);
 
 	SetAmmo(client, entity, ammo, clip);
 
-	ClientCommand(client, "playgamesound ui/item_heavy_gun_pickup.wav");
 	ClientCommand(client, "playgamesound ui/item_heavy_gun_drop.wav");
+	ClientCommand(client, "playgamesound ui/item_heavy_gun_pickup.wav");
 
-	if(cvarRemoveWeapon)
+	if(cvarRemoveWeapon && roundState()==RoundActive)
 	{
 		AcceptEntityInput(target, "Kill");
 	}
@@ -6450,24 +6370,7 @@ GetEntityModel(iEntity, String:strModel[], iMaxSize, String:strPropName[] = "m_n
 	GetModelPath(iIndex, strModel, iMaxSize);
 }
 
-GetPlayerWeaponSlot2(iClient, iSlot)
-{
-	new iEntity = GetPlayerWeaponSlot(iClient, iSlot);
-	if(iEntity > 0 && IsValidEdict(iEntity)) return iEntity;
-	
-	if(iSlot == 1)
-	{
-		iEntity = -1;
-		while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
-		{
-			if(IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient) return iEntity;
-		}
-	}
-	
-	return -1;
-}
-
-CheckStartWeapons()
+CheckStartWeapons()	// TODO
 {
 	new iClassesWithoutWeapons[10] = 0;
 	
