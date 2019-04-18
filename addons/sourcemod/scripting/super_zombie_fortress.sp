@@ -26,16 +26,16 @@
 #include <tf2_stocks>
 #include <morecolors>
 #include <tf2items>
+//#include <tf2attributes>
 //#include <super_zombie_fortress>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamtools>
 #define REQUIRE_EXTENSIONS
-#undef REQUIRE_PLUGIN
-#tryinclude <tf2attributes>
-#define REQUIRE_PLUGIN
 
 #include "szf_util_base.inc"
 #include "szf_util_pref.inc"
+
+#pragma newdecls required
 
 //
 // Plugin Information
@@ -49,14 +49,10 @@
 #else
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
 #endif
-#define BUILD_NUMBER "14"
+#define BUILD_NUMBER "15"
 
 #if defined _steamtools_included
 bool steamtools = false;
-#endif
-
-#if defined _tf2attributes_included
-bool tf2attributes = false;
 #endif
 
 #if !defined DEV_REVISION
@@ -127,8 +123,6 @@ int g_AdditionalTime = 0;
 // Sound system
 Handle g_hMusicArray = INVALID_HANDLE;
 Handle g_hFastRespawnArray = INVALID_HANDLE;
-
-Handle hConfiguration = INVALID_HANDLE;
 
 Handle hWeaponSandman = INVALID_HANDLE;
 Handle hWeaponWatch = INVALID_HANDLE;
@@ -253,7 +247,7 @@ int g_iStartSurvivors = 0;
 
 bool g_bTankOnce = false;
 
-new String:g_strSoundFleshHit[][128] =
+char g_strSoundFleshHit[][128] =
 {
 	"physics/flesh/flesh_impact_bullet1.wav",
 	"physics/flesh/flesh_impact_bullet2.wav",
@@ -262,14 +256,14 @@ new String:g_strSoundFleshHit[][128] =
 	"physics/flesh/flesh_impact_bullet5.wav"
 };
 
-new String:g_strSoundCritHit[][128] =
+char g_strSoundCritHit[][128] =
 {
 	"player/crit_received1.wav",
 	"player/crit_received2.wav",
 	"player/crit_received3.wav"
 };
 
-new String:g_weaponModels[][128] =
+char g_weaponModels[][128] =
 {
 	"models/weapons/c_models/c_dartgun.mdl",
 	"models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl",
@@ -321,10 +315,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	MarkNativeAsOptional("Steam_SetGameDescription");
 	#endif
 	
-	#if defined _tf2attributes_included
-	MarkNativeAsOptional("TF2Attrib_SetByDefIndex");
-	MarkNativeAsOptional("TF2Attrib_RemoveByDefIndex");
-	#endif
 	return APLRes_Success;
 
 }
@@ -410,10 +400,6 @@ public void OnPluginStart()
 	#if defined _steamtools_included
 	steamtools = LibraryExists("SteamTools");
 	#endif
-	
-	#if defined _tf2attributes_included
-	tf2attributes = LibraryExists("tf2attributes");
-	#endif
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -424,13 +410,6 @@ public void OnLibraryAdded(const char[] name)
 		steamtools = true;
 	}
 	#endif
-	
-	#if defined _tf2attributes_included
-	if(!strcmp(name, "tf2attributes", false))
-	{
-		tf2attributes = true;
-	}
-	#endif
 }
 
 public void OnLibraryRemoved(const char[] name)
@@ -439,13 +418,6 @@ public void OnLibraryRemoved(const char[] name)
 	if(!strcmp(name, "SteamTools", false))
 	{
 		steamtools = false;
-	}
-	#endif
-	
-	#if defined _tf2attributes_included
-	if(!strcmp(name, "tf2attributes", false))
-	{
-		tf2attributes = false;
 	}
 	#endif
 }
@@ -762,8 +734,6 @@ public Action OnJoinTeam(int client, const char[] command, int argc)
 	{
 		return Plugin_Handled;
 	}
-
-	return Plugin_Continue;
 }
 
 public Action OnJoinClass(int client, const char[] command, int argc)
@@ -963,7 +933,7 @@ public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 		return Plugin_Continue; 
 
 	CreateTimer(1.0, SetupMapWeapons, true, TIMER_FLAG_NO_MAPCHANGE);
-	RemovePhysicObjects();
+	//RemovePhysicObjects();
 	DetermineControlPoints();
 	
 	int players[MAXPLAYERS+1] = -1;
@@ -1624,7 +1594,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 		CreateTimer(0.1, CheckLastPlayer);
 		
 		int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
-		decl String:strPath[PLATFORM_MAX_PATH];
+		char strPath[PLATFORM_MAX_PATH];
 		MusicGetPath(MUSIC_DEAD, iRandom, strPath, sizeof(strPath));
 		EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
 		EmitSoundToClient(victim, strPath, _, SNDLEVEL_AIRCRAFT);
@@ -1834,7 +1804,7 @@ public Action timer_graceStartPost(Handle timer)
 	// Disable all respawn room visualizers (non-ZF maps only)
 	if(!mapIsZF())
 	{
-		decl String:strParent[255];
+		char strParent[255];
 		index = -1;
 		while((index = FindEntityByClassname(index, "func_respawnroomvisualizer")) != -1)
 		{
@@ -1847,7 +1817,7 @@ public Action timer_graceStartPost(Handle timer)
 	}
 	
 	int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_PREPARE]-1);
-	char trPath[PLATFORM_MAX_PATH];
+	char strPath[PLATFORM_MAX_PATH];
 	MusicGetPath(MUSIC_PREPARE, iRandom, strPath, sizeof(strPath));
 	for(int i = 1; i <= MaxClients; i++)
 	{
@@ -1917,7 +1887,7 @@ public Action timer_zombify(Handle timer, any client)
 ////////////////////////////////////////////////////////////
 void handle_gameFrameLogic()
 {
-	int iCount = GetSurvivorCount();
+	//int iCount = GetSurvivorCount();
 	// 1. Limit spy cloak to 80% of max.
 	for(int i = 1; i <= MaxClients; i++)
 	{
@@ -2248,8 +2218,8 @@ void zfSetTeams()
 	{
 		if(GetConVarBool(cvarSwapOnPayload)) 
 		{			
-			survivorTeam = _:TFTeam_Blue;
-			zombieTeam = _:TFTeam_Red;
+			survivorTeam = view_as<int>(TFTeam_Blue);
+			zombieTeam = view_as<int>(TFTeam_Red);
 		}
 	}
 	
@@ -2261,11 +2231,11 @@ void zfSetTeams()
 	{
 		if(GetConVarBool(cvarSwapOnAttdef))
 		{
-			int bool:isAttdef = true;
+			bool isAttdef = true;
 			int index = -1;
 			while((index = FindEntityByClassname(index, "team_control_point")) != -1)
 			{
-				if(GetEntProp(index, Prop_Send, "m_iTeamNum") != _:TFTeam_Red)
+				if(GetEntProp(index, Prop_Send, "m_iTeamNum") != view_as<int>(TFTeam_Red))
 				{
 					isAttdef = false;
 					break;
@@ -2300,7 +2270,7 @@ void zfSwapTeams()
 // Utility Functionality
 //
 ////////////////////////////////////////////////////////////
-public int Sort_Preference(int client1, int client2, const int array[], Handle hndl)
+public int Sort_Preference(int client1, int client2, const int[] array, Handle hndl)
 {	
  // Used during round start to sort using client team preference.
 	int prefCli1 = IsFakeClient(client1) ? ZF_TEAMPREF_NONE : prefGet(client1, TeamPref);
@@ -3305,7 +3275,7 @@ void MusicGetPath(int iCategory = MUSIC_DRUMS, int iNumber, char[] strInput, int
 	//PrintToChatAll("Attempting to get path for category %d (num %d)", iCategory, iNumber);
 	int iCount = 0;
 	int iEntryCategory;
-	chr strValue[PLATFORM_MAX_PATH];
+	char strValue[PLATFORM_MAX_PATH];
 	Handle hEntry;
 	for(int i = 0; i < GetArraySize(g_hMusicArray); i++)
 	{
@@ -3605,7 +3575,7 @@ public Action SpookySound(Handle hTimer)
 		return;
 	
 	int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_RABIES]-1);
-	decl String:strPath[PLATFORM_MAX_PATH];
+	char strPath[PLATFORM_MAX_PATH];
 	MusicGetPath(MUSIC_RABIES, iRandom, strPath, sizeof(strPath));
 	
 	int iTarget = -1;
@@ -3723,7 +3693,7 @@ void MusicHandleClient(int iClient)
 		/*
 		if(IsMecha(iClient))
 		{
-			decl String:strInput[255];
+			char strInput[255];
 			Format(strInput, sizeof(strInput), "Zombies: %.1f\nHealth: %.1f\nScared: %.1f", fZombies, fHealth, fScared);
 			SetHudTextParams(0.04, 0.5, 10.0, 50, 255, 50, 255);
 			ShowHudText(iClient, 1, strInput);
@@ -3894,7 +3864,8 @@ bool PerformFastRespawn2(int iClient)
 	if(iResult < 0)
 		return false;
 	
-	decl Float:fPosSpawn[3], Float:fPosTarget[3], Float:fAngle[3];
+	char fPosSpawn[3];
+	float fPosTarget[3], fAngle[3];
 	GetArrayArray(g_hFastRespawnArray, iResult, fPosSpawn);
 	GetClientAbsOrigin(iTarget, fPosTarget);
 	VectorTowards(fPosSpawn, fPosTarget, fAngle);
@@ -3926,15 +3897,15 @@ stock void VectorTowards(float vOrigin[3], float vTarget[3], float vAngle[3])
 	GetVectorAngles(vResults, vAngle);
 }
 
-stock bool:PointsAtTarget(Float:fBeginPos[3], any:iTarget)
+stock bool PointsAtTarget(float fBeginPos[3], any iTarget)
 {
-	new Float:fTargetPos[3];
+	float fTargetPos[3];
 	GetClientEyePosition(iTarget, fTargetPos);
 	
-	new Handle:hTrace = INVALID_HANDLE;
+	Handle hTrace = INVALID_HANDLE;
 	hTrace = TR_TraceRayFilterEx(fBeginPos, fTargetPos, MASK_VISIBLE, RayType_EndPoint, TraceDontHitOtherEntities, iTarget);
 	
-	new iHit = -1;
+	int iHit = -1;
 	if(TR_DidHit(hTrace))
 		iHit = TR_GetEntityIndex(hTrace);
 	
@@ -3942,7 +3913,7 @@ stock bool:PointsAtTarget(Float:fBeginPos[3], any:iTarget)
 	return (iHit == iTarget);
 }
 
-public bool:TraceDontHitOtherEntities(iEntity, iMask, any:iData)
+public bool TraceDontHitOtherEntities(int iEntity, int iMask, any iData)
 {
 	if(iEntity == iData)
 		return true;
@@ -3952,7 +3923,7 @@ public bool:TraceDontHitOtherEntities(iEntity, iMask, any:iData)
 	return true;
 }
 
-public bool:TraceDontHitEntity(iEntity, iMask, any:iData)
+public bool TraceDontHitEntity(int iEntity, int iMask, any iData)
 {
 	if(iEntity == iData)
 		return false;
@@ -3960,7 +3931,7 @@ public bool:TraceDontHitEntity(iEntity, iMask, any:iData)
 	return true;
 }
 
-stock bool:CanRecieveDamage(iClient)
+stock bool CanRecieveDamage(int iClient)
 {
 	if(iClient<=0 || !IsClientInGame(iClient))
 		return true;
@@ -3971,18 +3942,18 @@ stock bool:CanRecieveDamage(iClient)
 	return true;
 }
 
-stock GetClientPointVisible(iClient)
+stock int GetClientPointVisible(int iClient)
 {
-	decl Float:vOrigin[3], Float:vAngles[3], Float:vEndOrigin[3];
+	float vOrigin[3], vAngles[3], vEndOrigin[3];
 	GetClientEyePosition(iClient, vOrigin);
 	GetClientEyeAngles(iClient, vAngles);
 	
-	new Handle:hTrace = INVALID_HANDLE;
+	Handle hTrace = INVALID_HANDLE;
 	hTrace = TR_TraceRayFilterEx(vOrigin, vAngles, MASK_ALL, RayType_Infinite, TraceDontHitEntity, iClient);
 	TR_GetEndPosition(vEndOrigin, hTrace);
 	
-	new iReturn = -1;
-	new iHit = TR_GetEntityIndex(hTrace);
+	int iReturn = -1;
+	int iHit = TR_GetEntityIndex(hTrace);
 	
 	if(TR_DidHit(hTrace) && iHit!=iClient && (GetVectorDistance(vOrigin, vEndOrigin)/50.0)<=2.0)
 	{
@@ -3993,19 +3964,25 @@ stock GetClientPointVisible(iClient)
 	return iReturn;
 }
 
-stock bool:ObstancleBetweenEntities(iEntity1, iEntity2)
+stock bool ObstancleBetweenEntities(int iEntity1, int iEntity2)
 {
-	decl Float:vOrigin1[3], Float:vOrigin2[3];
+	float vOrigin1[3], vOrigin2[3];
 	
-	if(validClient(iEntity1)) GetClientEyePosition(iEntity1, vOrigin1);
-	else GetEntPropVector(iEntity1, Prop_Send, "m_vecOrigin", vOrigin1);
+	if(validClient(iEntity1))
+	{
+		GetClientEyePosition(iEntity1, vOrigin1);
+	}
+	else
+	{
+		GetEntPropVector(iEntity1, Prop_Send, "m_vecOrigin", vOrigin1);
+	}
 	GetEntPropVector(iEntity2, Prop_Send, "m_vecOrigin", vOrigin2);
 	
-	new Handle:hTrace = INVALID_HANDLE;
+	Handle hTrace = INVALID_HANDLE;
 	hTrace = TR_TraceRayFilterEx(vOrigin1, vOrigin2, MASK_ALL, RayType_EndPoint, TraceDontHitEntity, iEntity1);
 	
-	new bool:bHit = TR_DidHit(hTrace);
-	new iHit = TR_GetEntityIndex(hTrace);
+	bool bHit = TR_DidHit(hTrace);
+	int iHit = TR_GetEntityIndex(hTrace);
 	CloseHandle(hTrace);
 	
 	if(!bHit || iHit!=iEntity2)
@@ -4014,7 +3991,7 @@ stock bool:ObstancleBetweenEntities(iEntity1, iEntity2)
 	return false;
 }
 
-HandleClientInventory(iClient)
+void HandleClientInventory(int iClient)
 {
 	if(iClient <= 0 || !IsClientInGame(iClient) || !IsPlayerAlive(iClient))
 		return;
@@ -4026,7 +4003,7 @@ HandleClientInventory(iClient)
 		RemoveSecondaryWearable(iClient);
 	}
 	
-	new iEntity;
+	int iEntity;
 	if(TF2_GetPlayerClass(iClient) == TFClass_Scout && hWeaponSandman != INVALID_HANDLE)
 	{
 		iEntity = GetPlayerWeaponSlot(iClient, 2);
@@ -4054,67 +4031,7 @@ HandleClientInventory(iClient)
 			EquipPlayerWeapon(iClient, iEntity);
 		}
 	}
-	
-	/*if(hWeaponStickyLauncher != INVALID_HANDLE)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, 1);
-		if(iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 265)
-		{
-			TF2_RemoveWeaponSlot(iClient, 1);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponStickyLauncher);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-	}
-	if(hWeaponRocketLauncher != INVALID_HANDLE)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, 0);
-		if(iEntity > 0 && IsValidEdict(iEntity))
-		{
-			new iIndex = GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex");
-			if(iIndex == 237 || iIndex == 228)
-			{
-				TF2_RemoveWeaponSlot(iClient, 0);
-				iEntity = TF2Items_GiveNamedItem(iClient, hWeaponRocketLauncher);
-				EquipPlayerWeapon(iClient, iEntity);
-			}
-		}
-	}
-	if(TF2_GetPlayerClass(iClient) == TFClass_Medic)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, 0);
-		if(hWeaponSyringe != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 36)
-		{
-			TF2_RemoveWeaponSlot(iClient, 0);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSyringe);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if(hWeaponBonesaw != INVALID_HANDLE && iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 304)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponBonesaw);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-	}
-	
-	iEntity = GetPlayerWeaponSlot(iClient, 2);
-	if(iEntity > 0 && IsValidEdict(iEntity) && (GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 357 || GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 266 || GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 482))
-	{
-		if(TF2_GetPlayerClass(iClient) == TFClass_DemoMan && hWeaponSword != INVALID_HANDLE)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		else if(hWeaponShovel != INVALID_HANDLE)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponShovel);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-	}*/
-	
+
 	iEntity = GetPlayerWeaponSlot(iClient, 4);
 	if(iEntity > 0 && IsValidEdict(iEntity) && hWeaponWatch != INVALID_HANDLE && TF2_GetPlayerClass(iClient) == TFClass_Spy)
 	{
@@ -4123,30 +4040,19 @@ HandleClientInventory(iClient)
 		EquipPlayerWeapon(iClient, iEntity);
 	}
 	
-	if(hWeaponSword != INVALID_HANDLE)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if(iEntity > 0 && IsValidEdict(iEntity) && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 132)
-		{
-			TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSword);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-	}
-	
 	SetValidSlot(iClient);
 	CheckStartWeapons();
 }
 
-SetValidSlot(iClient)
+void SetValidSlot(int iClient)
 {
-	new iOld = GetEntProp(iClient, Prop_Send, "m_hActiveWeapon");
+	int iOld = GetEntProp(iClient, Prop_Send, "m_hActiveWeapon");
 	if(iOld > 0)
 		return;
 	
-	new iSlot;
-	new iEntity;
-	for (iSlot = 0; iSlot <= 5; iSlot++)
+	int iSlot;
+	int iEntity;
+	for(int iSlot = 0; iSlot <= 5; iSlot++)
 	{
 		iEntity = GetPlayerWeaponSlot(iClient, iSlot);
 		if(iEntity > 0 && IsValidEdict(iEntity))
@@ -4157,7 +4063,7 @@ SetValidSlot(iClient)
 	}
 }
 
-SetupWeapons()
+void SetupWeapons()
 {
 	// Scout's Special Stun Bat
 	hWeaponSandman = TF2Items_CreateItem(OVERRIDE_ALL);
@@ -4166,109 +4072,21 @@ SetupWeapons()
 	TF2Items_SetQuality(hWeaponSandman, 6);
 	TF2Items_SetAttribute(hWeaponSandman, 0, 38, 1.0);
 	TF2Items_SetNumAttributes(hWeaponSandman, 1);
-	
-	// Sticky Launcher
-	hWeaponStickyLauncher = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponStickyLauncher, "tf_weapon_pipebomblauncher");
-	TF2Items_SetItemIndex(hWeaponStickyLauncher, 20);
-	TF2Items_SetQuality(hWeaponStickyLauncher, 0);
-	TF2Items_SetNumAttributes(hWeaponStickyLauncher, 0);
-	
-	// Rocket Launcher
-	hWeaponRocketLauncher = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponRocketLauncher, "tf_weapon_rocketlauncher");
-	TF2Items_SetItemIndex(hWeaponRocketLauncher, 18);
-	TF2Items_SetQuality(hWeaponRocketLauncher, 0);
-	TF2Items_SetNumAttributes(hWeaponRocketLauncher, 0);
-	
-	// Loch'n'Load
-	hWeaponLochNLoad = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponLochNLoad, "tf_weapon_grenadelauncher");
-	TF2Items_SetItemIndex(hWeaponLochNLoad, 308);
-	TF2Items_SetQuality(hWeaponLochNLoad, 0);
-	TF2Items_SetAttribute(hWeaponLochNLoad, 0, 127, 2.0);
-	TF2Items_SetAttribute(hWeaponLochNLoad, 1, 103, 1.25);
-	TF2Items_SetNumAttributes(hWeaponLochNLoad, 2);
-	
-	// Flaregun
-	hWeaponFlareGun = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponFlareGun, "tf_weapon_flaregun");
-	TF2Items_SetItemIndex(hWeaponFlareGun, 39);
-	TF2Items_SetQuality(hWeaponFlareGun, 0);
-	TF2Items_SetAttribute(hWeaponFlareGun, 0, 25, 0.5);
-	TF2Items_SetNumAttributes(hWeaponFlareGun, 1);
-	
-	// Shotgun (Pyro)
-	hWeaponShotgunPyro = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponShotgunPyro, "tf_weapon_shotgun_pyro");
-	TF2Items_SetItemIndex(hWeaponShotgunPyro, 12);
-	TF2Items_SetQuality(hWeaponShotgunPyro, 0);
-	TF2Items_SetNumAttributes(hWeaponShotgunPyro, 0);
-	
-	// Shotgun (Soldier)
-	hWeaponShotgunSoldier = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponShotgunSoldier, "tf_weapon_shotgun_soldier");
-	TF2Items_SetItemIndex(hWeaponShotgunSoldier, 10);
-	TF2Items_SetQuality(hWeaponShotgunSoldier, 0);
-	TF2Items_SetNumAttributes(hWeaponShotgunSoldier, 0);
-	
-	// Rightous Bison
-	hWeaponBison = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponBison, "tf_weapon_raygun");
-	TF2Items_SetItemIndex(hWeaponBison, 442);
-	TF2Items_SetQuality(hWeaponBison, 6);
-	TF2Items_SetAttribute(hWeaponFlareGun, 0, 281, 1.0);
-	TF2Items_SetNumAttributes(hWeaponBison, 1);
-	
-	// Chargin' Targe
-	hWeaponTarge = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponTarge, "tf_wearable_demoshield");
-	TF2Items_SetItemIndex(hWeaponTarge, 131);
-	TF2Items_SetQuality(hWeaponTarge, 6);
-	TF2Items_SetNumAttributes(hWeaponTarge, 0);
-	
-	// Demoman's Eyelander
-	hWeaponSword = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponSword, "tf_weapon_sword");
-	TF2Items_SetItemIndex(hWeaponSword, 132);
-	TF2Items_SetQuality(hWeaponSword, 6);
-	TF2Items_SetNumAttributes(hWeaponSword, 0);
 
-	// Shovel
-	hWeaponShovel = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponShovel, "tf_weapon_shovel");
-	TF2Items_SetItemIndex(hWeaponShovel, 6);
-	TF2Items_SetQuality(hWeaponShovel, 0);
-	TF2Items_SetNumAttributes(hWeaponShovel, 0);
-	
 	// Fists
 	hWeaponFists = TF2Items_CreateItem(OVERRIDE_ALL);
 	TF2Items_SetClassname(hWeaponFists, "tf_weapon_fists");
 	TF2Items_SetItemIndex(hWeaponFists, 5);
 	TF2Items_SetQuality(hWeaponFists, 0);
 	TF2Items_SetNumAttributes(hWeaponFists, 0);
-	
+
 	// Fists of Steel
 	hWeaponSteelFists = TF2Items_CreateItem(OVERRIDE_ALL);
 	TF2Items_SetClassname(hWeaponSteelFists, "tf_weapon_fists");
 	TF2Items_SetItemIndex(hWeaponSteelFists, 331);
 	TF2Items_SetQuality(hWeaponSteelFists, 6);
 	TF2Items_SetNumAttributes(hWeaponSteelFists, 0);
-	
-	// Stock Syringe Gun
-	hWeaponSyringe = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponSyringe, "tf_weapon_syringegun_medic");
-	TF2Items_SetItemIndex(hWeaponSyringe, 17);
-	TF2Items_SetQuality(hWeaponSyringe, 0);
-	TF2Items_SetNumAttributes(hWeaponSyringe, 0);
-	
-	// Stock Bonesaw
-	hWeaponBonesaw = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponBonesaw, "tf_weapon_bonesaw");
-	TF2Items_SetItemIndex(hWeaponBonesaw, 8);
-	TF2Items_SetQuality(hWeaponBonesaw, 0);
-	TF2Items_SetNumAttributes(hWeaponBonesaw, 0);
-	
+
 	// Stock Watch
 	hWeaponWatch = TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
 	TF2Items_SetClassname(hWeaponWatch, "tf_weapon_invis");
@@ -4277,21 +4095,22 @@ SetupWeapons()
 	TF2Items_SetNumAttributes(hWeaponWatch, 0);
 }
 
-SpitterGoo(iClient, iAttacker = 0)
+void SpitterGoo(int iClient, int iAttacker = 0)
 {
 	if(roundState() != RoundActive)
 		return;
 
 	//PrintToChatAll("Spitter goo at %N!", iClient);
 	
-	if(g_hGoo == INVALID_HANDLE) g_hGoo = CreateArray(5);
+	if(g_hGoo == INVALID_HANDLE)
+		g_hGoo = CreateArray(5);
 	
-	decl Float:fClientPos[3], Float:fClientEye[3];
+	float fClientPos[3], fClientEye[3];
 	GetClientEyePosition(iClient, fClientPos);
 	GetClientEyeAngles(iClient, fClientEye);
 	
 	g_iGooId++;	
-	decl iEntry[5];
+	int iEntry[5];
 	iEntry[0] = RoundFloat(fClientPos[0]);
 	iEntry[1] = RoundFloat(fClientPos[1]);
 	iEntry[2] = RoundFloat(fClientPos[2]);
@@ -4309,16 +4128,17 @@ SpitterGoo(iClient, iAttacker = 0)
 	CreateTimer(1.0, GooEffect, g_iGooId, TIMER_REPEAT);
 }
 
-GooDamageCheck()
+void GooDamageCheck()
 {
-	decl Float:fPosGoo[3], iEntry[5], Float:fPosClient[3]; 
-	new Float:fDistance;
-	new iAttacker;
+	float fPosGoo[3]
+	int iEntry[5]
+	float fPosClient[3]; 
+	float fDistance;
+	int iAttacker;
 	
-	new bool:bWasGooified[MAXPLAYERS+1];
+	bool bWasGooified[MAXPLAYERS+1];
 	
-	new iClient;
-	for (iClient = 1; iClient <= MaxClients; iClient++)
+	for(int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		bWasGooified[iClient] = g_bGooified[iClient];
 		g_bGooified[iClient] = false;
@@ -4326,7 +4146,7 @@ GooDamageCheck()
 	
 	if(g_hGoo != INVALID_HANDLE)
 	{
-		for (new i = 0; i < GetArraySize(g_hGoo); i++)
+		for(int i = 0; i < GetArraySize(g_hGoo); i++)
 		{
 			GetArrayArray(g_hGoo, i, iEntry);
 			fPosGoo[0] = float(iEntry[0]);
@@ -4334,7 +4154,7 @@ GooDamageCheck()
 			fPosGoo[2] = float(iEntry[2]);
 			iAttacker = iEntry[3];
 			
-			for (iClient = 1; iClient <= MaxClients; iClient++)
+			for(int iClient = 1; iClient <= MaxClients; iClient++)
 			{
 				if(validLivingSur(iClient) && !g_bGooified[iClient] && CanRecieveDamage(iClient) && !g_bBackstabbed[iClient])
 				{
@@ -4344,22 +4164,24 @@ GooDamageCheck()
 					{
 						// deal damage
 						g_iGooMultiplier[iClient] += GOO_INCREASE_RATE;
-						new Float:fPercentageDistance = (DISTANCE_GOO-fDistance) / DISTANCE_GOO;
-						if(fPercentageDistance < 0.5) fPercentageDistance = 0.5;
-						new Float:fDamage = float(g_iGooMultiplier[iClient])/float(GOO_INCREASE_RATE) * fPercentageDistance;
-						if(fDamage < 1.0) fDamage = 1.0;
-						new iDamage = RoundFloat(fDamage);
+						float fPercentageDistance = (DISTANCE_GOO-fDistance) / DISTANCE_GOO;
+						if(fPercentageDistance < 0.5)
+							fPercentageDistance = 0.5;
+						float fDamage = view_as<float>(g_iGooMultiplier[iClient]/GOO_INCREASE_RATE * fPercentageDistance);
+						if(fDamage < 1.0)
+							fDamage = 1.0;
+						int iDamage = RoundFloat(fDamage);
 						DealDamage(iClient, iDamage, iAttacker, _, "projectile_stun_ball");
 						g_bGooified[iClient] = true;
 						
 						if(fDamage >= 7.0)
 						{
-							new iRandom = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
+							int iRandom = GetRandomInt(0, sizeof(g_strSoundCritHit)-1);
 							EmitSoundToClient(iClient, g_strSoundCritHit[iRandom], _, SNDLEVEL_AIRCRAFT);
 						}
 						else
 						{
-							new iRandom = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
+							int iRandom = GetRandomInt(0, sizeof(g_strSoundFleshHit)-1);
 							EmitSoundToClient(iClient, g_strSoundFleshHit[iRandom], _, SNDLEVEL_AIRCRAFT);
 						}
 					}
@@ -4367,7 +4189,7 @@ GooDamageCheck()
 			}  
 		}
 	}
-	for (iClient = 1; iClient <= MaxClients; iClient++)
+	for(int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		if(IsClientInGame(iClient))
 		{
@@ -4395,14 +4217,14 @@ GooDamageCheck()
 	}
 }
 
-public Action:GooExpire(Handle:hTimer, any:iGoo)
+public Action GooExpire(Handle hTimer, any iGoo)
 {
 	if(g_hGoo == INVALID_HANDLE)
 		return;
 	
-	decl iEntry[5];
-	new iEntryId;
-	for (new i = 0; i < GetArraySize(g_hGoo); i++)
+	int iEntry[5];
+	int iEntryId;
+	for(int i = 0; i < GetArraySize(g_hGoo); i++)
 	{
 		GetArrayArray(g_hGoo, i, iEntry);
 		iEntryId = iEntry[4];
@@ -4414,7 +4236,7 @@ public Action:GooExpire(Handle:hTimer, any:iGoo)
 	}
 }
 
-RemoveAllGoo()
+void RemoveAllGoo()
 {
 	if(g_hGoo == INVALID_HANDLE)
 		return;
@@ -4422,14 +4244,15 @@ RemoveAllGoo()
 	ClearArray(g_hGoo);
 }
 
-public Action:GooEffect(Handle:hTimer, any:iGoo)
+public Action GooEffect(Handle hTimer, any iGoo)
 {
 	if(g_hGoo == INVALID_HANDLE)
 		return Plugin_Stop;
 	
-	decl iEntry[5], Float:fPos[3];
-	new iEntryId;
-	for (new i = 0; i < GetArraySize(g_hGoo); i++)
+	int iEntry[5]
+	float fPos[3];
+	int iEntryId;
+	for(int i = 0; i < GetArraySize(g_hGoo); i++)
 	{
 		GetArrayArray(g_hGoo, i, iEntry);
 		iEntryId = iEntry[4];
@@ -4445,7 +4268,7 @@ public Action:GooEffect(Handle:hTimer, any:iGoo)
 	return Plugin_Stop;
 }
 
-public OnEntityCreated(iEntity, const String:strClassname[])
+public void OnEntityCreated(intiEntity, const char[] strClassname)
 {
 	if(StrEqual(strClassname, "tf_projectile_stun_ball", false))
 	{
@@ -4454,14 +4277,14 @@ public OnEntityCreated(iEntity, const String:strClassname[])
 	}
 }
 
-public Action:BallStartTouch(iEntity, iOther)
+public Action BallStartTouch(int iEntity, int iOther)
 {
 	if(!zf_bEnabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
 	
 	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
 	{
-		new iOwner = GetEntPropEnt(iEntity, Prop_Data, "m_hOwnerEntity");
+		int iOwner = GetEntPropEnt(iEntity, Prop_Data, "m_hOwnerEntity");
 		SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
 		if(!(GetEntityFlags(iEntity) & FL_ONGROUND))
 		{
@@ -4472,7 +4295,7 @@ public Action:BallStartTouch(iEntity, iOther)
 	return Plugin_Continue;
 }
 
-public Action:BallTouch(iEntity, iOther)
+public Action BallTouch(int iEntity, int iOther)
 {
 	if(!zf_bEnabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
@@ -4487,9 +4310,9 @@ public Action:BallTouch(iEntity, iOther)
 	return Plugin_Stop;
 }
 
-stock ShowParticle(String:particlename[], Float:time, Float:pos[3], Float:ang[3]=NULL_VECTOR)
+stock int ShowParticle(char[] particlename, float time, float pos[3], float ang[3]=NULL_VECTOR)
 {
-	new particle = CreateEntityByName("info_particle_system");
+	int particle = CreateEntityByName("info_particle_system");
 	if(IsValidEdict(particle))
 	{
 		TeleportEntity(particle, pos, ang, NULL_VECTOR);
@@ -4506,14 +4329,14 @@ stock ShowParticle(String:particlename[], Float:time, Float:pos[3], Float:ang[3]
 	return particle;
 }
 
-stock PrecacheParticle(String:strName[])
+stock void PrecacheParticle(char[] strName)
 {
 	if(IsValidEntity(0))
 	{
-		new iParticle = CreateEntityByName("info_particle_system");
+		int iParticle = CreateEntityByName("info_particle_system");
 		if(IsValidEdict(iParticle))
 		{
-			new String:tName[32];
+			char tName[32];
 			GetEntPropString(0, Prop_Data, "m_iName", tName, sizeof(tName));
 			DispatchKeyValue(iParticle, "targetname", "tf2particle");
 			DispatchKeyValue(iParticle, "parentname", tName);
@@ -4528,11 +4351,11 @@ stock PrecacheParticle(String:strName[])
 	}
 }
 
-public Action:RemoveParticle(Handle:timer, any:particle)
+public Action RemoveParticle(Handle timer, any particle)
 {
 	if(particle >= 0 && IsValidEntity(particle))
 	{
-		new String:classname[32];
+		char classname[32];
 		GetEdictClassname(particle, classname, sizeof(classname));
 		if(StrEqual(classname, "info_particle_system", false))
 		{
@@ -4543,18 +4366,18 @@ public Action:RemoveParticle(Handle:timer, any:particle)
 	}
 }
 
-stock DealDamage(iVictim, iDamage, iAttacker=0,iDmgType=DMG_GENERIC, String:strWeapon[]="")
+stock void DealDamage(int iVictim, int iDamage, int iAttacker=0, int iDmgType=DMG_GENERIC, char[] strWeapon="")
 {
 	if(!validClient(iAttacker))
 		iAttacker = 0;
 
 	if(validClient(iVictim) && iDamage > 0)
 	{
-		decl String:strDamage[16];
+		char strDamage[16];
 		IntToString(iDamage, strDamage, 16);
-		decl String:strDamageType[32];
+		char strDamageType[32];
 		IntToString(iDmgType, strDamageType, 32);
-		new iHurt = CreateEntityByName("point_hurt");
+		int iHurt = CreateEntityByName("point_hurt");
 		if(iHurt > 0 && IsValidEdict(iHurt))
 		{
 			DispatchKeyValue(iVictim,"targetname","infectious_hurtme");
@@ -4574,13 +4397,12 @@ stock DealDamage(iVictim, iDamage, iAttacker=0,iDmgType=DMG_GENERIC, String:strW
 	}
 }
 
-GetMostDamageZom()
+int GetMostDamageZom()
 {
-	new Handle:hArray = CreateArray();
-	new i;
-	new iHighest = 0;
+	Handle hArray = CreateArray();
+	int iHighest = 0;
 	
-	for (i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validZom(i))
 		{
@@ -4588,7 +4410,7 @@ GetMostDamageZom()
 		}
 	}
 	
-	for (i = 1; i <= MaxClients; i++)
+	for(inti = 1; i <= MaxClients; i++)
 	{
 		if(validZom(i) && g_iDamage[i] >= iHighest)
 		{
@@ -4602,21 +4424,22 @@ GetMostDamageZom()
 		return 0;
 	}
 	
-	new iClient = GetArrayCell(hArray, GetRandomInt(0, GetArraySize(hArray)-1));
+	int iClient = GetArrayCell(hArray, GetRandomInt(0, GetArraySize(hArray)-1));
 	CloseHandle(hArray);
 	return iClient;
 }
 
-bool:ZombiesHaveTank()
+bool ZombiesHaveTank()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK) return true;
+		if(validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
+			return true;
 	}
 	return false;
 }
 
-ZombieTank(iCaller = 0)
+void ZombieTank(int iCaller = 0)
 {
 	if(!zf_bEnabled || roundState()!=RoundActive) 
 		return;
@@ -4638,9 +4461,10 @@ ZombieTank(iCaller = 0)
 	}
 	
 	g_iZombieTank = GetMostDamageZom();
-	if(g_iZombieTank <= 0) return;
+	if(g_iZombieTank <= 0)
+		return;
 	
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validZom(i))
 		{
@@ -4655,16 +4479,20 @@ ZombieTank(iCaller = 0)
 	g_bTankOnce = true;
 }
 
-public Action:command_tank(client, args)
+public Action command_tank(int client, int args)
 {
-	if(!zf_bEnabled) return Plugin_Handled;
-	if(ZombiesHaveTank()) return Plugin_Handled;
-	if(g_iZombieTank > 0) return Plugin_Handled;
-	if(g_bZombieRage) return Plugin_Handled;
+	if(!zf_bEnabled)
+		return Plugin_Handled;
+	if(ZombiesHaveTank())
+		return Plugin_Handled;
+	if(g_iZombieTank > 0)
+		return Plugin_Handled;
+	if(g_bZombieRage)
+		return Plugin_Handled;
 
 	g_iZombieTank = client;
 	
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validZom(i))
 		{
@@ -4675,17 +4503,21 @@ public Action:command_tank(client, args)
 	return Plugin_Handled;
 }
 
-bool:TankCanReplace(iClient)
+bool TankCanReplace(int iClient)
 {
-	if(g_iZombieTank <= 0) return false;
-	if(g_iZombieTank == iClient) return false;
-	if(g_iSpecialInfected[iClient] != INFECTED_NONE) return false;
-	if(TF2_GetPlayerClass(iClient) != TF2_GetPlayerClass(g_iZombieTank)) return false;
+	if(g_iZombieTank <= 0)
+		return false;
+	if(g_iZombieTank == iClient)
+		return false;
+	if(g_iSpecialInfected[iClient] != INFECTED_NONE)
+		return false;
+	if(TF2_GetPlayerClass(iClient) != TF2_GetPlayerClass(g_iZombieTank))
+		return false;
 	
-	new iHealth = GetClientHealth(g_iZombieTank);
-	decl Float:fPos[3];
-	decl Float:fAng[3];
-	decl Float:fVel[3];
+	int iHealth = GetClientHealth(g_iZombieTank);
+	float fPos[3];
+	float fAng[3];
+	float fVel[3];
 	
 	GetClientAbsOrigin(g_iZombieTank, fPos);
 	GetClientAbsAngles(g_iZombieTank, fVel);
@@ -4699,15 +4531,16 @@ bool:TankCanReplace(iClient)
 	return true;
 }
 
-public Action:command_tank_random(client, args)
+public Action command_tank_random(int client, intargs)
 {
-	if(!zf_bEnabled) return Plugin_Handled;
+	if(!zf_bEnabled)
+		return Plugin_Handled;
 	ZombieTank(client);
 			
 	return Plugin_Handled;
 }
 
-public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefinitionIndex, &Handle:item)
+public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDefinitionIndex, Handle &item)
 {
 	if(!zf_bEnabled)
 	{
@@ -4723,7 +4556,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		{
 			case 36:	// Blutsauger
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "16 ; 1");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "16 ; 1");
 				// 16: On Hit: Gain up to +1 health
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4733,7 +4566,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 129, 1001:	// Buff Banner
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "319 ; 0.6");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "319 ; 0.6");
 				// 319:	-40% buff duration
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4743,7 +4576,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 132, 266, 482, 1082:	// Eyelander, Horseless Headless Horsemann's Headtaker, Nessie's Nine Iron, Festive Eyelander
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.75");
 				// 54:	-25% slower move speed on wearer
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4753,7 +4586,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 133:	// Gunboats
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 0.7");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 0.7");
 				// 58:	+50% self damage force
 				// 135:	-30% blast damage from rocket jumps
 				if(itemOverride!=INVALID_HANDLE)
@@ -4764,7 +4597,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 142:	// Gunslinger
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "26 ; 0");
 				// 26:	+0 max health on wearer
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4774,7 +4607,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 155:	// Southern Hospitality
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "61 ; 1 ; 412 ; 1.1");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "61 ; 1 ; 412 ; 1.1");
 				// 61: 0% fire damage vulnerability on wearer
 				// 412: 10% damage vulnerability on wearer
 				if(itemOverride!=INVALID_HANDLE)
@@ -4785,7 +4618,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 226:	// Battalion's Backup
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
 				// 26:	+0 max health on wearer
 				// 140:	+10 max health on wearer
 				// 319:	-40% buff duration
@@ -4797,7 +4630,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 228:	// Black Box
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "741 ; 5");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "741 ; 5");
 				// 741:	On Hit: Gain up to +5 health per attack
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4807,7 +4640,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 237:	// Rocket Jumper
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 77 ; 0.75 ; 135 ; 0.5");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 77 ; 0.75 ; 135 ; 0.5");
 				// 58:	+30% self damage force
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4817,7 +4650,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 265:	// Sticky Jumper
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 79 ; 0.75 ; 135 ; 0.5");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.65 ; 79 ; 0.75 ; 135 ; 0.5");
 				// 58:	+30% self damage force
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4827,7 +4660,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 304:	// Amputator
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
 				// 57:	+2 health regenerated per second on wearer
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4837,7 +4670,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 354:	// Concheror
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2 ; 319 ; 0.6");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "57 ; 2 ; 319 ; 0.6");
 				// 57:	+2 health regenerated per second on wearer
 				// 319:	-40% buff duration
 				if(itemOverride!=INVALID_HANDLE)
@@ -4848,7 +4681,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 404:	// Persian Persuader
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "778 ; 1.15");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "778 ; 1.15");
 				// 58:	Melee hits refill 15% of your charge meter
 				if(itemOverride!=INVALID_HANDLE)
 				{
@@ -4858,7 +4691,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 405, 608:	// Ali Baba's Wee Booties & Bootlegger
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 20");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 20");
 				// 26:	+0 max health on wearer
 				// 140:	+20 max health on wearer
 				if(itemOverride!=INVALID_HANDLE)
@@ -4869,7 +4702,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 444:	// Mantreads
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
 				// 58:	+50% self damage force
 				// 135:	+30% blast damage from rocket jumps
 				if(itemOverride!=INVALID_HANDLE)
@@ -4880,7 +4713,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			}
 			case 642:	// Cozy Camper
 			{
-				new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
+				Handle itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
 				if(itemOverride!=INVALID_HANDLE)
 				{
 					item=itemOverride;
@@ -4899,7 +4732,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		   !StrContains(classname, "tf_weapon_robot_arm") ||
 		   !StrContains(classname, "tf_weapon_club"))			// Melees
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
 			// 28:	-50% random critical hit chance
 			// 69:	-90% health from healers on wearer
 			if(itemOverride!=INVALID_HANDLE)
@@ -4910,7 +4743,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
 			// 59:	-50% self damage force
 			// 77:	-25% max primary ammo on wearer
 			// 135:	-50% blast damage from rocket jumps
@@ -4922,7 +4755,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
 			// 5:	-35% slower fire rate
 			// 59:	-50% self damage force
 			// 72:	-50% afterburn damage penalty
@@ -4937,7 +4770,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
 			// 5:	-25% slower fire rate
 			// 96:	+35% slower reload time
 			if(itemOverride!=INVALID_HANDLE)
@@ -4948,7 +4781,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
 			// 58:	+50% self damage force
 			// 135:	+30% blast damage from rocket jumps
 			if(itemOverride!=INVALID_HANDLE)
@@ -4959,7 +4792,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
 			// 220:	Gain 15% of base health on kill
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -4969,7 +4802,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
 			// 77:	-50% max primary ammo on wearer
 			// 869:	Minicrits whenever it would normally crit
 			if(itemOverride!=INVALID_HANDLE)
@@ -4980,7 +4813,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
 			// 795:	-40% damage bonus vs burning players
 			// 869:	Minicrits whenever it would normally crit
 			if(itemOverride!=INVALID_HANDLE)
@@ -4991,7 +4824,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
 			// 2059:	
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5001,7 +4834,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
 			// 77:	-25% max primary ammo on wearer
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5011,7 +4844,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5");
 			// 59:	-75% self damage force
 			// 79:	-25% max secondary ammo on wearer
 			// 135:	-50% blast damage from rocket jumps
@@ -5023,7 +4856,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
 			// 249:	-50% increase in charge recharge rate
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5033,7 +4866,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
+			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
 			// 28: -75% random critical hit chance
 			// 734:	-90% less healing from all sources
 			if(itemOverride!=INVALID_HANDLE)
@@ -5044,7 +4877,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
 			// 869:	Minicrits whenever it would normally crit
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5054,7 +4887,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
 			// 5:	-20% slower fire rate
 			// 96:	+35% slower reload time
 			if(itemOverride!=INVALID_HANDLE)
@@ -5065,7 +4898,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
 			// 77:	-25% max primary ammo on wearer
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5075,7 +4908,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
 			// 79:	-76% max secondary ammo on wearer
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5085,7 +4918,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
 			// 20:	100% critical hit vs burning players
 			// 408:	100% critical hit vs non-burning players
 			if(itemOverride!=INVALID_HANDLE)
@@ -5096,7 +4929,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
 			// 286:	-50% max building health
 			// 287:	-35% Sentry Gun damage bonus
 			// 464: Sentry build speed increased by -50%
@@ -5110,7 +4943,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
 			// 2:	+200% damage bonus
 			// 77:	-80% max primary ammo on wearer
 			// 138:	-67% damage vs players
@@ -5123,7 +4956,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
 			// 9:	-80% ÜberCharge rate
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5133,7 +4966,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
 			// 28:	-70% random critical hit chance
 			// 69:	-85% health from healers on wearer
 			// 131:	-300% natural regen rate
@@ -5145,7 +4978,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
+			Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
 			// 249:	-60% increase in charge recharge rate
 			if(itemOverride!=INVALID_HANDLE)
 			{
@@ -5157,17 +4990,17 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	return Plugin_Continue;
 }
 
-public Action:Timer_CheckItems(Handle:timer, any:userid)
+public Action Timer_CheckItems(Handle timer, any userid)
 {
-	new client=GetClientOfUserId(userid);
+	int client=GetClientOfUserId(userid);
 	if(!IsValidClient(client) || !IsPlayerAlive(client) || !zf_bEnabled)
 	{
 		return Plugin_Continue;
 	}
 
 	SetEntityRenderColor(client, 255, 255, 255, 255);
-	new index=-1;
-	new civilianCheck[MaxClients+1];
+	int index=-1;
+	int civilianCheck[MaxClients+1];
 
 	if(validZom(client))
 	{
@@ -5375,7 +5208,7 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 	}
 	else
 	{
-		new weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		int weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 		if(IsValidEntity(weapon))
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
@@ -5448,20 +5281,20 @@ public Action:Timer_CheckItems(Handle:timer, any:userid)
 	return Plugin_Continue;
 }
 
-stock Handle:PrepareItemHandle(Handle:item, String:name[]="", index=-1, const String:att[]="", bool:dontPreserve=false)
+stock Handle PrepareItemHandle(Handle item, char[] name="", intindex=-1, const char[] att="", bool dontPreserve=false)
 {
-	static Handle:weapon;
-	new addattribs;
+	static Handle weapon;
+	int addattribs;
 
-	new String:weaponAttribsArray[32][32];
-	new attribCount=ExplodeString(att, ";", weaponAttribsArray, 32, 32);
+	char weaponAttribsArray[32][32];
+	int attribCount=ExplodeString(att, ";", weaponAttribsArray, 32, 32);
 
 	if(attribCount % 2)
 	{
 		--attribCount;
 	}
 
-	new flags=OVERRIDE_ATTRIBUTES;
+	int flags=OVERRIDE_ATTRIBUTES;
 	if(!dontPreserve)
 	{
 		flags|=PRESERVE_ATTRIBUTES;
@@ -5475,18 +5308,17 @@ stock Handle:PrepareItemHandle(Handle:item, String:name[]="", index=-1, const St
 	{
 		TF2Items_SetFlags(weapon, flags);
 	}
-	//new Handle:weapon=TF2Items_CreateItem(flags);  //INVALID_HANDLE;  Going to uncomment this since this is what Randomizer does
 
 	if(item!=INVALID_HANDLE)
 	{
 		addattribs=TF2Items_GetNumAttributes(item);
 		if(addattribs>0)
 		{
-			for(new i; i<2*addattribs; i+=2)
+			for(int i; i<2*addattribs; i+=2)
 			{
-				new bool:dontAdd=false;
-				new attribIndex=TF2Items_GetAttributeId(item, i);
-				for(new z; z<attribCount+i; z+=2)
+				bool dontAdd=false;
+				int attribIndex=TF2Items_GetAttributeId(item, i);
+				for(int z; z<attribCount+i; z+=2)
 				{
 					if(StringToInt(weaponAttribsArray[z])==attribIndex)
 					{
@@ -5525,10 +5357,10 @@ stock Handle:PrepareItemHandle(Handle:item, String:name[]="", index=-1, const St
 	if(attribCount>0)
 	{
 		TF2Items_SetNumAttributes(weapon, attribCount/2);
-		new i2;
-		for(new i; i<attribCount && i2<16; i+=2)
+		int i2;
+		for(int i; i<attribCount && i2<16; i+=2)
 		{
-			new attrib=StringToInt(weaponAttribsArray[i]);
+			int attrib=StringToInt(weaponAttribsArray[i]);
 			if(!attrib)
 			{
 				LogError("Bad weapon attribute passed: %s ; %s", weaponAttribsArray[i], weaponAttribsArray[i+1]);
@@ -5547,9 +5379,9 @@ stock Handle:PrepareItemHandle(Handle:item, String:name[]="", index=-1, const St
 	return weapon;
 }
 
-stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
+stock int SpawnWeapon(int client, char[] name, int index, int level, intqual, char[] att)
 {
-	new Handle:hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
+	Handle hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
 	if(hWeapon==INVALID_HANDLE)
 	{
 		return -1;
@@ -5559,8 +5391,8 @@ stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
 	TF2Items_SetItemIndex(hWeapon, index);
 	TF2Items_SetLevel(hWeapon, level);
 	TF2Items_SetQuality(hWeapon, qual);
-	new String:atts[32][32];
-	new count=ExplodeString(att, ";", atts, 32, 32);
+	char atts[32][32];
+	int count=ExplodeString(att, ";", atts, 32, 32);
 
 	if(count % 2)
 	{
@@ -5570,15 +5402,15 @@ stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
 	if(count>0)
 	{
 		TF2Items_SetNumAttributes(hWeapon, count/2);
-		new i2;
-		for(new i; i<count; i+=2)
+		int i2;
+		for(int i; i<count; i+=2)
 		{
-			new attrib=StringToInt(atts[i]);
+			int attrib=StringToInt(atts[i]);
 			if(!attrib)
 			{
-			LogError("Bad weapon attribute passed: %s ; %s", atts[i], atts[i+1]);
-			CloseHandle(hWeapon);
-			return -1;
+				LogError("Bad weapon attribute passed: %s ; %s", atts[i], atts[i+1]);
+				CloseHandle(hWeapon);
+				return -1;
 			}
 
 			TF2Items_SetAttribute(hWeapon, i2, attrib, StringToFloat(atts[i+1]));
@@ -5590,19 +5422,19 @@ stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
 		TF2Items_SetNumAttributes(hWeapon, 0);
 	}
 
-	new entity=TF2Items_GiveNamedItem(client, hWeapon);
+	int entity=TF2Items_GiveNamedItem(client, hWeapon);
 	CloseHandle(hWeapon);
 	EquipPlayerWeapon(client, entity);
 	return entity;
 }
 
-stock GetIndexOfWeaponSlot(client, slot)
+stock int GetIndexOfWeaponSlot(int client, int slot)
 {
-	new weapon=GetPlayerWeaponSlot(client, slot);
+	int weapon=GetPlayerWeaponSlot(client, slot);
 	return (weapon>MaxClients && IsValidEntity(weapon) ? GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex") : -1);
 }
 
-stock bool:IsValidClient(client, bool:replaycheck = true)
+stock bool IsValidClient(int client, bool replaycheck = true)
 {
 	if(client <= 0 || client > MaxClients)
 	{
@@ -5629,26 +5461,27 @@ stock bool:IsValidClient(client, bool:replaycheck = true)
 	return true;
 }
 
-stock FindEntityByClassname2(startEnt, const String:classname[])
+stock int FindEntityByClassname2(int startEnt, const char[] classname[])
 {
 	/* If startEnt isn't valid shifting it back to the nearest valid one */
-	while (startEnt > -1 && !IsValidEntity(startEnt)) startEnt--;
+	while(startEnt > -1 && !IsValidEntity(startEnt)) startEnt--;
 	return FindEntityByClassname(startEnt, classname);
 }
 
-stock bool:HasRazorback(iClient) {
-	new iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_razorback")) != -1)
+stock bool HasRazorback(int iClient)
+{
+	int iEntity = -1;
+	while((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_razorback")) != -1)
 	{
 		if(IsClassname(iEntity, "tf_wearable_razorback") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient && GetEntProp(iEntity, Prop_Send, "m_iItemDefinitionIndex") == 57) return true;
 	}
 	return false;
 }
 
-stock bool:RemoveSecondaryWearable(iClient)
+stock bool RemoveSecondaryWearable(int iClient)
 {
-	new iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
+	int iEntity = -1;
+	while((iEntity = FindEntityByClassname2(iEntity, "tf_wearable_demoshield")) != -1)
 	{
 		if(IsClassname(iEntity, "tf_wearable_demoshield") && GetEntPropEnt(iEntity, Prop_Send, "m_hOwnerEntity") == iClient)
 		{
@@ -5659,57 +5492,70 @@ stock bool:RemoveSecondaryWearable(iClient)
 	return false;
 }
 
-public Action:RemoveBackstab(Handle:hTimer, any:iClient)
+public Action RemoveBackstab(Handle hTimer, any iClient)
 {
-	if(!validClient(iClient)) return;
-	if(!IsPlayerAlive(iClient)) return;
+	if(!validClient(iClient))
+		return;
+	if(!IsPlayerAlive(iClient))
+		return;
 	g_bBackstabbed[iClient] = false;
 }
 
-bool:MusicCanReset(iMusic)
+bool MusicCanReset(int iMusic)
 {
-	if(iMusic == MUSIC_INTENSE) return false;
-	if(iMusic == MUSIC_MILD) return false;
-	if(iMusic == MUSIC_VERYMILD3) return false;
+	if(iMusic == MUSIC_INTENSE)
+		return false;
+	if(iMusic == MUSIC_MILD)
+		return false;
+	if(iMusic == MUSIC_VERYMILD3)
+		return false;
 	return true;
 }
 
-stock bool:IsClassname(iEntity, String:strClassname[]) {
-	if(iEntity <= 0) return false;
-	if(!IsValidEdict(iEntity)) return false;
+stock bool IsClassname(int iEntity, char[] strClassname)
+{
+	if(iEntity <= 0)
+		return false;
+	if(!IsValidEdict(iEntity))
+		return false;
 	
-	decl String:strClassname2[32];
+	char strClassname2[32];
 	GetEdictClassname(iEntity, strClassname2, sizeof(strClassname2));
-	if(StrEqual(strClassname, strClassname2, false)) return true;
+	if(StrEqual(strClassname, strClassname2, false))
+		return true;
 	return false;
 }
 
-GiveBonus(iClient, String:strBonus[])
+void GiveBonus(int iClient, char[] strBonus[])
 {
-	if(iClient <= 0) return;
-	if(!IsClientInGame(iClient)) return;
-	if(IsFakeClient(iClient)) return;
-	
-	//if(iClient != GetMecha()) return;
-	
+	if(iClient <= 0)
+		return;
+	if(!IsClientInGame(iClient))
+		return;
+	if(IsFakeClient(iClient))
+		return;
+
 	if(g_hBonus[iClient] == INVALID_HANDLE)
 	{
 		g_iBonusCombo[iClient] = 0;
 		g_bBonusAlt[iClient] = false;
 		g_hBonus[iClient] = CreateArray(255);
 	}
-	
+
 	PushArrayString(g_hBonus[iClient], strBonus);
-	
-	if(g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(1.0, ShowBonus, iClient);
+
+	if(g_hBonusTimers[iClient] == INVALID_HANDLE)
+		g_hBonusTimers[iClient] = CreateTimer(1.0, ShowBonus, iClient);
 }
 
-public Action:ShowBonus(Handle:hTimer, any:iClient)
+public Action ShowBonus(Handle hTimer, any iClient)
 {
 	g_hBonusTimers[iClient] = INVALID_HANDLE;
 	
-	if(iClient <= 0) return Plugin_Handled;
-	if(!IsClientInGame(iClient)) return Plugin_Handled;
+	if(iClient <= 0)
+		return Plugin_Handled;
+	if(!IsClientInGame(iClient))
+		return Plugin_Handled;
 	
 	
 	if(GetArraySize(g_hBonus[iClient]) <= 0)
@@ -5722,16 +5568,17 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	
 	if(!g_bBonusAlt[iClient])
 	{
-		decl String:strEntry[255];
-		decl String:strPath[PLATFORM_MAX_PATH];
+		char strEntry[255];
+		char strPath[PLATFORM_MAX_PATH];
 		GetArrayString(g_hBonus[iClient], 0, strEntry, sizeof(strEntry));
 		Format(strPath, sizeof(strPath), "r_screenoverlay\"left4fortress/%s\"", strEntry);
 		ClientCommand(iClient, strPath);
 		
-		new iPitch = g_iBonusCombo[iClient] * 30 + 100;
-		if(iPitch > 250) iPitch = 250;
+		int iPitch = g_iBonusCombo[iClient] * 30 + 100;
+		if(iPitch > 250)
+			iPitch = 250;
 		
-		new iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_AWARD]-1);
+		int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_AWARD]-1);
 		MusicGetPath(MUSIC_AWARD, iRandom, strPath, sizeof(strPath));
 		
 		EmitSoundToClient(iClient, strPath, _, _, _, SND_CHANGEPITCH, _, iPitch);
@@ -5756,24 +5603,25 @@ public Action:ShowBonus(Handle:hTimer, any:iClient)
 	{
 		ClientCommand(iClient, "r_screenoverlay \"\"");
 		RemoveFromArray(g_hBonus[iClient], 0);
-		if(g_hBonusTimers[iClient] == INVALID_HANDLE) g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
+		if(g_hBonusTimers[iClient] == INVALID_HANDLE)
+			g_hBonusTimers[iClient] = CreateTimer(0.1, ShowBonus, iClient);
 	}
 	
-	//new Handle:event=CreateEvent("player_escort_score", true);
-	//SetEventInt(event, "player", iClient);
-	//SetEventInt(event, "points", 5);
-	//FireEvent(event);
+	Handle event=CreateEvent("player_escort_score", true);
+	SetEventInt(event, "player", iClient);
+	SetEventInt(event, "points", 1);
+	FireEvent(event);
 	
 	g_bBonusAlt[iClient] = !g_bBonusAlt[iClient];
 	
 	return Plugin_Handled;
 }
 
-GetAverageDamage()
+int GetAverageDamage()
 {
-	new iTotalDamage = 0;
-	new iCount = 0;
-	for (new i = 1; i <= MaxClients; i++)
+	int iTotalDamage = 0;
+	int iCount = 0;
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i))
 		{
@@ -5784,51 +5632,42 @@ GetAverageDamage()
 	return RoundFloat(float(iTotalDamage) / float(iCount));
 }
 
-PrecacheBonus(String:strPath[])
+void PrecacheBonus(String:strPath[])
 {
-	decl String:strPath2[PLATFORM_MAX_PATH];
+	char strPath2[PLATFORM_MAX_PATH];
 	Format(strPath2, sizeof(strPath2), "materials/left4fortress/%s.vmt", strPath);
 	AddFileToDownloadsTable(strPath2);
 	Format(strPath2, sizeof(strPath2), "materials/left4fortress/%s.vtf", strPath);
 	AddFileToDownloadsTable(strPath2);
 }
 
-/*RemovePhysicObjects()
+int GetActivePlayerCount()
 {
-	if(g_iMode == GAMEMODE_NEW) return;
-	new index = -1; 
-	while ((index = FindEntityByClassname(index, "prop_physics")) != -1)
+	int i = 0;
+	for(int j = 1; j <= MaxClients; j++)
 	{
-		if(IsClassname(index, "prop_physics")) AcceptEntityInput(index, "Kill");
-	}
-}*/
-
-GetActivePlayerCount()
-{
-	new i = 0;
-	for (new j = 1; j <= MaxClients; j++)
-	{
-		if(validActivePlayer(j)) i++;
+		if(validActivePlayer(j))
+			i++;
 	}
 	return i;
 }
 
-DetermineControlPoints()
+void DetermineControlPoints()
 {
 	g_bCapturingLastPoint = false;
 	g_iControlPoints = 0;
 	
-	for (new i = 0; i < sizeof(g_iControlPointsInfo); i++)
+	for(int i = 0; i < sizeof(g_iControlPointsInfo); i++)
 	{
 		g_iControlPointsInfo[i][0] = -1;
 	}
 	
 	//LogMessage("SZF: Calculating cps...");
 	
-	new iMaster = -1;
+	int iMaster = -1;
 
-	new iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "team_control_point_master")) != -1)
+	int iEntity = -1;
+	while((iEntity = FindEntityByClassname2(iEntity, "team_control_point_master")) != -1)
 	{
 		if(IsClassname(iEntity, "team_control_point_master"))
 		{
@@ -5843,9 +5682,11 @@ DetermineControlPoints()
 	}
 	
 	iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "team_control_point")) != -1) {
-		if(IsClassname(iEntity, "team_control_point") && g_iControlPoints < sizeof(g_iControlPointsInfo)) {
-			new iIndex = GetEntProp(iEntity, Prop_Data, "m_iPointIndex");			
+	while((iEntity = FindEntityByClassname2(iEntity, "team_control_point")) != -1)
+	{
+		if(IsClassname(iEntity, "team_control_point") && g_iControlPoints < sizeof(g_iControlPointsInfo))
+		{
+			int iIndex = GetEntProp(iEntity, Prop_Data, "m_iPointIndex");			
 			g_iControlPointsInfo[g_iControlPoints][0] = iIndex;
 			g_iControlPointsInfo[g_iControlPoints][1] = 0;
 			g_iControlPoints++;
@@ -5859,17 +5700,20 @@ DetermineControlPoints()
 	CheckRemainingCP();
 }
 
-public Action:OnCPCapture(Handle:hEvent, const String:strName[], bool:bHide)
+public Action OnCPCapture(Handle hEvent, const char[] strName, bool bHide)
 {
-	if(g_iControlPoints <= 0) return;
+	if(g_iControlPoints <= 0)
+		return;
 	
 	//LogMessage("Captured CP");
 
-	new iCaptureIndex = GetEventInt(hEvent, "cp");
-	if(iCaptureIndex < 0) return;
-	if(iCaptureIndex >= g_iControlPoints) return;
+	int iCaptureIndex = GetEventInt(hEvent, "cp");
+	if(iCaptureIndex < 0)
+		return;
+	if(iCaptureIndex >= g_iControlPoints)
+		return;
 	
-	for (new i = 0; i < g_iControlPoints; i++)
+	for(int i = 0; i < g_iControlPoints; i++)
 	{
 		if(g_iControlPointsInfo[i][0] == iCaptureIndex)
 		{
@@ -5880,17 +5724,19 @@ public Action:OnCPCapture(Handle:hEvent, const String:strName[], bool:bHide)
 	CheckRemainingCP();
 }
 
-public Action:OnCPCaptureStart(Handle:hEvent, const String:strName[], bool:bHide)
+public Action OnCPCaptureStart(Handle hEvent, const char[] strName, bool bHide)
 {
-	if(g_iControlPoints <= 0) return;
-	
+	if(g_iControlPoints <= 0)
+		return;
 
-	new iCaptureIndex = GetEventInt(hEvent, "cp");
+	int iCaptureIndex = GetEventInt(hEvent, "cp");
 	//LogMessage("Began capturing CP #%d / (total %d)", iCaptureIndex, g_iControlPoints);
-	if(iCaptureIndex < 0) return;
-	if(iCaptureIndex >= g_iControlPoints) return;
+	if(iCaptureIndex < 0)
+		return;
+	if(iCaptureIndex >= g_iControlPoints)
+		return;
 	
-	for (new i = 0; i < g_iControlPoints; i++)
+	for(int i = 0; i < g_iControlPoints; i++)
 	{
 		if(g_iControlPointsInfo[i][0] == iCaptureIndex)
 		{
@@ -5904,19 +5750,22 @@ public Action:OnCPCaptureStart(Handle:hEvent, const String:strName[], bool:bHide
 	CheckRemainingCP();
 }
 
-CheckRemainingCP()
+void CheckRemainingCP()
 {
 	g_bCapturingLastPoint = false;
-	if(g_iControlPoints <= 0) return;
+	if(g_iControlPoints <= 0)
+		return;
 	
 	//LogMessage("Checking remaining CP");
 
-	new iCaptureCount = 0;
-	new iCapturing = 0;
-	for (new i = 0; i < g_iControlPoints; i++)
+	int iCaptureCount = 0;
+	int iCapturing = 0;
+	for(int i = 0; i < g_iControlPoints; i++)
 	{
-		if(g_iControlPointsInfo[i][1] >= 2) iCaptureCount++;
-		if(g_iControlPointsInfo[i][1] == 1) iCapturing++;
+		if(g_iControlPointsInfo[i][1] >= 2)
+			iCaptureCount++;
+		if(g_iControlPointsInfo[i][1] == 1)
+			iCapturing++;
 	}
 	
 	//LogMessage("Capture count: %d, Max CPs: %d, Capturing: %d", iCaptureCount, g_iControlPoints, iCapturing);
@@ -5924,13 +5773,14 @@ CheckRemainingCP()
 	if(iCaptureCount == g_iControlPoints-1 && iCapturing > 0)
 	{
 		g_bCapturingLastPoint = true;
-		if(g_fZombieDamageScale < 1.0 && !g_bTankOnce) ZombieTank();
+		if(g_fZombieDamageScale < 1.0 && !g_bTankOnce)
+			ZombieTank();
 	}
 }
 
-TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &Handle:hWeapon, &bool:bWearable, String:strName[], iMaxSize)
+TFClassWeapon GetWeaponInfoFromModel(char[] strModel, int &iSlot, int &iSwitchSlot, Handle &hWeapon, bool &bWearable, char[] strName, int iMaxSize)
 {
-	new TFClassWeapon:iClass = TFClassWeapon_Unknown;
+	TFClassWeapon iClass = TFClassWeapon_Unknown;
 	
 	if(StrEqual(strModel, "models/weapons/c_models/c_lochnload/c_lochnload.mdl"))
 	{
@@ -5974,10 +5824,10 @@ TFClassWeapon:GetWeaponInfoFromModel(String:strModel[], &iSlot, &iSwitchSlot, &H
 	return iClass;
 }
 
-AttemptGrabItem(iClient)
+bool AttemptGrabItem(iClient)
 {
-	new iTarget = GetClientPointVisible(iClient);
-	new String:strClassname[255];
+	int iTarget = GetClientPointVisible(iClient);
+	char strClassname[255];
 	bool isWeapon;
 
 	if(debugmode)
@@ -6002,7 +5852,7 @@ AttemptGrabItem(iClient)
 		return false;
 	}
 
-	decl String:strModel[255];
+	char strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
 	PrintToChat(iClient, "%s", strModel);
 
@@ -6292,7 +6142,7 @@ stock int CreateWeapon(int client, int target, int slot, char[] name, int index,
 	{
 		TF2Items_SetNumAttributes(hWeapon, count / 2);
 		int i2;
-		for (int i; i<count; i+=2)
+		for(int i; i<count; i+=2)
 		{
 			int attrib = StringToInt(atts[i]);
 			if (!attrib)
@@ -6331,7 +6181,7 @@ stock int CreateWeapon(int client, int target, int slot, char[] name, int index,
 	return entity;
 }
 
-stock SetAmmo(client, weapon, ammo=-1, clip=-1)
+stock void SetAmmo(int client, int weapon, int ammo=-1, int clip=-1)
 {
 	if(IsValidEntity(weapon))
 	{
@@ -6340,58 +6190,58 @@ stock SetAmmo(client, weapon, ammo=-1, clip=-1)
 			SetEntProp(weapon, Prop_Data, "m_iClip1", clip);
 		}
 
-		new ammoType=(ammo>-1 ? GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType") : -1);
+		int ammoType=(ammo>-1 ? GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType") : -1);
 		if(ammoType!=-1)
 		{
 			SetEntProp(client, Prop_Data, "m_iAmmo", ammo, _, ammoType);
 		}
 		else if(ammo>-1)  //Only complain if we're trying to set ammo
 		{
-			decl String:classname[64];
+			char classname[64];
 			GetEdictClassname(weapon, classname, sizeof(classname));
 			LogError("[SZF] Cannot give ammo to weapon %s!", classname);
 		}
 	}
 }
 
-GetModelPath(iIndex, String:strModel[], iMaxSize)
+void GetModelPath(intiIndex, char[] strModel, int iMaxSize)
 {
-	new iTable = FindStringTable("modelprecache");
+	int iTable = FindStringTable("modelprecache");
 	ReadStringTable(iTable, iIndex, strModel, iMaxSize);
 }
 
-GetEntityModel(iEntity, String:strModel[], iMaxSize, String:strPropName[] = "m_nModelIndex")
+void GetEntityModel(int iEntity, char[] strModel, int iMaxSize, char[] strPropName = "m_nModelIndex")
 {
 	//m_iWorldModelIndex
-	new iIndex = GetEntProp(iEntity, Prop_Send, strPropName);
+	int iIndex = GetEntProp(iEntity, Prop_Send, strPropName);
 	GetModelPath(iIndex, strModel, iMaxSize);
 }
 
-CheckStartWeapons()	// TODO
+void CheckStartWeapons()
 {
-	new iClassesWithoutWeapons[10] = 0;
+	int iClassesWithoutWeapons[10] = 0;
 	
-	for (new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(validLivingSur(i) && !DoesPlayerHaveRealWeapon(i))
 		{
-			new TFClassType:iClass = TF2_GetPlayerClass(i);
+			TFClassType iClass = TF2_GetPlayerClass(i);
 			iClassesWithoutWeapons[iClass]++;
 			//PrintToChat(i, "You do not have a real weapon");
 		}
 	}
 	
-	decl String:strModel[PLATFORM_MAX_PATH];
+	char strModel[PLATFORM_MAX_PATH];
 
-	new iEntity = -1;
-	while ((iEntity = FindEntityByClassname2(iEntity, "prop_dynamic")) != -1)
+	int iEntity = -1;
+	while((iEntity = FindEntityByClassname2(iEntity, "prop_dynamic")) != -1)
 	{
 		if(IsClassname(iEntity, "prop_dynamic") && GetWeaponType(iEntity) == 1)
 		{
 			GetEntityModel(iEntity, strModel, sizeof(strModel));
-			new TFClassWeapon:iClass = GetWeaponClass(strModel);
+			TFClassWeapon iClass = GetWeaponClass(strModel);
 			
-			new Handle:hArray = CreateArray();
+			Handle hArray = CreateArray();
 			if(iClass == TFClassWeapon_Group_Shotgun)
 			{
 				PushArrayCell(hArray, TFClassWeapon_Soldier);
@@ -6405,10 +6255,10 @@ CheckStartWeapons()	// TODO
 			}
 			
 			
-			new bool:bEnable = false;
-			for (new i = 0; i < GetArraySize(hArray); i++)
+			bool bEnable = false;
+			for(int i = 0; i < GetArraySize(hArray); i++)
 			{
-				new iClass2 = GetArrayCell(hArray, i);
+				int iClass2 = GetArrayCell(hArray, i);
 				//PrintToServer("Class: %d", iClass2);
 				if(iClassesWithoutWeapons[iClass2] > 0)
 				{
@@ -6432,52 +6282,55 @@ CheckStartWeapons()	// TODO
 	}
 }
 
-GetWeaponType(iEntity)
+int GetWeaponType(int iEntity)
 {
-	decl String:strName[255];
+	char strName[255];
 	GetEntPropString(iEntity, Prop_Data, "m_iName", strName, sizeof(strName));
-	if(StrEqual(strName, "szf_weapons_intro", false)) return 1;
+	if(StrEqual(strName, "szf_weapons_spawn", false))
+		return 1;
 	
 	return 0;
 }
 
-TFClassWeapon:GetWeaponClass(String:strModel[])
+TFClassWeapon GetWeaponClass(char[] strModel)
 {	
-	new Handle:hWeapon = INVALID_HANDLE;
-	new iSlot = -1;
-	new iSwitchSlot = -1;
-	new bool:bWearable = false;
-	decl String:strName[255];
+	Handle hWeapon = INVALID_HANDLE;
+	int iSlot = -1;
+	int iSwitchSlot = -1;
+	bool bWearable = false;
+	chr strName[255];
 	
-	new TFClassWeapon:iWeaponClass = GetWeaponInfoFromModel(strModel, iSlot, iSwitchSlot, hWeapon, bWearable, strName, sizeof(strName));
+	TFClassWeapon iWeaponClass = GetWeaponInfoFromModel(strModel, iSlot, iSwitchSlot, hWeapon, bWearable, strName, sizeof(strName));
 	
 	return iWeaponClass;
 }
 
-bool:DoesPlayerHaveRealWeapon(iClient)
+bool DoesPlayerHaveRealWeapon(int iClient)
 {
-	new iEntity = GetPlayerWeaponSlot(iClient, 0);
-	if(iEntity > 0 && IsValidEdict(iEntity)) return true;
+	int iEntity = GetPlayerWeaponSlot(iClient, 0);
+	if(iEntity > 0 && IsValidEdict(iEntity))
+		return true;
 	iEntity = GetPlayerWeaponSlot(iClient, 1);
-	if(iEntity > 0 && IsValidEdict(iEntity)) return true;
+	if(iEntity > 0 && IsValidEdict(iEntity))
+		return true;
 	
 	return false;
 }
 
-bool:AttemptCarryItem(iClient)
+bool AttemptCarryItem(int iClient)
 {
 	if(DropCarryingItem(iClient))
 		return true;
 
-	new iTarget = GetClientPointVisible(iClient);
+	int iTarget = GetClientPointVisible(iClient);
 	
-	new String:strClassname[255];
+	char strClassname[255];
 	if(iTarget > 0)
 		GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
 	if(iTarget <= 0 || !IsClassname(iTarget, "prop_physics"))
 		return false;
-	
-	decl String:strName[255];
+
+	char strName[255];
 	GetEntPropString(iTarget, Prop_Data, "m_iName", strName, sizeof(strName));
 	if(!StrEqual(strName, "gascan", false))
 		return false;
@@ -6495,13 +6348,14 @@ bool:AttemptCarryItem(iClient)
 	return true;
 }
 
-UpdateClientCarrying(iClient)
+void UpdateClientCarrying(int iClient)
 {
-	new iTarget = g_iCarryingItem[iClient];
+	int iTarget = g_iCarryingItem[iClient];
 	
 	//PrintCenterText(iClient, "Teleporting gas can (%d)", iTarget);
 	
-	if(iTarget <= 0) return;
+	if(iTarget <= 0)
+		return;
 	if(!IsClassname(iTarget, "prop_physics"))
 	{
 		DropCarryingItem(iClient);
@@ -6510,12 +6364,13 @@ UpdateClientCarrying(iClient)
 	
 	//PrintCenterText(iClient, "Teleporting gas can 1");
 	
-	decl String:strName[255];
+	char strName[255];
 	GetEntPropString(iTarget, Prop_Data, "m_iName", strName, sizeof(strName));
-	if(!StrEqual(strName, "gascan", false)) return;
+	if(!StrEqual(strName, "gascan", false))
+		return;
 	
-	decl Float:vOrigin[3], Float:vAngles[3], Float:vDistance[3];
-	new Float:vEmpty[3];
+	float vOrigin[3], vAngles[3], vDistance[3];
+	float vEmpty[3];
 	GetClientEyePosition(iClient, vOrigin);
 	GetClientEyeAngles(iClient, vAngles);
 	vAngles[0] = 5.0;
@@ -6530,15 +6385,17 @@ UpdateClientCarrying(iClient)
 	//PrintCenterText(iClient, "Teleporting gas can");
 }
 
-bool:DropCarryingItem(iClient, bool:bDrop = true)
+bool DropCarryingItem(int iClient, bool bDrop = true)
 {
-	new iTarget = g_iCarryingItem[iClient];
-	if(iTarget <= 0) return false;
+	int iTarget = g_iCarryingItem[iClient];
+	if(iTarget <= 0)
+		return false;
 	
 	g_iCarryingItem[iClient] = -1;
 	SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 1);
 	
-	if(!IsClassname(iTarget, "prop_physics")) return true;
+	if(!IsClassname(iTarget, "prop_physics"))
+		return true;
 	
 	//PrintToChat(iClient, "Dropped gas can");
 	//SetEntProp(iTarget, Prop_Send, "m_nSolidType", 6);
@@ -6546,14 +6403,14 @@ bool:DropCarryingItem(iClient, bool:bDrop = true)
    
 	if(bDrop && (IsEntityStuck(iTarget) || ObstancleBetweenEntities(iClient, iTarget)))
 	{
-		decl Float:vOrigin[3];
+		float vOrigin[3];
 		GetClientEyePosition(iClient, vOrigin);
 		TeleportEntity(iTarget, vOrigin, NULL_VECTOR, NULL_VECTOR);
 	}
 	return true;
 }
 
-stock AnglesToVelocity(Float:fAngle[3], Float:fVelocity[3], Float:fSpeed = 1.0)
+stock void AnglesToVelocity(float fAngle[3], float fVelocity[3], float fSpeed = 1.0)
 {
 	fVelocity[0] = Cosine(DegToRad(fAngle[1]));
 	fVelocity[1] = Sine(DegToRad(fAngle[1]));
@@ -6564,9 +6421,9 @@ stock AnglesToVelocity(Float:fAngle[3], Float:fVelocity[3], Float:fSpeed = 1.0)
 	ScaleVector(fVelocity, fSpeed);
 }
 
-stock bool:IsEntityStuck(iEntity)
+stock bool IsEntityStuck(int iEntity)
 {
-	decl Float:vecMin[3], Float:vecMax[3], Float:vecOrigin[3];
+	float vecMin[3], vecMax[3], vecOrigin[3];
 	
 	GetEntPropVector(iEntity, Prop_Send, "m_vecMins", vecMin);
 	GetEntPropVector(iEntity, Prop_Send, "m_vecMaxs", vecMax);
