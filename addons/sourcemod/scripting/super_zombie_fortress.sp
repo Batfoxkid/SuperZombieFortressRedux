@@ -43,14 +43,14 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Overhaul"
+#define DEV_REVISION "Smug Doc Lucar"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
 #endif
 
-#define BUILD_NUMBER "20"
+#define BUILD_NUMBER "23"
 
 #define debugmode true
 
@@ -59,6 +59,11 @@ bool steamtools = false;
 #endif
 
 #define MAXATTRIBUTES 16
+
+// File paths
+#define ConfigPath "configs/super_zombie_fortress"
+#define DataPath "data/super_zombie_fortress"
+#define WeaponCFG "weapons.cfg"
 
 public Plugin myinfo = 
 {
@@ -97,6 +102,7 @@ Handle szf_tMainFast;
 Handle szf_tMainSlow;
 Handle szf_tHoarde;
 Handle szf_tDataCollect;// Cvar Handles
+Handle kvWeaponMods=INVALID_HANDLE;
 ConVar cvarForceOn;
 ConVar cvarRatio;
 ConVar cvarAllowTeamPref;
@@ -4504,6 +4510,25 @@ public Action command_tank_random(int client, int args)
 	return Plugin_Handled;
 }
 
+public void CacheWeapons()
+{
+	char config[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, config, sizeof(config), "%s/%s", DataPath, WeaponCFG);
+	
+	if(!FileExists(config))
+	{
+		LogError("[SZF] Can not find '%s'!", WeaponCFG);
+		return;
+	}
+	
+	kvWeaponMods = CreateKeyValues("Weapons");
+	if(!FileToKeyValues(kvWeaponMods, config))
+	{
+		LogError("[SZF] '%s' is improperly formatted!", WeaponCFG);
+		return;
+	}
+}
+
 public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDefinitionIndex, Handle &item)
 {
 	if(!zf_bEnabled)
@@ -4513,6 +4538,78 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 
 	if(validZom(client))
 	{
+	}
+	else if(kvWeaponMods != null)
+	{
+		char weapon[64], wepIndexStr[768], attributes[768];
+		for(int i=1; ; i++)
+		{
+			KvRewind(kvWeaponMods);
+			Format(weapon, 10, "weapon%i", i);
+			if(KvJumpToKey(kvWeaponMods, weapon))
+			{
+				int isOverride=KvGetNum(kvWeaponMods, "mode");
+				KvGetString(kvWeaponMods, "classname", weapon, sizeof(weapon));
+				KvGetString(kvWeaponMods, "index", wepIndexStr, sizeof(wepIndexStr));
+				KvGetString(kvWeaponMods, "attributes", attributes, sizeof(attributes));
+				if(isOverride)
+				{
+					if(StrContains(wepIndexStr, "-2")!=-1 && StrContains(classname, weapon, false)!=-1 || StrContains(wepIndexStr, "-1")!=-1 && StrEqual(classname, weapon, false))
+					{
+						if(isOverride!=3)
+						{
+							Handle itemOverride=PrepareItemHandle(item, _, _, attributes, isOverride==1 ? false : true);
+							if(itemOverride!=null)
+							{
+								item=itemOverride;
+								return Plugin_Changed;
+							}
+						}
+						else
+						{
+							return Plugin_Stop;
+						}
+					}
+					if(StrContains(wepIndexStr, "-1")==-1 && StrContains(wepIndexStr, "-2")==-1)
+					{
+						int wepIndex;
+						char wepIndexes[768][32];
+						int weaponIdxcount = ExplodeString(wepIndexStr, " ; ", wepIndexes, sizeof(wepIndexes), 32);
+						for(int wepIdx = 0; wepIdx<=weaponIdxcount ; wepIdx++)
+						{
+							if(strlen(wepIndexes[wepIdx])>0)
+							{
+								wepIndex = StringToInt(wepIndexes[wepIdx]);
+								if(wepIndex == iItemDefinitionIndex)
+								{
+									switch(isOverride)
+									{
+										case 3:
+										{
+											return Plugin_Stop;
+										}					
+										case 2,1:
+										{
+											Handle itemOverride=PrepareItemHandle(item, _, _, attributes, isOverride==1 ? false : true);
+											if(itemOverride!=null)
+											{
+												item=itemOverride;
+												return Plugin_Changed;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}	
+			}
+			else
+			{
+				break;
+			}
+		}
+		KvGoBack(kvWeaponMods);
 	}
 	else
 	{
@@ -4965,14 +5062,13 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	SetEntityRenderColor(client, 255, 255, 255, 255);
 	int index = -1;
 	int[] civilianCheck = new int[MaxClients+1];
+	int weapon = -1;
 
 	if(validZom(client))
 	{
 		float FireRate=1.0,	// 5 / 6	Any
 		Jump=1.0,		// 443		Any
 		Bleed=0.0,		// 149		Any
-		HealthOnKill=0.0,	// 220		Any
-		HealthOnHit=0.0,	// 16		Any
 		Damage=1.0,		// 1 / 2	Any
 		Speed=1.0,		// 442		Any
 		SlowBy40=0.0,		// 182		Any
@@ -4982,16 +5078,20 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		RandomCrits=1.0;	// 15 / 28	Any
 
 		int Health=0,		// 125 / 26	Any
-		Knockback=0,		// 216		Any
-		CritsAreMini=0,		// 869		Any
-		CritsOnBack=0,		// 362		Any
-		NoDisguises=1,		// 155		Spy
-		NoCloak=0,		// Custom	Spy
-		SilentCloak=0,		// 160		Spy
+		HealthOnKill=0,		// 220		Any
+		HealthOnHit=0,		// 16		Any
 		CloakOnHit=0,		// 166		Spy
 		CloakOnKill=100;	// 158		Spy
 
-		int weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		bool Knockback=false,	// 216		Any
+		CritsAreMini=false,	// 869		Any
+		CritsOnBack=false,	// 362		Any
+		NoDisguises=true,	// 155		Spy
+		NoCloak=false,		// Custom	Spy
+		SilentCloak=false,	// 160		Spy			
+		Preserve=true;		// Custom	Any
+
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 		if(IsValidEntity(weapon))
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
@@ -5001,7 +5101,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				// Scout
 				case 45, 1078:  // Force-A-Nature
 				{
-					Knockback=1;
+					Knockback=true;
 					SlowChance=1.0;
 					FireRate=1.25;
 				}
@@ -5015,14 +5115,13 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 				case 772:  // Baby Face's Blaster
 				{
-					Speed=0.9;
-					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
+					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 54 ; 0.9 ; 348 ; 999 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
 				}
 				case 1103:  // Back Scatter
 				{
 					FireRate=1.15;
-					CritsOnBack=1;
-					CritsAreMini=1;
+					CritsOnBack=true
+					CritsAreMini=true;
 					RandomCrits=0.0;
 				}
 				// Heavy
@@ -5064,8 +5163,8 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 				case 460:  // Enforcer
 				{
-					NoDisguises=0;
-					NoCloak=1;
+					NoDisguises=false;
+					NoCloak=true;
 				}
 				case 525:  // Diamondback
 				{
@@ -5123,7 +5222,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 				case 311:  // Buffalo Steak Sandvich
 				{
-					Speed*=1.3;
+					TF2_AddCondition(client, TFCond_SpeedBuffAlly, -1.0);
 					TF2_AddCondition(client, TFCond_CritCola, -1.0);
 					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
 				}
@@ -5155,6 +5254,8 @@ public Action Timer_CheckItems(Handle timer, any userid)
 			}
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 		}
+		char classname[64], attributes[64];
+		index=5; // Fail safe
 		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
 		if(IsValidEntity(weapon))
 		{
@@ -5162,130 +5263,183 @@ public Action Timer_CheckItems(Handle timer, any userid)
 			switch(index)
 			{
 				// Scout
-				case 46, 1145:  // Bonk! Atomic Punch
+				case 44:  // Sandman
 				{
-					Health-=100;
-					TF2_AddCondition(client, TFCond_DodgeChance, -1.0);
+					Health-=15;
+					Format(attributes, sizeof(attributes), "278;99");
 				}
-				case 163:  // Crit-a-Cola
+				case 317:  // Candy Cane
 				{
-					TF2_AddCondition(client, TFCond_CritCola, -1.0);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+					Health-=25;
+					HealthOnHit+=20;
+					Preserve=false;
 				}
-				case 222, 1121:  // Mad Milk
+				case 325, 452:  // Boston Basher, Three-Rune Blade
 				{
-					//DamageVsPlayers-=0.5;
+					Bleed+=2.0;
+					Format(attributes, sizeof(attributes), "207;1.75");
 				}
-				case 449:  // Winger
+				case 648:  // Wrap Assassin
 				{
-					FireRate*=0.9;
-					Jump*=1.15;
-				}
-				case 773:  // Pretty Boy's Pocket Pistol
-				{
-					FireRate*=1.1;
-					HealthOnHit+=6;
-				}
-				case 812, 833:  // Flying Guillotine
-				{
-					FireRate*=1.15;
-					Bleed+=1.0;
+					Format(attributes, sizeof(attributes), "278;99");
 				}
 				// Heavy
-				case 42, 863, 1002:  // Sandvich
+				case 43:  // Killing Gloves of Boxing
 				{
-					Health+=150;
-					Speed*=0.7;
+					FireRate*=1.2;
+					Format(attributes, sizeof(attributes), "613;5");
+					Preserve=false;
 				}
-				case 159, 433:  // Dalokohs Bar
-				{
-					Health+=50;
-					Speed*=0.9;
-				}
-				case 311:  // Buffalo Steak Sandvich
-				{
-					Speed*=1.3;
-					TF2_AddCondition(client, TFCond_CritCola, -1.0);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
-				}
-				case 425:  // Family Business
-				{
-					FireRate*=0.85;
-					Speed*=0.95;
-				}
-				case 1153:  // Panic Attack
+				case 239, 1084, 1100:  // Gloves of Running Urgently
 				{
 					Health-=100;
-					Speed*=1.5;
-					Jump*=1.15;
-					DamageVsPlayers*=0.9;
-					FireRate*=1.1;
+					Speed*=1.3;
+					Preserve=false;
 				}
-				case 1190:  // Second Banana
+				case 426:  // Eviction Notice
 				{
-					Health+=100;
-					Speed*=0.8;
+					Health-=50;
+					Speed*=1.15;
+					Damage*=0.4;
+					Speed*=0.45;
+					Preserve=false;
 				}
 				// Spy
-				case 810, 831:  // Red-Tape Recorder
+				case 225, 574:  // Your Eternal Reward
 				{
-					FireRate*=1.35;
-					Speed*=1.25;
-					DamageVsPlayers*=0.65;
+					SilentCloak=false;
+					Format(attributes, sizeof(attributes), "34;1.33");
+					Preserve=false;
+				}
+				case 356:  // Conniver's Kunai
+				{
+					Health-=70;
+					HealthOnHit+=35;
+					Preserve=false;
+				}
+				case 461:  // Conniver's Kunai
+				{
+					Health-=25;
+					CloakOnHit+=30;
+					Format(attributes, sizeof(attributes), "737;1.5");
+					Preserve=false;
+				}
+				case 649:  // Conniver's Kunai
+				{
+					Preserve=false;
 				}
 			}
 		}
-		char classname[64], attributes[64];
-		GetEdictClassname(weapon, classname, sizeof(classname));
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 
 		if(FireRate > 1)
-			TF2Items_SetAttribute(hWeapon, i2, attrib, );
+			Format(attributes, sizeof(attributes), "%s;5;%.2f", attributes, FireRate);
 		else if(FireRate < 1)
-			Format(attributes, sizeof(attributes), "6 ; %.2f", FireRate);
-			attribcount++;
+			Format(attributes, sizeof(attributes), "%s;6;%.2f", attributes, FireRate);
+
 		if(Jump != 1)
-			Format(attributes, sizeof(attributes), "%s ; 443 ; %.2f", attributes, Jump);
+			Format(attributes, sizeof(attributes), "%s;443;%.2f", attributes, Jump);
 
 		if(Bleed > 0)
-			Format(attributes, sizeof(attributes), "%s ; 149 ; %.2f", attributes, Bleed);
-
-		if(HealthOnKill != 0)
-			Format(attributes, sizeof(attributes), "%s ; 220 ; %i", attributes, HealthOnKill);
-
-		if(HealthOnHit != 0)
-			Format(attributes, sizeof(attributes), "%s ; 16 ; %i", attributes, HealthOnHit);
-
-		if(Damage > 1)
-			Format(attributes, sizeof(attributes), "%s ; 2 ; %.2f", attributes, Damage);
-		else if(Damage < 1)
-			Format(attributes, sizeof(attributes), "%s ; 1 ; %.2f", attributes, Damage);
+			Format(attributes, sizeof(attributes), "%s;149;%.2f", attributes, Bleed);
 
 		if(Speed != 1)
-			Format(attributes, sizeof(attributes), "%s ; 442 ; %.2f", attributes, Speed);
+			Format(attributes, sizeof(attributes), "%s;442;%.2f", attributes, Speed);
 
 		if(SlowBy40 > 0)
-			Format(attributes, sizeof(attributes), "%s ; 182 ; %.2f", attributes, SlowBy40);
-
-		if(DamageVsPlayers != 1)
-			Format(attributes, sizeof(attributes), "%s ; 138 ; %.2f", attributes, DamageVsPlayers);
+			Format(attributes, sizeof(attributes), "%s;182;%.2f", attributes, SlowBy40);
 
 		if(DamageVsBurning != 1)
-			Format(attributes, sizeof(attributes), "%s ; 795 ; %.2f", attributes, DamageVsBurning);
+			Format(attributes, sizeof(attributes), "%s;795;%.2f", attributes, DamageVsBurning);
 
 		if(SlowChance != 0)
-			Format(attributes, sizeof(attributes), "%s ; 32 ; %.2f", attributes, SlowChance);
+			Format(attributes, sizeof(attributes), "%s;32;%.2f", attributes, SlowChance);
 
-		if(RandomCrits != 1)
-			Format(attributes, sizeof(attributes), "%s ; 28 ; %.2f", attributes, RandomCrits);
-		else if(RandomCrits == 0)
-			Format(attributes, sizeof(attributes), "%s ; 28 ; %.2f", attributes, RandomCrits);
+		if(HealthOnKill != 0)
+			Format(attributes, sizeof(attributes), "%s;220;%i", attributes, HealthOnKill);
 
-		SpawnWeapon(client, classname, index, 101, 13, attributes);
+		if(Health > 0)
+			Format(attributes, sizeof(attributes), "%s;26;%i", attributes, Health);
+		else if(Health < 0)
+			Format(attributes, sizeof(attributes), "%s;125;%i", attributes, Health);
+
+		if(Knockback)
+			Format(attributes, sizeof(attributes), "%s;216;1", attributes);
+
+		if(CritsAreMini)
+			Format(attributes, sizeof(attributes), "%s;869;1", attributes);
+
+		switch(TF2_GetPlayerClass(client))
+		{
+			case TFClass_Scout:
+			{
+				Damage*=0.29;
+
+				if(RandomCrits != 1)
+					Format(attributes, sizeof(attributes), "%s;28;%.2f", attributes, RandomCrits);
+				else if(RandomCrits == 0)
+					Format(attributes, sizeof(attributes), "%s;15;0", attributes);
+
+				if(CritsOnBack)
+					Format(attributes, sizeof(attributes), "%s;362;1", attributes);
+			}
+			case TFClass_Heavy:
+			{
+				Damage*=0.54;
+
+				if(RandomCrits != 1)
+					Format(attributes, sizeof(attributes), "%s;28;%.2f", attributes, RandomCrits);
+				else if(RandomCrits == 0)
+					Format(attributes, sizeof(attributes), "%s;15;0", attributes);
+
+				if(CritsOnBack)
+					Format(attributes, sizeof(attributes), "%s;362;1", attributes);
+			}
+			case TFClass_Spy:
+			{
+				Damage*=2.5;
+				DamageVsPlayers*=0.1;
+
+				if(NoCloak)
+				{
+					TF2_RemoveWeaponSlot(client, 4);
+				}
+				else
+				{
+					if(CloakOnHit != 0)
+						Format(attributes, sizeof(attributes), "%s;166;%i", CloakOnHit);
+
+					if(CloakOnKill != 0)
+						Format(attributes, sizeof(attributes), "%s;158;%i", CloakOnHit);
+
+					if(SlientCloak)
+						Format(attributes, sizeof(attributes), "%s;160;1", attributes);
+				}
+						
+				if(NoDisguises)
+					Format(attributes, sizeof(attributes), "%s;155;1", attributes);
+
+			}
+		}
+
+		if(Damage > 1)
+			Format(attributes, sizeof(attributes), "%s;2;%.2f", attributes, Damage);
+		else if(Damage < 1)
+			Format(attributes, sizeof(attributes), "%s;1;%.2f", attributes, Damage);
+
+		if(DamageVsPlayers != 1)
+			Format(attributes, sizeof(attributes), "%s;138;%.2f", attributes, DamageVsPlayers);
+
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
+		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes, preserve);
+		SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
+
+		int vuln = GetRandomInt(0, 100);
+		TF2Attrib_SetByDefIndex(weapon, 61, view_as<float>(vuln/100));
+		TF2Attrib_SetByDefIndex(weapon, 206, view_as<float>((100-vuln)/100));
 	}
 	else
 	{
-		int weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 		if(IsValidEntity(weapon))
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
