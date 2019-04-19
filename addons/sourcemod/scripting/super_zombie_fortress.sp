@@ -26,11 +26,13 @@
 #include <tf2_stocks>
 #include <morecolors>
 #include <tf2items>
-//#include <tf2attributes>
+#include <tf2attributes>
 //#include <super_zombie_fortress>
+#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamtools>
 #define REQUIRE_EXTENSIONS
+#endif
 
 #include "szf_util_base.inc"
 #include "szf_util_pref.inc"
@@ -50,7 +52,7 @@
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
 #endif
 
-#define BUILD_NUMBER "23"
+#define BUILD_NUMBER "24"
 
 #define debugmode true
 
@@ -5120,7 +5122,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				case 1103:  // Back Scatter
 				{
 					FireRate=1.15;
-					CritsOnBack=true
+					CritsOnBack=true;
 					CritsAreMini=true;
 					RandomCrits=0.0;
 				}
@@ -5411,7 +5413,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					if(CloakOnKill != 0)
 						Format(attributes, sizeof(attributes), "%s;158;%i", CloakOnHit);
 
-					if(SlientCloak)
+					if(SilentCloak)
 						Format(attributes, sizeof(attributes), "%s;160;1", attributes);
 				}
 						
@@ -5430,7 +5432,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 			Format(attributes, sizeof(attributes), "%s;138;%.2f", attributes, DamageVsPlayers);
 
 		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes, preserve);
+		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes, Preserve);
 		SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 
 		int vuln = GetRandomInt(0, 100);
