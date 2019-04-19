@@ -5612,7 +5612,7 @@ stock Handle PrepareItemHandle(Handle item, char[] name="", int index=-1, const 
 	return weapon;
 }
 
-stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, char[] att)
+stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, char[] att, bool dontPreserve=false)
 {
 	Handle hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
 	if(hWeapon==INVALID_HANDLE)
@@ -5624,6 +5624,10 @@ stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, c
 	TF2Items_SetItemIndex(hWeapon, index);
 	TF2Items_SetLevel(hWeapon, level);
 	TF2Items_SetQuality(hWeapon, qual);
+	if(dontPreserve)
+	{
+		TF2Items_SetFlags(hWeapon, PRESERVE_ATTRIBUTES);
+	}
 	char atts[32][32];
 	int count=ExplodeString(att, ";", atts, 32, 32);
 
