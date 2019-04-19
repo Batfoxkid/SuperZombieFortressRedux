@@ -262,7 +262,7 @@ char g_strSoundCritHit[][128] =
 
 char g_weaponModels[][128] =
 {
-	"models/weapons/c_models/c_dartgun.mdl",
+	//"models/weapons/c_models/c_dartgun.mdl",
 	"models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl",
 	"models/weapons/c_models/urinejar.mdl",
 	"models/weapons/c_models/c_bow/c_bow.mdl",
@@ -297,7 +297,6 @@ char g_weaponModels[][128] =
 	"models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl",
 	"models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl",
 	"models/weapons/c_models/c_pistol.mdl",
-	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",
 	"models/weapons/c_models/c_wrangler.mdl"
 };
 
@@ -1142,12 +1141,8 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 				}
 				else if(GetRandomInt(0, 6)>4 && !starter)
 				{
-					switch(GetRandomInt(2, 18))
+					switch(GetRandomInt(3, 18))
 					{
-						case 2:
-						{
-							SetEntityModel(weapon, "models/weapons/c_models/c_dartgun.mdl");
-						}
 						case 3:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl");
@@ -1216,19 +1211,15 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 				}
 				else if(GetRandomInt(0, 2)>0)
 				{
-					switch(GetRandomInt(1, 15))
+					switch(GetRandomInt(2, 15))
 					{
-						case 1:
+						case 2:
 						{
 							SetEntityModel(weapon, "models/weapons/c_models/c_shotgun/c_shotgun.mdl");
 						}
-						case 2:
-						{
-							SetEntityModel(weapon, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl");
-						}
 						case 3:
 						{
-							SetEntityModel(weapon, "models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl");
+							SetEntityModel(weapon, "models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl");
 						}
 						case 4:
 						{
@@ -4976,7 +4967,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	int[] civilianCheck = new int[MaxClients+1];
 
 	if(validZom(client))
-	{/*
+	{
 		float FireRate=1.0,	// 5 / 6	Any
 		Jump=1.0,		// 443		Any
 		Bleed=0.0,		// 149		Any
@@ -5004,6 +4995,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		if(IsValidEntity(weapon))
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 			switch(index)
 			{
 				// Scout
@@ -5012,22 +5004,18 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					Knockback=1;
 					SlowChance=1.0;
 					FireRate=1.25;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 220:  // Shortstop
 				{
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 					SpawnWeapon(client, "tf_weapon_handgun_scout", 220, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
 				}
 				case 448:  // Soda Popper
 				{
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 					//SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 818 ; 1");
 				}
 				case 772:  // Baby Face's Blaster
 				{
 					Speed=0.9;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
 				}
 				case 1103:  // Back Scatter
@@ -5036,7 +5024,6 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					CritsOnBack=1;
 					CritsAreMini=1;
 					RandomCrits=0.0;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				// Heavy
 				case 41:  // Natascha
@@ -5045,7 +5032,6 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					DamageVsPlayers=0.75;
 					Health=30;
 					SlowBy40=5.0;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 312:  // Brass Beast
 				{
@@ -5053,19 +5039,16 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					Damage=1.25;
 					Health=30;
 					Speed=0.75;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 424:  // Tomislav
 				{
 					FireRate=1.1;
 					Speed=1.1;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 811, 832:  // Huo-Long Heater
 				{
 					//DamageVsBurning=1.2;
 					//DamageVsPlayers=0.75;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				// Spy
 				case 61, 1006:  // Ambassador
@@ -5073,28 +5056,22 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					FireRate=1.2;
 					Damage=0.85;
 					DamageVsPlayers=1.25;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 224:  // L'Etranger
 				{
 					CloakOnHit=30;
 					DamageVsPlayers=0.9;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 460:  // Enforcer
 				{
 					NoDisguises=0;
 					NoCloak=1;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
 				case 525:  // Diamondback
 				{
 					Damage=0.85;
 					DamageVsPlayers=1.2;
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 				}
-				default:
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 			}
 		}
 		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
@@ -5171,13 +5148,140 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				// Spy
 				case 810, 831:  // Red-Tape Recorder
 				{
-					FireRate=1.35;
-					Speed=1.25;
-					DamageVsPlayers=0.65;
+					FireRate*=1.35;
+					Speed*=1.25;
+					DamageVsPlayers*=0.65;
 				}
 			}
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-		}*/
+		}
+		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
+		if(IsValidEntity(weapon))
+		{
+			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			switch(index)
+			{
+				// Scout
+				case 46, 1145:  // Bonk! Atomic Punch
+				{
+					Health-=100;
+					TF2_AddCondition(client, TFCond_DodgeChance, -1.0);
+				}
+				case 163:  // Crit-a-Cola
+				{
+					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+				}
+				case 222, 1121:  // Mad Milk
+				{
+					//DamageVsPlayers-=0.5;
+				}
+				case 449:  // Winger
+				{
+					FireRate*=0.9;
+					Jump*=1.15;
+				}
+				case 773:  // Pretty Boy's Pocket Pistol
+				{
+					FireRate*=1.1;
+					HealthOnHit+=6;
+				}
+				case 812, 833:  // Flying Guillotine
+				{
+					FireRate*=1.15;
+					Bleed+=1.0;
+				}
+				// Heavy
+				case 42, 863, 1002:  // Sandvich
+				{
+					Health+=150;
+					Speed*=0.7;
+				}
+				case 159, 433:  // Dalokohs Bar
+				{
+					Health+=50;
+					Speed*=0.9;
+				}
+				case 311:  // Buffalo Steak Sandvich
+				{
+					Speed*=1.3;
+					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+				}
+				case 425:  // Family Business
+				{
+					FireRate*=0.85;
+					Speed*=0.95;
+				}
+				case 1153:  // Panic Attack
+				{
+					Health-=100;
+					Speed*=1.5;
+					Jump*=1.15;
+					DamageVsPlayers*=0.9;
+					FireRate*=1.1;
+				}
+				case 1190:  // Second Banana
+				{
+					Health+=100;
+					Speed*=0.8;
+				}
+				// Spy
+				case 810, 831:  // Red-Tape Recorder
+				{
+					FireRate*=1.35;
+					Speed*=1.25;
+					DamageVsPlayers*=0.65;
+				}
+			}
+		}
+		char classname[64], attributes[64];
+		GetEdictClassname(weapon, classname, sizeof(classname));
+		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+
+		if(FireRate > 1)
+			TF2Items_SetAttribute(hWeapon, i2, attrib, );
+		else if(FireRate < 1)
+			Format(attributes, sizeof(attributes), "6 ; %.2f", FireRate);
+			attribcount++;
+		if(Jump != 1)
+			Format(attributes, sizeof(attributes), "%s ; 443 ; %.2f", attributes, Jump);
+
+		if(Bleed > 0)
+			Format(attributes, sizeof(attributes), "%s ; 149 ; %.2f", attributes, Bleed);
+
+		if(HealthOnKill != 0)
+			Format(attributes, sizeof(attributes), "%s ; 220 ; %i", attributes, HealthOnKill);
+
+		if(HealthOnHit != 0)
+			Format(attributes, sizeof(attributes), "%s ; 16 ; %i", attributes, HealthOnHit);
+
+		if(Damage > 1)
+			Format(attributes, sizeof(attributes), "%s ; 2 ; %.2f", attributes, Damage);
+		else if(Damage < 1)
+			Format(attributes, sizeof(attributes), "%s ; 1 ; %.2f", attributes, Damage);
+
+		if(Speed != 1)
+			Format(attributes, sizeof(attributes), "%s ; 442 ; %.2f", attributes, Speed);
+
+		if(SlowBy40 > 0)
+			Format(attributes, sizeof(attributes), "%s ; 182 ; %.2f", attributes, SlowBy40);
+
+		if(DamageVsPlayers != 1)
+			Format(attributes, sizeof(attributes), "%s ; 138 ; %.2f", attributes, DamageVsPlayers);
+
+		if(DamageVsBurning != 1)
+			Format(attributes, sizeof(attributes), "%s ; 795 ; %.2f", attributes, DamageVsBurning);
+
+		if(SlowChance != 0)
+			Format(attributes, sizeof(attributes), "%s ; 32 ; %.2f", attributes, SlowChance);
+
+		if(RandomCrits != 1)
+			Format(attributes, sizeof(attributes), "%s ; 28 ; %.2f", attributes, RandomCrits);
+		else if(RandomCrits == 0)
+			Format(attributes, sizeof(attributes), "%s ; 28 ; %.2f", attributes, RandomCrits);
+
+		SpawnWeapon(client, classname, index, 101, 13, attributes);
 	}
 	else
 	{
@@ -6052,10 +6156,6 @@ bool AttemptGrabItem(int iClient)
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_smg", 16, 1, "", 0, 100, 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_dartgun.mdl"))
-		{
-			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrifle", 230, 0, "", 0, 25);
-		}
 		else if(StrEqual(strModel, "models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sniperrifle", 402, 0, "", 0, 25);
@@ -6179,7 +6279,7 @@ stock void SetAmmo(int client, int weapon, int ammo=-1, int clip=-1)
 	}
 }
 
-void GetModelPath(int intiIndex, char[] strModel, int iMaxSize)
+void GetModelPath(int iIndex, char[] strModel, int iMaxSize)
 {
 	int iTable = FindStringTable("modelprecache");
 	ReadStringTable(iTable, iIndex, strModel, iMaxSize);
