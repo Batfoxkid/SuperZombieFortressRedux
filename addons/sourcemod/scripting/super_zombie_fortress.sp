@@ -45,22 +45,20 @@
 #define MAJOR_REVISION "2"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
-#define DEV_REVISION "Smug Doc Lucar"
+#define DEV_REVISION "Build"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
-	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
+	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
 #endif
 
-#define BUILD_NUMBER "24"
+#define BUILD_NUMBER "41"
 
-#define debugmode true
+#define debugmode false
 
 #if defined _steamtools_included
 bool steamtools = false;
 #endif
-
-#define MAXATTRIBUTES 16
 
 // File paths
 #define ConfigPath "configs/super_zombie_fortress"
@@ -84,12 +82,24 @@ public Plugin myinfo =
 
 #define SOUND_BONUS	"ui/trade_ready.wav"
 
+
+int OtherTeam=2;
+int ZomTeam=3;
+int Enabled;
+bool LastMan=true;
+int MapType=0;
+int RedAlivePlayers=0;
+int BlueAlivePlayers=0;
+int RedDeadPlayers=0;
+int BlueDeadPlayers=0;
+
+float GlowTimer[MAXPLAYERS+1];
+
 //
 // State
 //
 
 // Global State
-int zf_bEnabled;
 int zf_bNewRound;
 int zf_spawnSurvivorsKilledCounter;
 int zf_spawnZombiesKilledCounter;
@@ -105,6 +115,8 @@ Handle szf_tMainSlow;
 Handle szf_tHoarde;
 Handle szf_tDataCollect;// Cvar Handles
 Handle kvWeaponMods=INVALID_HANDLE;
+Handle GameConfig;
+Handle WearableEquip;
 ConVar cvarForceOn;
 ConVar cvarRatio;
 ConVar cvarAllowTeamPref;
@@ -186,7 +198,9 @@ int g_iMode = GAMEMODE_DEFAULT;
 #define MUSIC_NEARDEATH2	17
 #define MUSIC_AWARD		18
 #define MUSIC_LASTTENSECONDS	19
-#define MUSIC_MAX		20
+#define MUSIC_ROUNDWIN		20
+#define MUSIC_ROUNDLOSE		21
+#define MUSIC_MAX		22
 
 #define MUSIC_NONE			0
 #define MUSIC_INTENSE			1
@@ -271,41 +285,41 @@ char g_strSoundCritHit[][128] =
 char g_weaponModels[][128] =
 {
 	//"models/weapons/c_models/c_dartgun.mdl",
-	"models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl",
-	"models/weapons/c_models/urinejar.mdl",
-	"models/weapons/c_models/c_bow/c_bow.mdl",
-	"models/weapons/c_models/c_leechgun/c_leechgun.mdl",
-	"models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl",
-	"models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl",
-	"models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl",
-	"models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl",
-	"models/weapons/c_models/c_flamethrower/c_flamethrower.mdl",
-	"models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl",
-	"models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl",
-	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",
-	"models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl",
-	"models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl",
-	"models/weapons/c_models/c_directhit/c_directhit.mdl",
-	"models/weapons/c_models/c_blackbox/c_blackbox.mdl",
-	"models/weapons/c_models/c_shotgun/c_shotgun.mdl",
-	"models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl",
-	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",
-	"models/weapons/c_models/c_bugle/c_bugle.mdl",
-	"models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl",
-	"models/weapons/c_models/c_detonator/c_detonator.mdl",
-	"models/weapons/c_models/c_degreaser/c_degreaser.mdl",
-	"models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl",
-	"models/weapons/c_models/c_lochnload/c_lochnload.mdl",
-	"models/weapons/c_models/c_sticky_jumper.mdl",
-	"models/weapons/c_models/c_scottish_resistance.mdl",
-	"models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl",
-	"models/weapons/c_models/c_medigun/c_medigun.mdl",
-	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",
-	"models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl",
-	"models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl",
-	"models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl",
-	"models/weapons/c_models/c_pistol.mdl",
-	"models/weapons/c_models/c_wrangler.mdl"
+	"models/weapons/c_models/c_dex_sniperrifle/c_dex_sniperrifle.mdl",	//
+	"models/weapons/c_models/urinejar.mdl",	//
+	"models/weapons/c_models/c_bow/c_bow.mdl",	//
+	"models/weapons/c_models/c_leechgun/c_leechgun.mdl",	// ?
+	"models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow.mdl",	//
+	"models/weapons/c_models/c_proto_syringegun/c_proto_syringegun.mdl",	//
+	"models/weapons/c_models/c_proto_medigun/c_proto_medigun.mdl",	//
+	"models/weapons/c_models/c_drg_manmelter/c_drg_manmelter.mdl",	//
+	"models/weapons/c_models/c_flamethrower/c_flamethrower.mdl",	//
+	"models/weapons/c_models/c_drg_phlogistinator/c_drg_phlogistinator.mdl",	//
+	"models/weapons/c_models/c_shogun_warhorn/c_shogun_warhorn.mdl",	//
+	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",	//
+	"models/weapons/c_models/c_drg_cowmangler/c_drg_cowmangler.mdl",	//
+	"models/weapons/c_models/c_bet_rocketlauncher/c_bet_rocketlauncher.mdl",	// ?
+	"models/weapons/c_models/c_directhit/c_directhit.mdl",	//
+	"models/weapons/c_models/c_blackbox/c_blackbox.mdl",	//
+	"models/weapons/c_models/c_shotgun/c_shotgun.mdl",	//
+	"models/weapons/c_models/c_drg_righteousbison/c_drg_righteousbison.mdl",	//
+	"models/weapons/c_models/c_reserve_shooter/c_reserve_shooter.mdl",	//
+	"models/weapons/c_models/c_bugle/c_bugle.mdl",	// ?
+	"models/weapons/c_models/c_flaregun_pyro/c_flaregun_pyro.mdl",	//
+	"models/weapons/c_models/c_detonator/c_detonator.mdl",	//
+	"models/weapons/c_models/c_degreaser/c_degreaser.mdl",	//
+	"models/weapons/c_models/c_liberty_launcher/c_liberty_launcher.mdl",	//
+	"models/weapons/c_models/c_lochnload/c_lochnload.mdl",	//
+	"models/weapons/c_models/c_sticky_jumper/c_sticky_jumper.mdl",	// ?
+	"models/weapons/c_models/c_scottish_resistance.mdl",	//
+	"models/weapons/c_models/c_drg_pomson/c_drg_pomson.mdl",	// ?
+	"models/weapons/c_models/c_medigun/c_medigun.mdl",	// ?
+	"models/weapons/c_models/c_syringegun/c_syringegun.mdl",	//
+	"models/weapons/c_models/c_bazaar_sniper/c_bazaar_sniper.mdl",	//
+	"models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl",	//
+	"models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl",	//
+	"models/weapons/c_models/c_pistol/c_pistol.mdl",	//
+	"models/weapons/c_models/c_wrangler.mdl"	//
 };
 
 ////////////////////////////////////////////////////////////
@@ -332,7 +346,7 @@ public void OnPluginStart()
 	LoadTranslations("super_zombie_fortress.phrases");	
 
 	// Initialize global state
-	zf_bEnabled = false;
+	Enabled = false;
 	zf_bNewRound = true;
 	setRoundState(RoundInit1);
 			
@@ -371,6 +385,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_broadcast_audio", OnBroadcast, EventHookMode_Pre);
 	HookEvent("player_spawn", OnPlayerSpawn);	
 	HookEvent("player_death", OnPlayerDeath);
+	HookEvent("post_inventory_application", OnPlayerInventory);
 	
 	//HookEvent("player_builtobject", OnPlayerBuiltObject); 
 	HookEvent("teamplay_point_captured", OnCPCapture); 
@@ -387,7 +402,8 @@ public void OnPluginStart()
 	
 	// Hook Client Commands
 	AddCommandListener(OnJoinTeam, "jointeam");
-	AddCommandListener(OnJoinClass, "joinclass");
+	AddCommandListener(OnJoinTeam, "autoteam");
+	AddCommandListener(OnChangeClass, "joinclass");
 	AddCommandListener(OnCallMedic, "voicemenu"); 
 	// Hook Client Console Commands	
 	//AddCommandListener(CommandTeamPref, "szf_teampref");
@@ -400,6 +416,23 @@ public void OnPluginStart()
 	
 	SetupWeapons();
 	CheckStartWeapons();
+
+	GameConfig = LoadGameConfigFile("szf_gamedata");
+	
+	if(!GameConfig)
+	{
+		LogError("Failed to find szf_gamedata.txt gamedata!");
+	}
+
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(GameConfig, SDKConf_Virtual, "EquipWearable");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	WearableEquip = EndPrepSDKCall();
+	
+	if(!WearableEquip)
+	{
+		LogError("Failed to prepare the SDKCall for giving cosmetics. Try updating gamedata or restarting your server.");
+	}
 
 	#if defined _steamtools_included
 	steamtools = LibraryExists("SteamTools");
@@ -473,7 +506,7 @@ public void OnMapEnd()
 	
 public void OnClientPostAdminCheck(int client)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return;
 	
 	CreateTimer(10.0, timer_initialHelp, client, TIMER_FLAG_NO_MAPCHANGE);
@@ -488,7 +521,7 @@ public void OnClientPostAdminCheck(int client)
 
 public void OnClientDisconnect(int client)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return;
 
 	pref_OnClientDisconnect(client);
@@ -498,14 +531,6 @@ public void OnClientDisconnect(int client)
 		g_iZombieTank = 0;
 }
 
-public void OnGameFrame()
-{
-	if(!zf_bEnabled)
-		return;	
-
-	handle_gameFrameLogic();
-}
-
 ////////////////////////////////////////////////////////////
 //
 // SDKHooks Callbacks
@@ -513,7 +538,7 @@ public void OnGameFrame()
 ////////////////////////////////////////////////////////////
 public void OnPreThinkPost(int client)
 {	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return;
 
 	UpdateClientCarrying(client);
@@ -524,7 +549,7 @@ public void OnPreThinkPost(int client)
 
 public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &fDamage, int &iDamagetype, int &iWeapon, float fForce[3], float fForcePos[3], int damagecustom)
 {  
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	if(!CanRecieveDamage(iVictim))
@@ -554,61 +579,10 @@ public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &
 	}
 	if(iVictim != iAttacker)
 	{
-		if(validLivingClient(iAttacker) && fDamage < 300.0)
-		{ 
-			if(validZom(iAttacker))
-				fDamage = fDamage * g_fZombieDamageScale * 0.7;
-
-			if(validSur(iAttacker))
-				fDamage = fDamage / g_fZombieDamageScale * 1.1;
-
-			if(fDamage > 200.0)
-				fDamage = 200.0;
-
-			bChanged = true;
-		}
-		if(validSur(iVictim) && validZom(iAttacker))
+		if(validSur(iAttacker) && validZom(iVictim))
 		{
-			if((TF2_GetPlayerClass(iAttacker) == TFClass_Spy && !HasRazorback(iVictim) && iDamagetype== DMGTYPE_MELEE_CRIT) || fDamage >= 200.0)
-			{
-				if(!g_bBackstabbed[iVictim])
-				{
-					fDamage = 1.0;
-					SetEntityHealth(iVictim, 10);
-					TF2_StunPlayer(iVictim, 7.0, 1.0, TF_STUNFLAGS_BIGBONK|TF_STUNFLAG_NOSOUNDOREFFECT, iAttacker);
-					g_bBackstabbed[iVictim] = true;
-					CreateTimer(7.0, RemoveBackstab, iVictim);
-					MusicHandleClient(iVictim);
-					bChanged = true;
-					
-					int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_NEARDEATH2]-1);
-					char strPath[PLATFORM_MAX_PATH];
-					MusicGetPath(MUSIC_NEARDEATH2, iRandom, strPath, sizeof(strPath));
-					for(int i=1; i<=MaxClients; i++)
-					{
-						if(validClient(i) && ShouldHearEventSounds(i) && i != iVictim)
-						{
-							EmitSoundToClient(i, strPath, iVictim, SNDLEVEL_AIRCRAFT);
-						}
-					}
-				}
-				else
-				{
-					fDamage = 0.0;
-					bChanged = true;
-				}
-			}
-		}
-		if(validZom(iVictim) && TF2_GetPlayerClass(iVictim) == TFClass_Heavy)
-		{
-			fForce[0] = 0.0;
-			fForce[1] = 0.0;
-			fForce[2] = 0.0;
-			fDamage *= 0.7;
-			if(fDamage > 100.0)
-				fDamage = 100.0;
-
-			bChanged = true; 
+			fDamage *= g_fZombieDamageScale;
+			return Plugin_Changed;
 		}
 		if(validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
 		{
@@ -641,6 +615,74 @@ public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &
 	return Plugin_Continue;
 }
 
+public Action Timer_CheckAlivePlayers(Handle timer)
+{
+	if(CheckRoundState()==2)
+		return Plugin_Continue;
+
+	RedAlivePlayers=0;
+	BlueAlivePlayers=0;
+	RedDeadPlayers=0;
+	BlueDeadPlayers=0;
+	int LastMann=0;
+	for(int client=1; client<=MaxClients; client++)
+	{
+		if(IsClientInGame(client))
+		{
+			if(IsPlayerAlive(client))
+			{
+				if(GetClientTeam(client)==OtherTeam)
+				{
+					RedAlivePlayers++;
+					LastMann=client;
+				}
+				else if(GetClientTeam(client)==ZomTeam)
+				{
+					BlueAlivePlayers++;
+				}
+			}
+			else
+			{
+				if(GetClientTeam(client)==OtherTeam)
+				{
+					RedDeadPlayers++;
+					LastMann=client;
+				}
+				else if(GetClientTeam(client)==ZomTeam)
+				{
+					BlueDeadPlayers++;
+				}
+			}
+		}
+	}
+	if(!RedAlivePlayers)
+	{
+		ForceTeamWin(ZomTeam);
+	}
+	else if(RedAlivePlayers==1 && BlueAlivePlayers && isSur(LastMann) && LastMan)
+	{
+		SetEntityHealth(LastMann, 255);
+		CPrintToChat(LastMann, "{olive}[SZF]{default} %t", "Last Mann", LastMann);
+		MusicHandleClient(LastMann);
+		TF2_AddCondition(LastMann, TFCond_Buffed, -1.0);
+		LastMan=false;
+	}
+	else if(RedAlivePlayers<4)
+	{
+		for(int client=1; client<=MaxClients; client++)
+		{
+			if(IsClientInGame(client) && IsPlayerAlive(client))
+			{
+				if(GetClientTeam(client)==OtherTeam)
+				{
+					SetClientGlow(client, (60.0/RedAlivePlayers));
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
 ////////////////////////////////////////////////////////////
 //
 // Admin Console Command Handlers
@@ -651,7 +693,7 @@ public Action command_zfEnable(int client, int args)
 	ServerCommand("mp_restartgame 6");
 	CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Enabled");
 
-	if(!zf_bEnabled)
+	if(!Enabled)
 		zfEnable();
 
 	return Plugin_Continue;
@@ -659,7 +701,7 @@ public Action command_zfEnable(int client, int args)
 
 public Action command_zfDisable(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	ServerCommand("mp_restartgame 6");
@@ -671,7 +713,7 @@ public Action command_zfDisable(int client, int args)
 
 public Action command_zfSwapTeams(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	zfSwapTeams();
@@ -689,65 +731,50 @@ public Action command_zfSwapTeams(int client, int args)
 // Client Console / Chat Command Handlers
 //
 ////////////////////////////////////////////////////////////
-public Action OnJoinTeam(int client, const char[] command, int argc)
+public Action OnJoinTeam(int client, const char[] command, int args)
 {	
-	char cmd1[32];
-	char sSurTeam[16];	
-	char sZomTeam[16];
-	char sZomVgui[16];
-	
-	if(!zf_bEnabled)
-		return Plugin_Continue;	
-
-	if(argc < 1)
-		return Plugin_Handled;
-
-	GetCmdArg(1, cmd1, sizeof(cmd1));
-	
-	// Assign team-specific strings
-	if(zomTeam() == view_as<int>(TFTeam_Blue))
-	{
-		sSurTeam = "red";
-		sZomTeam = "blue";
-		sZomVgui = "class_blue";
-	}
-	else
-	{
-		sSurTeam = "blue";
-		sZomTeam = "red";
-		sZomVgui = "class_red";			
-	}
-			
-	// If client tries to join the survivor team or a random team
-	// during grace period or active round, place them on the zombie
-	// team and present them with the zombie class select screen.
-	if(StrEqual(cmd1, sSurTeam, false) || StrEqual(cmd1, "auto", false))
-	{
-		ChangeClientTeam(client, zomTeam());
-		ShowVGUIPanel(client, sZomVgui);
-		return Plugin_Handled;
-	}
-	// If client tries to join the zombie team or spectator
-	// during grace period or active round, let them do so.
-	else if(StrEqual(cmd1, sZomTeam, false) || StrEqual(cmd1, "spectate", false))
+	if(!Enabled || CheckRoundState()==-1)
 	{
 		return Plugin_Continue;
 	}
-	// Prevent joining any other team.
-	else
+
+	int oldTeam = GetClientTeam(client);
+	if(StrEqual(command, "autoteam", false))
 	{
+		if(oldTeam <= view_as<int>(TFTeam_Spectator))
+		{
+			ChangeClientTeam(client, ZomTeam);
+		}
 		return Plugin_Handled;
 	}
+
+	if(!args)
+	{
+		return Plugin_Continue;
+	}
+
+	char teamString[10];
+	GetCmdArg(1, teamString, sizeof(teamString));
+	if(StrEqual(teamString, "spectate", false))
+	{
+		return Plugin_Continue;
+	}
+	else if(oldTeam <= view_as<int>(TFTeam_Spectator))
+	{
+		ChangeClientTeam(client, ZomTeam);
+	}
+	return Plugin_Handled;
 }
 
-public Action OnJoinClass(int client, const char[] command, int argc)
+public Action OnChangeClass(int client, const char[] command, int args)
 {
 	char cmd1[32];
 	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
-	if(argc < 1)
-		return Plugin_Handled;
+
+	if(args < 1)
+		return Plugin_Continue;
 
 	GetCmdArg(1, cmd1, sizeof(cmd1));
 	
@@ -768,7 +795,7 @@ public Action OnJoinClass(int client, const char[] command, int argc)
 		if(roundState() == RoundActive)
 		{
 			CPrintToChat(client, "{olive}[SZF]{default} %t", "Class Change Deny");
-			return Plugin_Handled;					
+			return Plugin_Handled;
 		}
 		// If an invalid survivor class is selected, print a message
 		// and accept the joincalss command. ZF spawn logic will
@@ -778,7 +805,7 @@ public Action OnJoinClass(int client, const char[] command, int argc)
 			  StrEqual(cmd1, "demoman", false) ||
 			  StrEqual(cmd1, "engineer", false) ||
 			  StrEqual(cmd1, "medic", false) ||
-			  StrEqual(cmd1, "sniper", false)))
+			  StrEqual(cmd1, "sniper", false)) && MapType==1)
 		{
 			CPrintToChat(client, "{olive}[SZF]{default} %t", "Survivor Classes");
 		}			 
@@ -791,7 +818,7 @@ public Action OnCallMedic(int client, const char[] command, int argc)
 {
 	char cmd1[32], cmd2[32];
 	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;	
 	if(argc < 2)
 		return Plugin_Handled;
@@ -817,12 +844,12 @@ public Action OnCallMedic(int client, const char[] command, int argc)
 				SetEntityHealth(client, RoundToCeil(maxH * 1.5));
 									
 				ClientCommand(client, "voicemenu 2 1");
-				PrintHintText(client, "%t", "Rage Activated!");	
+				PrintHintText(client, "%t", "Rage Activated");	
 			}
 			else
 			{
 				ClientCommand(client, "voicemenu 2 5");
-				PrintHintText(client, "%t", "Can't Activate Rage!"); 
+				PrintHintText(client, "%t", "Can't Activate Rage"); 
 			}
 					
 			return Plugin_Handled;
@@ -843,7 +870,7 @@ public Action CommandTeamPref(int client, int args)
 {
 	char cmd[32];
 	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	// Get team preference
@@ -886,7 +913,7 @@ public Action CommandTeamPref(int client, int args)
 
 public Action CommandMenu(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue; 
 	panel_PrintMain(client);
 	
@@ -900,7 +927,7 @@ public Action CommandMenu(int client, int args)
 ////////////////////////////////////////////////////////////
 public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname, bool &result)
 {	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 				
 	// Handle special cases.
@@ -919,11 +946,11 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 			return Plugin_Changed;
 		}
 	}
-	else
+	/*else
 	{
 		result = (szf_critBonus[client] > GetRandomInt(0, 99));
 		return Plugin_Changed;
-	}
+	}*/
 	
 	return Plugin_Continue;
 }
@@ -933,7 +960,7 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 //
 public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue; 
 
 	CreateTimer(1.0, SetupMapWeapons, true, TIMER_FLAG_NO_MAPCHANGE);
@@ -958,6 +985,7 @@ public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 	
 	g_iZombieTank = 0;
 	g_bTankOnce = false;
+	LastMan = true;
 	RemoveAllGoo();
 
 	//
@@ -1059,10 +1087,11 @@ public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 //
 public Action OnSetupEnd(Handle event, const char[] name, bool dontBroadcast)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
-	CreateTimer(1.0, SetupMapWeapons, false, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(0.5, SetupMapWeapons, false, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(0.2, Timer_CheckAlivePlayers, _, TIMER_FLAG_NO_MAPCHANGE);
 	EndGracePeriod();
 	
 	g_StartTime = GetTime();
@@ -1074,7 +1103,7 @@ public Action OnSetupEnd(Handle event, const char[] name, bool dontBroadcast)
 
 public Action SetupMapWeapons(Handle timer, bool starter)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	int entity = -1;
@@ -1084,14 +1113,6 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 	// 1 = Remodel
 	// 2 = Replace
 	// 3 = Replace & Remodel
-	while((entity = FindEntityByClassname2(entity, "info_target")) != -1)
-	{
-		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
-		if(!StrContains(name, "szf_mode_new", false))
-		{
-			stripMap = true;
-		}
-	}
 
 	char map[PLATFORM_MAX_PATH];
 	GetCurrentMap(map, sizeof(map));
@@ -1110,14 +1131,10 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 	{
 		method = 1;
 	}
-	else if(!StrContains(map, "szf_volcanoevac", false))
-	{
-		method = 2;
-	}
 
 	int weapon;
 	char model[255];
-	if(stripMap && method!=0)
+	if(method!=0)
 	{
 		while((entity = FindEntityByClassname2(entity, "prop_dynamic"))!=-1)
 		{
@@ -1255,7 +1272,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 						}
 						case 10:
 						{
-							SetEntityModel(weapon, "models/weapons/c_models/c_sticky_jumper.mdl");
+							SetEntityModel(weapon, "models/weapons/c_models/c_sticky_jumper/c_sticky_jumper.mdl");
 						}
 						case 11:
 						{
@@ -1292,7 +1309,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 							if(GetRandomInt(0, 4)>3)
 								SetEntityModel(weapon, "models/weapons/c_models/c_ttg_max_gun/c_ttg_max_gun.mdl");
 							else
-								SetEntityModel(weapon, "models/weapons/c_models/c_pistol.mdl");
+								SetEntityModel(weapon, "models/weapons/c_models/c_pistol/c_pistol.mdl");
 						}
 						case 3:
 						{
@@ -1332,7 +1349,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 
 void EndGracePeriod()
 {
-	if(!zf_bEnabled || roundState()==RoundActive || roundState()==RoundPost)
+	if(!Enabled || roundState()==RoundActive || roundState()==RoundPost)
 		return;
 	
 	setRoundState(RoundActive);
@@ -1345,9 +1362,9 @@ void EndGracePeriod()
 //
 public Action OnRoundEnd(Handle event, const char[] name, bool dontBroadcast)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
-	
+
 	//
 	// Prepare for a completely new round, if
 	// + Round was a full round (full_round flag is set), OR
@@ -1355,7 +1372,11 @@ public Action OnRoundEnd(Handle event, const char[] name, bool dontBroadcast)
 	//
 	zf_bNewRound = GetEventBool(event, "full_round") || (GetEventInt(event, "team") == zomTeam());
 	setRoundState(RoundPost);
-	
+
+	char strPath[PLATFORM_MAX_PATH];
+	MusicGetPath((GetEventInt(event, "team")==zomTeam()) ? MUSIC_ROUNDLOSE : MUSIC_ROUNDWIN, 0, strPath, sizeof(strPath));
+	EmitSoundToAll(strPath);
+
 	SetGlow();
 	UpdateZombieDamageScale();
 	g_bRoundActive = false;
@@ -1369,7 +1390,7 @@ public Action OnRoundEnd(Handle event, const char[] name, bool dontBroadcast)
 //
 public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {	 
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;	
 			
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -1421,7 +1442,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 					if(iSubtract < 3) iSubtract = 3;
 				}
 				g_iSuperHealthSubtract[client] = iSubtract;
-				TF2_AddCondition(client, TFCond_Kritzkrieged, 999.0);
+				TF2_AddCondition(client, TFCond_Kritzkrieged, -1.0);
 				SetEntityHealth(client, 450);
 				
 				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
@@ -1457,7 +1478,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 			spawnClient(client, zomTeam());
 			return Plugin_Continue;
 		}
-		if(!validSurvivor(clientClass))
+		if(!validSurvivor(clientClass) && MapType==1)
 		{
 			spawnClient(client, surTeam()); 
 			return Plugin_Continue;
@@ -1478,7 +1499,8 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	}	 
 
 	// 2. Handle valid, post spawn logic
-	CreateTimer(0.1, timer_postSpawn, client, TIMER_FLAG_NO_MAPCHANGE); 
+	PrintToChat(client, "Spawned");
+	CreateTimer(0.1, timer_postSpawn, client, TIMER_FLAG_NO_MAPCHANGE);
 	
 	SetGlow();
 	UpdateZombieDamageScale();
@@ -1489,12 +1511,26 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue; 
 }
 
+public Action OnPlayerInventory(Handle event, const char[] name, bool dontBroadcast)
+{
+	if(!Enabled)
+		return Plugin_Continue;
+
+	int userid = GetEventInt(event, "userid");
+	int client = GetClientOfUserId(userid);
+
+	if(isZom(client))
+		CreateTimer(2.0, Timer_GiveVoodoo, userid, TIMER_FLAG_NO_MAPCHANGE);
+
+	return Plugin_Continue;
+}
+
 //
 // Player Death Event
 //
 public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	int killers[2];
@@ -1503,6 +1539,11 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	killers[1] = GetClientOfUserId(GetEventInt(event, "assister"));  
 
 	ClientCommand(victim, "r_screenoverlay\"\"");
+
+	if(CheckRoundState() == 1)
+	{
+		CreateTimer(0.1, Timer_CheckAlivePlayers, _, TIMER_FLAG_NO_MAPCHANGE);
+	}
 	
 	DropCarryingItem(victim);
 	
@@ -1559,9 +1600,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 			zf_spawnSurvivorsKilledCounter--;
 
 		// Transfer player to zombie team.
-		CreateTimer(6.0, timer_zombify, victim, TIMER_FLAG_NO_MAPCHANGE);
-		// check if he's the last
-		CreateTimer(0.1, CheckLastPlayer);
+		CreateTimer(2.0, timer_zombify, victim, TIMER_FLAG_NO_MAPCHANGE);
 		
 		int iRandom = GetRandomInt(0, g_iMusicCount[MUSIC_DEAD]-1);
 		char strPath[PLATFORM_MAX_PATH];
@@ -1576,44 +1615,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	{
 		if(validSur(killers[0]))
 			zf_spawnZombiesKilledCounter--;
-
-		for(int i = 0; i < 2; i++)
-		{								 
-			if(validLivingClient(killers[i]))
-			{
-				// Handle ammo kill bonuses.
-				// + Soldiers receive 2 rockets per kill.
-				// + Demomen receive 2 pipes per kill.
-				// + Snipers receive 5 rifle / 2 arrows per kill.
-				TFClassType killerClass = TF2_GetPlayerClass(killers[i]);				
-				switch(killerClass)
-				{
-					case TFClass_Soldier: addResAmmo(killers[i], 0, 2);
-					case TFClass_DemoMan: addResAmmo(killers[i], 0, 2);
-					case TFClass_Sniper:
-					{
-						if(isEquipped(killers[i], ZFWEAP_SNIPERRIFLE) || isEquipped(killers[i], ZFWEAP_SYDNEYSLEEPER))
-							addResAmmo(killers[i], 0, 5);
-						else if(isEquipped(killers[i], ZFWEAP_HUNTSMAN))
-							addResAmmo(killers[i], 0, 2);
-					}
-				}
-
-				// Handle morale bonuses.
-				// + Each kill grants a small health bonus and increases current crit bonus.
-				int curH = GetClientHealth(killers[i]);
-				int maxH = GetEntProp(killers[i], Prop_Data, "m_iMaxHealth"); 
-				if(curH < maxH)
-				{
-					curH += (szf_critBonus[killers[i]] * 2);
-					curH = min(curH, maxH);				
-					//SetEntityHealth(killers[i], curH);
-				}
-				szf_critBonus[killers[i]] = min(100, szf_critBonus[killers[i]] + 5); 
-									 
-			} // if				 
-		} // for 
-	} // if 
+	}
 	
 	SetGlow();
 	UpdateZombieDamageScale();
@@ -1622,28 +1624,82 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue;
 }
 
+////////////////////////////////////////////////////////////
 //
-// Object Built Event
+// Add Cosmetics
 //
-/*public Action OnPlayerBuiltObject(Handle event, const char[] name, bool dontBroadcast)
+////////////////////////////////////////////////////////////
+public Action Timer_GiveVoodoo(Handle timer, any data)
 {
-	if(!zf_bEnabled)
-		return Plugin_Continue;
+	int client = GetClientOfUserId(data);
 
-	int index = GetEventInt(event, "index");
-	int building = GetEventInt(event, "object");
+	if(!IsValidClient(client))
+		return;
 
-	// 1. Handle dispenser rules.
-	//		Disable dispensers when they begin construction.
-	//		Increase max health to 250 (default level 1 is 150).			
-	if(building == PLAYERBUILTOBJECT_ID_DISPENSER)
+	int index;
+	switch(TF2_GetPlayerClass(client))
 	{
-		SetEntProp(index, Prop_Send, "m_bDisabled", 1);
-		SetEntProp(index, Prop_Send, "m_iMaxHealth", 250);
+		case TFClass_Scout:
+			index=5617;
+
+		case TFClass_Soldier:
+			index=5618;
+
+		case TFClass_Pyro:
+			index=5624;
+
+		case TFClass_DemoMan:
+			index=5620;
+
+		case TFClass_Heavy:
+			index=5619;
+
+		case TFClass_Engineer:
+			index=5621;
+
+		case TFClass_Medic:
+			index=5622;
+
+		case TFClass_Sniper:
+			index=5625;
+
+		default:
+			index=5623;
+	}
+	CreateHat(client, index, 13, 1);
+}
+
+bool CreateHat(int client, int itemindex, int quality=13, int level=0)
+{
+	if(!IsValidClient(client))
+		return false;
+
+	int hat = CreateEntityByName("tf_wearable");
+
+	if(!IsValidEntity(hat))
+		return false;
+
+	PrintToChat(client, "Index: %i", itemindex);
+
+	char entclass[64];
+	GetEntityNetClass(hat, entclass, sizeof(entclass));
+	SetEntData(hat, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);
+	SetEntData(hat, FindSendPropInfo(entclass, "m_bInitialized"), 1);
+	SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityQuality"), quality);
+
+	if(level)
+	{
+		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
+	}
+	else
+	{
+		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomInt(1, 100));
 	}
 
-	return Plugin_Continue;		 
-}*/
+	DispatchSpawn(hat);
+	SDKCall(WearableEquip, client, hat);
+	return true;
+}
 
 ////////////////////////////////////////////////////////////
 //
@@ -1652,7 +1708,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 ////////////////////////////////////////////////////////////
 public Action timer_main(Handle timer) // 1Hz
 {		 
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 	
 	handle_zombieAbilities();	 
@@ -1710,7 +1766,7 @@ public Action timer_main(Handle timer) // 1Hz
 
 public Action timer_mainSlow(Handle timer) // 4 min
 { 
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;	
 	help_printZFInfoChat(0);
 	
@@ -1719,16 +1775,20 @@ public Action timer_mainSlow(Handle timer) // 4 min
 
 public Action timer_mainFast(Handle timer)
 { 
-	if(!zf_bEnabled)
+	if(!Enabled || CheckRoundState()==2)
 		return Plugin_Continue;	
-	GooDamageCheck();
+
+	for(int client; client<=MaxClients; client++)
+	{
+		SetClientGlow(client, -0.2);
+	}
 	
 	return Plugin_Continue;
 }
 
 public Action timer_hoarde(Handle timer) // 1/5th Hz
 {	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 	handle_hoardeBonus();
 	
@@ -1737,7 +1797,7 @@ public Action timer_hoarde(Handle timer) // 1/5th Hz
 
 public Action timer_datacollect(Handle timer) // 1/5th Hz
 {	
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 	FastRespawnDataCollect();
 	
@@ -1771,6 +1831,7 @@ public Action timer_graceStartPost(Handle timer)
 	while((index = FindEntityByClassname(index, "mapobj_cart_dispenser")) != -1)
 		SetEntProp(index, Prop_Send, "m_bDisabled", 1);	
 	
+
 	// Disable all respawn room visualizers (non-ZF maps only)
 	if(!mapIsZF())
 	{
@@ -1826,12 +1887,41 @@ public Action timer_postSpawn(Handle timer, any client)
 {
 	if(validClient(client) && IsPlayerAlive(client))
 	{
-		HandleClientInventory(client);
-		// Handle zombie spawn logic.
-		if(isZom(client))
-			stripWeapons(client);
-		if(!isZom(client))
-			CreateTimer(0.1, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
+		if(isSur(client))
+		{
+			HandleClientInventory(client);
+		}
+		else if(isZom(client))
+		{
+			int entity=-1;
+			while((entity=FindEntityByClassname2(entity, "tf_wear*"))!=-1)
+			{
+				if(isZom(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")))
+				{
+					switch(GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex"))
+					{
+						case 493, 233, 234, 241, 280, 281, 282, 283, 284, 286, 288, 362, 364, 365, 536, 542, 577, 599, 673, 729, 791, 839, 5607:  //Action slot items
+						{
+							//NOOP
+						}
+						case 5617, 5618, 5619, 5620, 5621, 5622, 5623, 5624, 5625:  //Voodoo cosmetics
+						{
+							//NOOP
+						}
+						default:
+							TF2_RemoveWearable(client, entity);
+					}
+				}
+			}
+
+			entity=-1;
+			while((entity=FindEntityByClassname2(entity, "tf_powerup_bottle"))!=-1)
+			{
+				if(isZom(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")))
+					TF2_RemoveWearable(client, entity);
+			}
+		}
+		CreateTimer(0.25, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
 	return Plugin_Continue; 
@@ -1855,33 +1945,6 @@ public Action timer_zombify(Handle timer, any client)
 // Handling Functionality
 //
 ////////////////////////////////////////////////////////////
-void handle_gameFrameLogic()
-{
-	//int iCount = GetSurvivorCount();
-	// 1. Limit spy cloak to 80% of max.
-	for(int i = 1; i <= MaxClients; i++)
-	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
-		{
-			if(getCloak(i) > 80.0) 
-				setCloak(i, 80.0);
-		}
-		/*if(roundState() == RoundActive)
-		{
-			if(validClient(i) && IsPlayerAlive(i) && isSur(i) && iCount == 1)
-			{
-				if(GetActivePlayerCount() >= 10 && !TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
-				{
-					TF2_AddCondition(i, TFCond_Kritzkrieged, 999.0);
-				}
-				if(GetActivePlayerCount() < 10 && TF2_IsPlayerInCondition(i, TFCond_Kritzkrieged))
-				{
-					TF2_RemoveCondition(i, TFCond_Kritzkrieged);
-				}
-			}
-		}*/
-	}
-}
 	
 void handle_winCondition()
 {	
@@ -1913,7 +1976,7 @@ void handle_zombieAbilities()
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i) && g_iSpecialInfected[i] != INFECTED_TANK)
 		{	 
-			clientClass = TF2_GetPlayerClass(i);
+			/*clientClass = TF2_GetPlayerClass(i);
 			curH = GetClientHealth(i);
 			maxH = GetEntProp(i, Prop_Data, "m_iMaxHealth");
 							
@@ -1960,7 +2023,7 @@ void handle_zombieAbilities()
 					case TFClass_Spy: bonus = 5 + (1 * zf_hoardeBonus[i]);
 				}
 			}	 
-			szf_critBonus[i] = bonus;
+			szf_critBonus[i] = bonus;*/
 			
 			// 3. Handle zombie rage timer
 			//		Rage recharges every 30s.
@@ -2054,7 +2117,7 @@ void handle_hoardeBonus()
 ////////////////////////////////////////////////////////////
 void zfEnable()
 {		 
-	zf_bEnabled = true;
+	Enabled = true;
 	zf_bNewRound = true;
 	setRoundState(RoundInit2);
 	
@@ -2090,7 +2153,7 @@ void zfEnable()
 	
 	if(szf_tMainFast != INVALID_HANDLE)
 		CloseHandle(szf_tMainFast);		
-	szf_tMainFast = CreateTimer(0.5, timer_mainFast, _, TIMER_REPEAT);
+	szf_tMainFast = CreateTimer(0.2, timer_mainFast, _, TIMER_REPEAT);
 	
 	if(szf_tHoarde != INVALID_HANDLE)
 		CloseHandle(szf_tHoarde);
@@ -2112,7 +2175,7 @@ void zfEnable()
 
 void zfDisable()
 {	
-	zf_bEnabled = false;
+	Enabled = false;
 	zf_bNewRound = true;
 	setRoundState(RoundInit2);
 	
@@ -2270,7 +2333,7 @@ public void help_printZFInfoChat(int client)
 	else
 	{
 		CPrintToChat(client, "{olive}[SZF]{default} %t", "Server Info", PLUGIN_VERSION);
-		CPrintToChatAll("{olive}[SZF]{default} %t", "SZF Command");
+		CPrintToChat(client, "{olive}[SZF]{default} %t", "SZF Command");
 	}
 }
 
@@ -2857,7 +2920,7 @@ public void OnSlagChange(int iClient, int iFeature, bool bEnabled)	// ??? Damn p
 void UpdateZombieDamageScale()
 {
 	g_fZombieDamageScale = 1.0;
-	if(!zf_bEnabled || g_iStartSurvivors<=0 || roundState()!=RoundActive)
+	if(!Enabled || g_iStartSurvivors<=0 || roundState()!=RoundActive)
 		return;	
 
 	float fTime = 1.0 - GetTimePercentage();
@@ -2918,27 +2981,6 @@ public Action RespawnPlayer(Handle hTimer, any iClient)
 	}
 }
 
-public Action CheckLastPlayer(Handle hTimer)
-{
-	int iCount = GetSurvivorCount();
-	if(iCount == 1)
-	{
-		for(int iLoop=1; iLoop<=MaxClients; iLoop++)
-		{
-			if(IsClientInGame(iLoop) && IsPlayerAlive(iLoop) && isSur(iLoop))
-			{
-				//TF2_RegeneratePlayer(iLoop);
-				HandleClientInventory(iLoop);
-				SetEntityHealth(iLoop, 255);
-				CPrintToChat(iLoop, "{olive}[SZF]{default} %t", "Last Mann", iLoop);
-				MusicHandleClient(iLoop);
-				break;
-			}
-		}
-	}
-	return;
-}
-
 public Action OnTimeAdded(Handle event, const char[] name, bool dontBroadcast)
 {
 	int iAddedTime = GetEventInt(event, "seconds_added");
@@ -2969,7 +3011,7 @@ stock int GetSecondsLeft()
 
 stock float GetTimePercentage()
 {
-	//Alright bitch, play tiemz ovar
+	//Alright B, play tiemz ovar
 	if(g_StartTime <= 0)
 		return 0.0;
 	int SecElapsed = GetTime() - g_StartTime;
@@ -3060,6 +3102,18 @@ public void OnMapStart()
 	for(int i = 0; i < sizeof(g_weaponModels); i++)
 	{
 		PrecacheModel(g_weaponModels[i]);
+	}
+
+	char name[64];
+	int entity = -1;
+	MapType = 0;
+	while((entity = FindEntityByClassname2(entity, "info_target")) != -1)
+	{
+		GetEntPropString(entity, Prop_Data, "m_iName", name, sizeof(name));
+		if(!StrContains(name, "szf_mode_new", false))
+		{
+			MapType = 1;
+		}
 	}
 
 	Handle hConvar = FindConVar("slag_map_has_music");
@@ -3220,6 +3274,10 @@ int MusicCategoryToNumber(char[] strCategory)
 		return MUSIC_AWARD;
 	if(StrEqual(strCategory, "last_ten_seconds", false))
 		return MUSIC_LASTTENSECONDS;
+	if(StrEqual(strCategory, "win", false))
+		return MUSIC_ROUNDWIN;
+	if(StrEqual(strCategory, "lose", false))
+		return MUSIC_ROUNDLOSE;
 
 	return -1;
 }
@@ -3234,7 +3292,7 @@ int MusicChannel(int iMusic)
 			return CHANNEL_MUSIC_SLAYER;
 		case MUSIC_TRUMPET, MUSIC_BANJO, MUSIC_HEART_SLOW, MUSIC_HEART_MEDIUM, MUSIC_HEART_FAST, MUSIC_DROWN, MUSIC_TANK, MUSIC_LASTSTAND, MUSIC_LASTTENSECONDS, MUSIC_NEARDEATH:
 			return CHANNEL_MUSIC_SINGLE;
-		case MUSIC_RABIES, MUSIC_DEAD, MUSIC_INCOMING, MUSIC_PREPARE, MUSIC_NEARDEATH2, MUSIC_AWARD:
+		case MUSIC_RABIES, MUSIC_DEAD, MUSIC_INCOMING, MUSIC_PREPARE, MUSIC_NEARDEATH2, MUSIC_AWARD, MUSIC_ROUNDWIN, MUSIC_ROUNDLOSE:
 			return CHANNEL_MUSIC_NONE;
 	}
 	return CHANNEL_MUSIC_DRUMS;
@@ -3719,7 +3777,7 @@ void MusicHandleClient(int iClient)
 
 public Action command_rabies(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	CreateTimer(0.0, SpookySound);
@@ -3730,7 +3788,7 @@ public Action command_rabies(int client, int args)
 
 public Action command_goo(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Continue;
 
 	SpitterGoo(client);
@@ -3973,14 +4031,14 @@ void HandleClientInventory(int iClient)
 	}
 	
 	int iEntity;
-	if(TF2_GetPlayerClass(iClient) == TFClass_Scout && hWeaponSandman != INVALID_HANDLE)
+	/*if(TF2_GetPlayerClass(iClient) == TFClass_Scout && hWeaponSandman != INVALID_HANDLE)
 	{
 		iEntity = GetPlayerWeaponSlot(iClient, 2);
 		if(iEntity > 0 && IsValidEdict(iEntity))
 			TF2_RemoveWeaponSlot(iClient, 2);
 		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSandman);
 		EquipPlayerWeapon(iClient, iEntity);
-	}
+	}*/
 	if(TF2_GetPlayerClass(iClient) == TFClass_Heavy)
 	{
 		if(g_iSpecialInfected[iClient] == INFECTED_TANK && hWeaponSteelFists != INVALID_HANDLE)
@@ -3991,23 +4049,23 @@ void HandleClientInventory(int iClient)
 			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSteelFists);
 			EquipPlayerWeapon(iClient, iEntity);
 		}
-		else if(hWeaponFists != INVALID_HANDLE)
+		/*else if(hWeaponFists != INVALID_HANDLE)
 		{
 			iEntity = GetPlayerWeaponSlot(iClient, 2);
 			if(iEntity > 0 && IsValidEdict(iEntity))
 				TF2_RemoveWeaponSlot(iClient, 2);
 			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponFists);
 			EquipPlayerWeapon(iClient, iEntity);
-		}
+		}*/
 	}
 
-	iEntity = GetPlayerWeaponSlot(iClient, 4);
+	/*iEntity = GetPlayerWeaponSlot(iClient, 4);
 	if(iEntity > 0 && IsValidEdict(iEntity) && hWeaponWatch != INVALID_HANDLE && TF2_GetPlayerClass(iClient) == TFClass_Spy)
 	{
 		TF2_RemoveWeaponSlot(iClient, 4);
 		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponWatch);
 		EquipPlayerWeapon(iClient, iEntity);
-	}
+	}*/
 	
 	SetValidSlot(iClient);
 	CheckStartWeapons();
@@ -4248,7 +4306,7 @@ public void OnEntityCreated(int iEntity, const char[] strClassname)
 
 public Action BallStartTouch(int iEntity, int iOther)
 {
-	if(!zf_bEnabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
+	if(!Enabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
 	
 	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
@@ -4266,7 +4324,7 @@ public Action BallStartTouch(int iEntity, int iOther)
 
 public Action BallTouch(int iEntity, int iOther)
 {
-	if(!zf_bEnabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
+	if(!Enabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
 	
 	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
@@ -4410,7 +4468,7 @@ bool ZombiesHaveTank()
 
 void ZombieTank(int iCaller = 0)
 {
-	if(!zf_bEnabled || roundState()!=RoundActive) 
+	if(!Enabled || roundState()!=RoundActive) 
 		return;
 	
 	if(ZombiesHaveTank())
@@ -4453,7 +4511,7 @@ void ZombieTank(int iCaller = 0)
 
 public Action command_tank(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Handled;
 	if(ZombiesHaveTank())
 		return Plugin_Handled;
@@ -4505,7 +4563,7 @@ bool TankCanReplace(int iClient)
 
 public Action command_tank_random(int client, int args)
 {
-	if(!zf_bEnabled)
+	if(!Enabled)
 		return Plugin_Handled;
 	ZombieTank(client);
 			
@@ -4533,11 +4591,6 @@ public void CacheWeapons()
 
 public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDefinitionIndex, Handle &item)
 {
-	if(!zf_bEnabled)
-	{
-		return Plugin_Continue;
-	}
-
 	if(validZom(client))
 	{
 	}
@@ -4784,26 +4837,6 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 				}
 			}
 		}
-		if(!StrContains(classname, "tf_weapon_shovel") ||
-		   !StrContains(classname, "tf_weapon_fireaxe") ||
-		   !StrContains(classname, "tf_weapon_breakable_sign") ||
-		   !StrContains(classname, "tf_weapon_slap") ||
-		   !StrContains(classname, "tf_weapon_bottle") ||
-		   !StrContains(classname, "tf_weapon_sword") ||
-		   !StrContains(classname, "tf_weapon_katana") ||
-		   !StrContains(classname, "tf_weapon_wrench") ||
-		   !StrContains(classname, "tf_weapon_robot_arm") ||
-		   !StrContains(classname, "tf_weapon_club"))			// Melees
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.5 ; 69 ; 0.1");
-			// 28:	-50% random critical hit chance
-			// 69:	-90% health from healers on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
 		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
 		{
 			Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
@@ -4929,9 +4962,7 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 		}
 		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
 		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.25 ; 734 ; 0.1", true);
-			// 28: -75% random critical hit chance
-			// 734:	-90% less healing from all sources
+			Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.05", true);
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
@@ -5027,18 +5058,6 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 				return Plugin_Changed;
 			}
 		}
-		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_bonesaw"))	// Medic Melees
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "28 ; 0.3 ; 131 ; 4 ; 69 ; 0.15");
-			// 28:	-70% random critical hit chance
-			// 69:	-85% health from healers on wearer
-			// 131:	-300% natural regen rate
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
 		if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
 		{
 			Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
@@ -5053,10 +5072,9 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 	return Plugin_Continue;
 }
 
-public Action Timer_CheckItems(Handle timer, any userid)
+public Action Timer_CheckItems(Handle timer, int client)
 {
-	int client=GetClientOfUserId(userid);
-	if(!IsValidClient(client) || !IsPlayerAlive(client) || !zf_bEnabled)
+	if(!IsValidClient(client) || !IsPlayerAlive(client))
 	{
 		return Plugin_Continue;
 	}
@@ -5065,9 +5083,13 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	int index = -1;
 	int[] civilianCheck = new int[MaxClients+1];
 	int weapon = -1;
+	TFClassType class = TF2_GetPlayerClass(client);
+	char classname[64]="tf_weapon_shovel";
 
 	if(validZom(client))
 	{
+		int SetHealth=125;
+
 		float FireRate=1.0,	// 5 / 6	Any
 		Jump=1.0,		// 443		Any
 		Bleed=0.0,		// 149		Any
@@ -5077,22 +5099,26 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		DamageVsPlayers=1.0,	// 138		Any
 		DamageVsBurning=1.0,	// 795		Any
 		SlowChance=0.0,		// 32		Any
-		RandomCrits=1.0;	// 15 / 28	Any
-
-		int Health=0,		// 125 / 26	Any
-		HealthOnKill=0,		// 220		Any
-		HealthOnHit=0,		// 16		Any
-		CloakOnHit=0,		// 166		Spy
-		CloakOnKill=100;	// 158		Spy
+		RandomCrits=1.0,	// 15 / 28	Any
+		Health=0.0,		// 125 / 26	Any
+		HealthOnKill=0.0,	// 220		Any
+		HealthOnHit=0.0,	// 16		Any
+		CloakOnHit=0.0,		// 166		Spy
+		CloakOnKill=100.0,	// 158		Spy
+		SubDamage=1.0;		// Custom	Spy
 
 		bool Knockback=false,	// 216		Any
 		CritsAreMini=false,	// 869		Any
 		CritsOnBack=false,	// 362		Any
 		NoDisguises=true,	// 155		Spy
 		NoCloak=false,		// Custom	Spy
-		SilentCloak=false,	// 160		Spy			
-		Preserve=true;		// Custom	Any
+		SilentCloak=false;	// 160		Spy
 
+		Handle panel = CreatePanel();
+		char string[256];
+		SetGlobalTransTarget(client);
+		Format(string, sizeof(string), "%t\n", "Left 4 Dead");
+		SetPanelTitle(panel, string);
 		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 		if(IsValidEntity(weapon))
 		{
@@ -5105,23 +5131,28 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				{
 					Knockback=true;
 					SlowChance=1.0;
-					FireRate=1.25;
+					FireRate=1.1;
 				}
 				case 220:  // Shortstop
 				{
-					SpawnWeapon(client, "tf_weapon_handgun_scout", 220, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
+					SpawnWeapon(client, "tf_weapon_handgun_scout_primary", 220, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Shortstop!\n");
+					DrawPanelText(panel, string);
 				}
 				case 448:  // Soda Popper
 				{
-					//SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 348 ; 999 ; 476 ; 0 ; 818 ; 1");
+					//SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 818 ; 1");
 				}
 				case 772:  // Baby Face's Blaster
 				{
-					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 54 ; 0.9 ; 348 ; 999 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
+					Speed*=0.9;
+					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Baby Face's Blaster!\n");
+					DrawPanelText(panel, string);
 				}
 				case 1103:  // Back Scatter
 				{
-					FireRate=1.15;
+					FireRate=1.1;
 					CritsOnBack=true;
 					CritsAreMini=true;
 					RandomCrits=0.0;
@@ -5131,20 +5162,20 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				{
 					FireRate=1.25;
 					DamageVsPlayers=0.75;
-					Health=30;
+					Health=30.0;
 					SlowBy40=5.0;
 				}
 				case 312:  // Brass Beast
 				{
 					FireRate=1.3;
 					Damage=1.25;
-					Health=30;
-					Speed=0.75;
+					Health=30.0;
+					Speed=0.85;
 				}
 				case 424:  // Tomislav
 				{
 					FireRate=1.1;
-					Speed=1.1;
+					Speed=1.05;
 				}
 				case 811, 832:  // Huo-Long Heater
 				{
@@ -5160,7 +5191,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 				case 224:  // L'Etranger
 				{
-					CloakOnHit=30;
+					CloakOnHit=30.0;
 					DamageVsPlayers=0.9;
 				}
 				case 460:  // Enforcer
@@ -5179,17 +5210,18 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		if(IsValidEntity(weapon))
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 			switch(index)
 			{
 				// Scout
 				case 46, 1145:  // Bonk! Atomic Punch
 				{
-					Health-=100;
+					Health-=100.0;
 					TF2_AddCondition(client, TFCond_DodgeChance, -1.0);
 				}
 				case 163:  // Crit-a-Cola
 				{
-					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_Buffed, -1.0);
 					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
 				}
 				case 222, 1121:  // Mad Milk
@@ -5204,7 +5236,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				case 773:  // Pretty Boy's Pocket Pistol
 				{
 					FireRate*=1.1;
-					HealthOnHit+=6;
+					HealthOnHit+=6.0;
 				}
 				case 812, 833:  // Flying Guillotine
 				{
@@ -5214,18 +5246,18 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				// Heavy
 				case 42, 863, 1002:  // Sandvich
 				{
-					Health+=150;
-					Speed*=0.7;
+					Health+=150.0;
+					Speed*=0.8;
 				}
 				case 159, 433:  // Dalokohs Bar
 				{
-					Health+=50;
-					Speed*=0.9;
+					Health+=50.0;
+					Speed*=0.95;
 				}
 				case 311:  // Buffalo Steak Sandvich
 				{
 					TF2_AddCondition(client, TFCond_SpeedBuffAlly, -1.0);
-					TF2_AddCondition(client, TFCond_CritCola, -1.0);
+					TF2_AddCondition(client, TFCond_Buffed, -1.0);
 					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
 				}
 				case 425:  // Family Business
@@ -5243,8 +5275,8 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				}
 				case 1190:  // Second Banana
 				{
-					Health+=100;
-					Speed*=0.8;
+					Health+=100.0;
+					Speed*=0.875;
 				}
 				// Spy
 				case 810, 831:  // Red-Tape Recorder
@@ -5254,190 +5286,353 @@ public Action Timer_CheckItems(Handle timer, any userid)
 					DamageVsPlayers*=0.65;
 				}
 			}
-			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 		}
-		char classname[64], attributes[64];
+		char attributes[64];
 		index=5; // Fail safe
 		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
 		if(IsValidEntity(weapon))
 		{
+			GetEntityClassname(weapon, classname, sizeof(classname));
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
 			switch(index)
 			{
 				// Scout
 				case 44:  // Sandman
 				{
-					Health-=15;
-					Format(attributes, sizeof(attributes), "278;99");
+					Health-=15.0;
+					Format(attributes, sizeof(attributes), "38 ; 1 ; 278 ; 99");
 				}
 				case 317:  // Candy Cane
 				{
-					Health-=25;
-					HealthOnHit+=20;
-					Preserve=false;
+					Health-=25.0;
+					HealthOnHit+=20.0;
 				}
 				case 325, 452:  // Boston Basher, Three-Rune Blade
 				{
 					Bleed+=2.0;
-					Format(attributes, sizeof(attributes), "207;1.75");
+					Format(attributes, sizeof(attributes), "204 ; 1 ; 207 ; 1.75");
 				}
 				case 648:  // Wrap Assassin
 				{
-					Format(attributes, sizeof(attributes), "278;99");
+					Format(attributes, sizeof(attributes), "278 ; 99 ; 346 ; 1");
 				}
 				// Heavy
 				case 43:  // Killing Gloves of Boxing
 				{
 					FireRate*=1.2;
-					Format(attributes, sizeof(attributes), "613;5");
-					Preserve=false;
+					Format(attributes, sizeof(attributes), "613 ; 5");
 				}
 				case 239, 1084, 1100:  // Gloves of Running Urgently
 				{
-					Health-=100;
+					Health-=100.0;
 					Speed*=1.3;
-					Preserve=false;
 				}
 				case 426:  // Eviction Notice
 				{
-					Health-=50;
+					Health-=50.0;
 					Speed*=1.15;
 					Damage*=0.4;
 					Speed*=0.45;
-					Preserve=false;
 				}
 				// Spy
 				case 225, 574:  // Your Eternal Reward
 				{
 					SilentCloak=false;
-					Format(attributes, sizeof(attributes), "34;1.33");
-					Preserve=false;
+					Format(attributes, sizeof(attributes), "34 ; 1.33");
 				}
 				case 356:  // Conniver's Kunai
 				{
-					Health-=70;
+					Health-=70.0;
 					HealthOnHit+=35;
-					Preserve=false;
 				}
 				case 461:  // Conniver's Kunai
 				{
-					Health-=25;
-					CloakOnHit+=30;
-					Format(attributes, sizeof(attributes), "737;1.5");
-					Preserve=false;
-				}
-				case 649:  // Conniver's Kunai
-				{
-					Preserve=false;
+					Health-=25.0;
+					CloakOnHit+=30.0;
+					Format(attributes, sizeof(attributes), "737 ; 1.5");
 				}
 			}
 		}
 
-		if(FireRate > 1)
-			Format(attributes, sizeof(attributes), "%s;5;%.2f", attributes, FireRate);
-		else if(FireRate < 1)
-			Format(attributes, sizeof(attributes), "%s;6;%.2f", attributes, FireRate);
+		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
+		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes);
+		SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 
-		if(Jump != 1)
-			Format(attributes, sizeof(attributes), "%s;443;%.2f", attributes, Jump);
-
-		if(Bleed > 0)
-			Format(attributes, sizeof(attributes), "%s;149;%.2f", attributes, Bleed);
-
-		if(Speed != 1)
-			Format(attributes, sizeof(attributes), "%s;442;%.2f", attributes, Speed);
-
-		if(SlowBy40 > 0)
-			Format(attributes, sizeof(attributes), "%s;182;%.2f", attributes, SlowBy40);
-
-		if(DamageVsBurning != 1)
-			Format(attributes, sizeof(attributes), "%s;795;%.2f", attributes, DamageVsBurning);
-
-		if(SlowChance != 0)
-			Format(attributes, sizeof(attributes), "%s;32;%.2f", attributes, SlowChance);
-
-		if(HealthOnKill != 0)
-			Format(attributes, sizeof(attributes), "%s;220;%i", attributes, HealthOnKill);
-
-		if(Health > 0)
-			Format(attributes, sizeof(attributes), "%s;26;%i", attributes, Health);
-		else if(Health < 0)
-			Format(attributes, sizeof(attributes), "%s;125;%i", attributes, Health);
-
-		if(Knockback)
-			Format(attributes, sizeof(attributes), "%s;216;1", attributes);
-
-		if(CritsAreMini)
-			Format(attributes, sizeof(attributes), "%s;869;1", attributes);
-
-		switch(TF2_GetPlayerClass(client))
+		switch(class)
 		{
 			case TFClass_Scout:
 			{
-				Damage*=0.29;
-
-				if(RandomCrits != 1)
-					Format(attributes, sizeof(attributes), "%s;28;%.2f", attributes, RandomCrits);
-				else if(RandomCrits == 0)
-					Format(attributes, sizeof(attributes), "%s;15;0", attributes);
-
-				if(CritsOnBack)
-					Format(attributes, sizeof(attributes), "%s;362;1", attributes);
+				SetHealth=125;
+				Damage*=0.29;	// 10
+				RandomCrits*=0.35;
+			}
+			case TFClass_Soldier:
+			{
+				SetHealth=200;
+				Damage*=0.46;	// 30
+				RandomCrits*=0.25;
+			}
+			case TFClass_Pyro:
+			{
+				SetHealth=175;
+				Damage*=0.34;	// 22
+				RandomCrits*=0.3;
+			}
+			case TFClass_DemoMan:
+			{
+				SetHealth=175;
+				Damage*=0.38;	// 25
+				RandomCrits*=0.3;
 			}
 			case TFClass_Heavy:
 			{
-				Damage*=0.54;
-
-				if(RandomCrits != 1)
-					Format(attributes, sizeof(attributes), "%s;28;%.2f", attributes, RandomCrits);
-				else if(RandomCrits == 0)
-					Format(attributes, sizeof(attributes), "%s;15;0", attributes);
-
-				if(CritsOnBack)
-					Format(attributes, sizeof(attributes), "%s;362;1", attributes);
+				SetHealth=300;
+				Damage*=0.54;	// 35
+				RandomCrits*=0.35;
+			}
+			case TFClass_Engineer:
+			{
+				SetHealth=125;
+				Damage*=0.28;	// 18
+				RandomCrits*=0.25;
+			}
+			case TFClass_Medic:
+			{
+				SetHealth=150;
+				Damage*=0.28;	// 18
+				RandomCrits*=0.35;
+			}
+			case TFClass_Sniper:
+			{
+				SetHealth=125;
+				Damage*=0.31;	// 20
+				RandomCrits*=0.4;
 			}
 			case TFClass_Spy:
 			{
+				SetHealth=125;
 				Damage*=2.5;
-				DamageVsPlayers*=0.1;
-
-				if(NoCloak)
-				{
-					TF2_RemoveWeaponSlot(client, 4);
-				}
-				else
-				{
-					if(CloakOnHit != 0)
-						Format(attributes, sizeof(attributes), "%s;166;%i", CloakOnHit);
-
-					if(CloakOnKill != 0)
-						Format(attributes, sizeof(attributes), "%s;158;%i", CloakOnHit);
-
-					if(SilentCloak)
-						Format(attributes, sizeof(attributes), "%s;160;1", attributes);
-				}
-						
-				if(NoDisguises)
-					Format(attributes, sizeof(attributes), "%s;155;1", attributes);
-
+				DamageVsPlayers*=0.12;
+				SubDamage = Damage*DamageVsPlayers;	// 12
 			}
 		}
+		SetEntityHealth(client, RoundToFloor(SetHealth+Health));
+
+		// Good Stuff
 
 		if(Damage > 1)
-			Format(attributes, sizeof(attributes), "%s;2;%.2f", attributes, Damage);
-		else if(Damage < 1)
-			Format(attributes, sizeof(attributes), "%s;1;%.2f", attributes, Damage);
+		{
+			TF2Attrib_SetByDefIndex(weapon, 2, Damage);
+			if(class!=TFClass_Spy)
+			{
+				Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((Damage-1.0)*100.0));
+				DrawPanelText(panel, string);
+			}
+		}
+		if(class==TFClass_Spy)
+		{
+			if(SubDamage > 1)
+			{
+				Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((SubDamage-1.0)*100.0));
+				DrawPanelText(panel, string);
+			}
+		}
+		if(FireRate < 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 6, FireRate);
+			Format(string, sizeof(string), "+%i%% faster firing speed", RoundToFloor((1.0-FireRate)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(Health > 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 26, Health);
+			Format(string, sizeof(string), "+%i max health on wearer", RoundToFloor(Health));
+			DrawPanelText(panel, string);
+		}
+		if(RandomCrits > 1 && class!=TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
+			Format(string, sizeof(string), "+%i%% random critical hit chance", RoundToFloor((RandomCrits-1.0)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(SlowChance > 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 32, SlowChance);
+			Format(string, sizeof(string), "On Hit: %i%% chance to slow target", RoundToFloor((SlowChance-1.0)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(Speed > 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 107, Speed);
+			Format(string, sizeof(string), "+%i%% faster move speed on wearer", RoundToFloor((Speed-1.0)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(Bleed > 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 149, Bleed);
+			Format(string, sizeof(string), "On Hit: Bleed for %i%% seconds", RoundToFloor(Bleed));
+			DrawPanelText(panel, string);
+		}
+		if(CloakOnKill > 0 && class==TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 158, CloakOnHit);
+			Format(string, sizeof(string), "+%i%% cloak on kill", RoundToFloor(CloakOnKill));
+			DrawPanelText(panel, string);
+		}
+		if(SilentCloak && class==TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 160, 1.0);
+			Format(string, sizeof(string), "Reduced decloak sound volume");
+			DrawPanelText(panel, string);
+		}
+		if(CloakOnHit > 0 && class==TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 166, CloakOnHit);
+			Format(string, sizeof(string), "+%i%% cloak on hit", RoundToFloor(CloakOnHit));
+			DrawPanelText(panel, string);
+		}
+		if(SlowBy40 > 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 182, SlowBy40);
+			Format(string, sizeof(string), "On Hit: Slow target movement by 40% for %is", RoundToFloor(SlowBy40));
+			DrawPanelText(panel, string);
+		}
+		if(Knockback)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 216, 1.0);
+			Format(string, sizeof(string), "Attrib_Knockback");
+			DrawPanelText(panel, string);
+		}
+		if(HealthOnKill > 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 220, HealthOnKill);
+			Format(string, sizeof(string), "Gain %i%% of base health on kill", RoundToFloor(HealthOnKill));
+			DrawPanelText(panel, string);
+		}
+		if(CritsOnBack && class!=TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 362, 1.0);
+			Format(string, sizeof(string), "Always critical hit from behind");
+			DrawPanelText(panel, string);
+		}
+		if(DamageVsBurning != 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 795, DamageVsBurning);
+			Format(string, sizeof(string), "%i%% damage bonus vs burning players", RoundToFloor((DamageVsBurning-1.0)*100.0));
+			DrawPanelText(panel, string);
+		}
 
-		if(DamageVsPlayers != 1)
-			Format(attributes, sizeof(attributes), "%s;138;%.2f", attributes, DamageVsPlayers);
+		Format(string, sizeof(string), " ");
+		DrawPanelText(panel, string);
 
-		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes, Preserve);
-		SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
+		// Bad Stuff
 
-		int vuln = GetRandomInt(0, 100);
-		TF2Attrib_SetByDefIndex(weapon, 61, view_as<float>(vuln/100));
-		TF2Attrib_SetByDefIndex(weapon, 206, view_as<float>((100-vuln)/100));
+		if(Damage < 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 1, Damage);
+			if(class!=TFClass_Spy)
+			{
+				Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-Damage)*100.0));
+				DrawPanelText(panel, string);
+			}
+		}
+		if(class==TFClass_Spy)
+		{
+			if(SubDamage < 1)
+			{
+				Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-SubDamage)*100.0));
+				DrawPanelText(panel, string);
+			}
+		}
+		if(FireRate > 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 5, FireRate);
+			Format(string, sizeof(string), "%i%% slower firing speed", RoundToFloor((FireRate-1.0)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(RandomCrits <= 0 && class!=TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 15, 0.0);
+			Format(string, sizeof(string), "No random critical hits");
+			DrawPanelText(panel, string);
+		}
+		else if(RandomCrits < 1 && class!=TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
+			Format(string, sizeof(string), "-%i%% random critical hit chance", RoundToFloor((1.0-RandomCrits)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(Speed < 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 54, Speed);
+			Format(string, sizeof(string), "%i%% slower move speed on wearer", RoundToFloor((1.0-Speed)*100.0));
+			DrawPanelText(panel, string);
+		}
+		int vuln = GetRandomInt(1, 99);
+		float total = (vuln/100.0)+1.0;
+		TF2Attrib_SetByDefIndex(weapon, 61, total);
+		Format(string, sizeof(string), "%i%% fire damage vulnerability on wearer", vuln);
+		DrawPanelText(panel, string);
+		if(Health < 0)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 125, Health);
+			Format(string, sizeof(string), "%i max health on wearer", RoundToFloor(Health));
+			DrawPanelText(panel, string);
+		}
+		if(DamageVsPlayers < 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 138, DamageVsPlayers);
+			if(class==TFClass_Spy)
+			{
+				Format(string, sizeof(string), "-%i%% backstab damage", RoundToFloor((1.0-DamageVsPlayers)*100.0));
+			}
+			else
+			{
+				Format(string, sizeof(string), "-%i%% damage vs players", RoundToFloor((1.0-DamageVsPlayers)*100.0));
+			}
+			DrawPanelText(panel, string);
+		}
+		if(NoDisguises && class==TFClass_Spy)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 155, 1.0);
+			TF2_RemovePlayerDisguise(client);
+			Format(string, sizeof(string), "Wearer cannot disguise");
+			DrawPanelText(panel, string);
+		}
+		if(NoCloak && class==TFClass_Spy)
+		{
+			TF2_RemoveWeaponSlot(client, 4);
+			Format(string, sizeof(string), "Wearer cannot cloak");
+			DrawPanelText(panel, string);
+		}
+		total = ((100-vuln)/100.0)+1.0;
+		TF2Attrib_SetByDefIndex(weapon, 206, total);
+		Format(string, sizeof(string), "+%i%% damage from melee sources", 100-vuln);
+		DrawPanelText(panel, string);
+		if(Jump < 1)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 443, Jump);
+			Format(string, sizeof(string), "%i%% smaller jump height", RoundToFloor((1.0-Jump)*100.0));
+			DrawPanelText(panel, string);
+		}
+		if(CritsAreMini)
+		{
+			TF2Attrib_SetByDefIndex(weapon, 869, 1.0);
+			Format(string, sizeof(string), "Minicrits whenever it would normally crit");
+			DrawPanelText(panel, string);
+		}
+		Format(string, sizeof(string), " ");
+		DrawPanelText(panel, string);
+		Format(string, sizeof(string), "%t", "SZF Help");
+		DrawPanelItem(panel, string);
+		Format(string, sizeof(string), "%t", "Exit");
+		DrawPanelItem(panel, string);
+		SendPanelToClient(panel, client, panel_HandleClass, 20);
+		CloseHandle(panel);
+		TF2Attrib_SetByDefIndex(weapon, 448, 1.0);
+		TF2Attrib_SetByDefIndex(weapon, 450, 1.0);
+		TF2Attrib_SetByDefIndex(weapon, 57, 4.0);
 	}
 	else
 	{
@@ -5462,23 +5657,20 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
 		if(IsValidEntity(weapon))
 		{
+			GetEntityClassname(weapon, classname, sizeof(classname));
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			switch(index)
 			{
 				case 998:	// Vaccinator
 				{
 					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-					SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "9 ; 0.2");
+					SpawnWeapon(client, "tf_weapon_medigun", 29, 1, 0, "");
 				}
 			}
 
-			if(TF2_GetPlayerClass(client)==TFClass_Medic)
+			if(!StrContains(classname, "tf_weapon_medigun"))
 			{
-				if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
-				{
-					SetEntityRenderMode(weapon, RENDER_TRANSCOLOR);
-					SetEntityRenderColor(weapon, 255, 255, 255, 75);
-				}
+				TF2Attrib_SetByDefIndex(weapon, 9, 0.2);
 			}
 		}
 		else
@@ -5495,8 +5687,19 @@ public Action Timer_CheckItems(Handle timer, any userid)
 				case 589:	// Eureka Effect
 				{
 					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-					SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "28 ; 0.5 ; 69 ; 0.1");
+					SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "");
 				}
+			}
+			if(class==TFClass_Medic)
+			{
+				TF2Attrib_SetByDefIndex(weapon, 28, 0.5);
+				TF2Attrib_SetByDefIndex(weapon, 69, 0.15);
+				TF2Attrib_SetByDefIndex(weapon, 129, -2.0);
+			}
+			else	
+			{
+				TF2Attrib_SetByDefIndex(weapon, 28, 0.5);
+				TF2Attrib_SetByDefIndex(weapon, 69, 0.1);
 			}
 		}
 		else
@@ -5612,7 +5815,7 @@ stock Handle PrepareItemHandle(Handle item, char[] name="", int index=-1, const 
 	return weapon;
 }
 
-stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, char[] att, bool dontPreserve=false)
+stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, char[] att)
 {
 	Handle hWeapon=TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
 	if(hWeapon==INVALID_HANDLE)
@@ -5624,10 +5827,7 @@ stock int SpawnWeapon(int client, char[] name, int index, int level, int qual, c
 	TF2Items_SetItemIndex(hWeapon, index);
 	TF2Items_SetLevel(hWeapon, level);
 	TF2Items_SetQuality(hWeapon, qual);
-	if(dontPreserve)
-	{
-		TF2Items_SetFlags(hWeapon, PRESERVE_ATTRIBUTES);
-	}
+
 	char atts[32][32];
 	int count=ExplodeString(att, ";", atts, 32, 32);
 
@@ -6065,10 +6265,10 @@ TFClassWeapon GetWeaponInfoFromModel(char[] strModel, int &iSlot, int &iSwitchSl
 bool AttemptGrabItem(int iClient)
 {
 	int iTarget = GetClientPointVisible(iClient);
-	char strClassname[255];
 	bool isWeapon;
 
 	#if debugmode
+	char strClassname[255];
 	GetEdictClassname(iTarget, strClassname, sizeof(strClassname));
 	PrintToChat(iClient, "%s", strClassname);
 	#else
@@ -6076,7 +6276,7 @@ bool AttemptGrabItem(int iClient)
 		return false;
 	#endif
 
-	char name[64];
+	/*char name[64];
 	GetEntPropString(iTarget, Prop_Data, "m_iName", name, sizeof(name));
 	if(!StrContains(name, "szf_weapon", false))
 	{
@@ -6089,7 +6289,7 @@ bool AttemptGrabItem(int iClient)
 	{
 		return false;
 	}
-	#endif
+	#endif*/
 
 	char strModel[255];
 	GetEntityModel(iTarget, strModel, sizeof(strModel));
@@ -6097,23 +6297,15 @@ bool AttemptGrabItem(int iClient)
 
 	if(TF2_GetPlayerClass(iClient) == TFClass_Soldier) // Soldier Only Weapons
 	{
-		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl"))
+		if(StrEqual(strModel, "models/weapons/w_models/w_shotgun.mdl") || StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_shotgun/c_shotgun.mdl"))
-		{
-			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 10, 1, "", 0, 38, 0);
-		}
-		else if(StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl") && cvarExtraClass)
+		else if((StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") || StrEqual(strModel, "models/weapons/w_models/w_frontierjustice.mdl")) && cvarExtraClass)
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_frontierjustice/c_frontierjustice.mdl") && cvarExtraClass)
-		{
-			CreateWeapon(iClient, iTarget, 1, "tf_weapon_shotgun_soldier", 141, 0, "869 ; 1", 0, 35, 0);
-		}
-		else if(StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
+		else if(StrEqual(strModel, "models/weapons/c_models/c_rocketlauncher/c_rocketlauncher.mdl") || StrEqual(strModel, "models/weapons/w_models/w_rocketlauncher.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 0, "tf_weapon_rocketlauncher", 18, 1, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5", 0, 19, 0);
 		}
@@ -6219,7 +6411,7 @@ bool AttemptGrabItem(int iClient)
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pipebomblauncher", 20, 1, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5", 0, 24, 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper.mdl"))
+		else if(StrEqual(strModel, "models/weapons/c_models/c_sticky_jumper/c_sticky_jumper.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pipebomblauncher", 265, 0, "59 ; 0.35 ; 79 ; 0.75 ; 135 ; 0.5", 0, 48, 0);
 		}
@@ -6262,11 +6454,11 @@ bool AttemptGrabItem(int iClient)
 		{
 			CreateWeapon(iClient, iTarget, 0, "tf_weapon_sentry_revenge", 141, 0, "869 ; 1", 0, 35, 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl"))
+		else if(StrEqual(strModel, "models/weapons/c_models/c_wrangler.mdl") || StrEqual(strModel, "models/weapons/w_models/w_wrangler.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_laser_pointer", 140, 0, "", 0);
 		}
-		else if(StrEqual(strModel, "models/weapons/c_models/c_pistol.mdl"))
+		else if(StrEqual(strModel, "models/weapons/c_models/c_pistol/c_pistol.mdl") || StrEqual(strModel, "models/weapons/w_models/w_pistol.mdl"))
 		{
 			CreateWeapon(iClient, iTarget, 1, "tf_weapon_pistol", 22, 1, "79 ; 0.24", 0, 60, 0);
 		}
@@ -6454,7 +6646,7 @@ void GetEntityModel(int iEntity, char[] strModel, int iMaxSize, char[] strPropNa
 
 void CheckStartWeapons()
 {
-	int iClassesWithoutWeapons[10] = 0;
+	/*int iClassesWithoutWeapons[10] = 0;
 	
 	for(int i = 1; i <= MaxClients; i++)
 	{
@@ -6514,7 +6706,7 @@ void CheckStartWeapons()
 				AcceptEntityInput(iEntity, "DisableCollision");
 			}
 		}
-	}
+	}*/
 }
 
 int GetWeaponType(int iEntity)
@@ -6666,6 +6858,87 @@ stock bool IsEntityStuck(int iEntity)
 	
 	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_SOLID, TraceDontHitEntity, iEntity);
 	return (TR_DidHit());
+}
+
+void ForceTeamWin(int team)
+{
+	int entity = FindEntityByClassname2(-1, "team_control_point_master");
+	if(!IsValidEntity(entity))
+	{
+		entity = CreateEntityByName("team_control_point_master");
+		DispatchSpawn(entity);
+		AcceptEntityInput(entity, "Enable");
+	}
+	SetVariantInt(team);
+	AcceptEntityInput(entity, "SetWinner");
+}
+
+public void OnItemSpawned(int entity)
+{
+	SDKHook(entity, SDKHook_StartTouch, OnPickup);
+	SDKHook(entity, SDKHook_Touch, OnPickup);
+}
+
+public Action OnPickup(int entity, int client)  //Thanks friagram!
+{
+	if(isZom(client) && Enabled)
+	{
+		char classname[32];
+		GetEntityClassname(entity, classname, sizeof(classname));
+		if(!StrContains(classname, "item_healthkit") || !StrContains(classname, "item_ammopack") || StrEqual(classname, "tf_ammo_pack"))
+		{
+			return Plugin_Handled;
+		}
+	}
+	return Plugin_Continue;
+}
+
+public int CheckRoundState()
+{
+	switch(GameRules_GetRoundState())
+	{
+		case RoundState_Init, RoundState_Pregame:
+		{
+			return -1;
+		}
+		case RoundState_StartGame, RoundState_Preround:
+		{
+			return 0;
+		}
+		case RoundState_RoundRunning, RoundState_Stalemate:  //Oh Valve.
+		{
+			return 1;
+		}
+		default:
+		{
+			return 2;
+		}
+	}
+	#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
+	return -1;  //Compiler bug-doesn't recognize 'default' as a valid catch-all
+	#endif
+}
+
+void SetClientGlow(int client, float time1, float time2=-1.0)
+{
+	if(IsValidClient(client))
+	{
+		GlowTimer[client]+=time1;
+		if(time2>=0)
+		{
+			GlowTimer[client]=time2;
+		}
+
+		if(GlowTimer[client]<=0.0)
+		{
+			GlowTimer[client]=0.0;
+			SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
+		}
+		else
+		{
+			SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
+		}
+	}
 }
 
 #file "Super Zombie Fortress"
