@@ -662,10 +662,11 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 		SetEntityHealth(LastMann, 255);
 		CPrintToChat(LastMann, "{olive}[SZF]{default} %t", "Last Mann", LastMann);
 		MusicHandleClient(LastMann);
-		TF2_AddCondition(LastMann, TFCond_Buffed, -1.0);
+		TF2_AddCondition(LastMann, TFCond_Buffed, TFCondDuration_Infinite);
+		SetClientGlow(client, 3600.0);
 		LastMan=false;
 	}
-	else if(RedAlivePlayers<4)
+	else if(RedAlivePlayers<5)
 	{
 		for(int client=1; client<=MaxClients; client++)
 		{
@@ -673,7 +674,8 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 			{
 				if(GetClientTeam(client)==OtherTeam)
 				{
-					SetClientGlow(client, (60.0/RedAlivePlayers));
+					SetClientGlow(client, (120.0/RedAlivePlayers));
+					TF2_AddCondition(LastMann, TFCond_SpawnOutline, TFCondDuration_Infinite);
 				}
 			}
 		}
@@ -1120,11 +1122,7 @@ public Action SetupMapWeapons(Handle timer, bool starter)
 		else
 			method = 1;
 	}
-	else if(!StrContains(map, "szf_fort", false))
-	{
-		method = 0;
-	}
-	else if(!StrContains(map, "szf_labs_remake", false) || !StrContains(map, "szf_4way", false))
+	else if(!StrContains(map, "szf_labs_remake", false) || !StrContains(map, "szf_4way", false) || !StrContains(map, "szf_fort", false))
 	{
 		method = 1;
 	}
@@ -1438,15 +1436,18 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 						iSubtract = 3;
 				}
 				g_iSuperHealthSubtract[client] = iSubtract;
-				TF2_AddCondition(client, TFCond_Kritzkrieged, -1.0);
+				TF2_AddCondition(client, TFCond_Kritzkrieged, TFCondDuration_Infinite);
 				SetEntityHealth(client, iHealth);
 				
 				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(client, 0, 255, 0, 255);
 				PerformFastRespawn2(client);
 
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-				weapon = SpawnWeapon(client, "tf_weapon_fists", 331, 101, 14, "107 ; 1.15 ; 252 ; 0.5 ; 329 ; 0.5");
+				for(int slot; slot<7; slot++)
+				{
+					TF2_RemoveWeaponSlot(client, slot);
+				}
+				int weapon = SpawnWeapon(client, "tf_weapon_fists", 331, 101, 14, "1 ; 0.54 ; 107 ; 1.15 ; 252 ; 0.5 ; 329 ; 0.5");
 				SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 
 				TF2Attrib_SetByDefIndex(weapon, 26, 300.0+float(iHealth));
@@ -1910,7 +1911,7 @@ public Action timer_postSpawn(Handle timer, any client)
 					TF2_RemoveWearable(client, entity);
 			}
 		}
-		CreateTimer(0.25, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(0.15, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
 	return Plugin_Continue; 
@@ -5075,7 +5076,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 	TFClassType class = TF2_GetPlayerClass(client);
 	char classname[64]="tf_weapon_shovel";
 
-	if(validZom(client))
+	if(validZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
 	{
 		int SetHealth=125;
 
@@ -5206,12 +5207,12 @@ public Action Timer_CheckItems(Handle timer, int client)
 				case 46, 1145:  // Bonk! Atomic Punch
 				{
 					Health-=100.0;
-					TF2_AddCondition(client, TFCond_DodgeChance, -1.0);
+					TF2_AddCondition(client, TFCond_DodgeChance, TFCondDuration_Infinite);
 				}
 				case 163:  // Crit-a-Cola
 				{
-					TF2_AddCondition(client, TFCond_Buffed, -1.0);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+					TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
 				}
 				case 222, 1121:  // Mad Milk
 				{
@@ -5245,9 +5246,9 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 311:  // Buffalo Steak Sandvich
 				{
-					TF2_AddCondition(client, TFCond_SpeedBuffAlly, -1.0);
-					TF2_AddCondition(client, TFCond_Buffed, -1.0);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, -1.0);
+					TF2_AddCondition(client, TFCond_SpeedBuffAlly, TFCondDuration_Infinite);
+					TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
+					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
 				}
 				case 425:  // Family Business
 				{
@@ -5622,6 +5623,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 		TF2Attrib_SetByDefIndex(weapon, 448, 1.0);
 		TF2Attrib_SetByDefIndex(weapon, 450, 1.0);
 		TF2Attrib_SetByDefIndex(weapon, 57, 4.0);
+		TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
 	}
 	else
 	{
@@ -6886,7 +6888,7 @@ public int CheckRoundState()
 {
 	switch(GameRules_GetRoundState())
 	{
-		case RoundState_Init, RoundState_Pregame:
+		case RoundState_Pregame, RoundState_Init:
 		{
 			return -1;
 		}
