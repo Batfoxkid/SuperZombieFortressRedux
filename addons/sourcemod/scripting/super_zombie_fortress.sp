@@ -52,7 +52,7 @@
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
 #endif
 
-#define BUILD_NUMBER "41"
+#define BUILD_NUMBER "42"
 
 #define debugmode false
 
@@ -223,7 +223,10 @@ int g_iMode = GAMEMODE_DEFAULT;
 #define TIME_GOO	6.0
 
 #define INFECTED_NONE	0
-#define INFECTED_TANK	1
+#define INFECTED_COMMON	1
+#define INFECTED_RARE	2
+#define INFECTED_TANK	3
+#define INFECTED_BOSS	4
 
 enum TFClassWeapon
 {
@@ -260,7 +263,6 @@ bool g_bHitOnce[MAXPLAYERS+1] = false;
 int g_iSpecialInfected[MAXPLAYERS+1] = 0;
 int g_iDamage[MAXPLAYERS+1] = 0;
 int g_iKillsThisLife[MAXPLAYERS+1] = 0;
-int g_iSuperHealth[MAXPLAYERS+1] = 0;
 int g_iSuperHealthSubtract[MAXPLAYERS+1] = 0;
 int g_iStartSurvivors = 0;
 
@@ -566,22 +568,18 @@ public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &
 		}
 	}
 
-	if(validClient(iVictim) && g_iSuperHealth[iVictim] > 0)
-	{
-		g_iSuperHealth[iVictim] -= RoundFloat(fDamage);
-		if(g_iSuperHealth[iVictim] < 0)
-			g_iSuperHealth[iVictim] = 0;
-
-		bChanged = true;
-		
-		int iMaxHealth = RoundFloat(float(GetEntProp(iVictim, Prop_Data, "m_iMaxHealth"))*1.5);
-		SetEntityHealth(iVictim, iMaxHealth);
-	}
 	if(iVictim != iAttacker)
 	{
 		if(validSur(iAttacker) && validZom(iVictim))
 		{
-			fDamage *= g_fZombieDamageScale;
+			if(RedAlivePlayers==1)
+			{
+				fDamage *= view_as<float>((BlueAlivePlayers+BlueDeadPlayers+4)/8);
+			}
+			else
+			{
+				fDamage *= view_as<float>((BlueAlivePlayers+BlueDeadPlayers+4)/(RedAlivePlayers+6));
+			}
 			return Plugin_Changed;
 		}
 		if(validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
@@ -979,7 +977,6 @@ public Action OnRoundStart(Handle event, const char[] name, bool dontBroadcast)
 		g_iDamage[i] = 0;
 		g_iKillsThisLife[i] = 0;
 		g_iSpecialInfected[i] = INFECTED_NONE;
-		g_iSuperHealth[i] = 0;
 		g_iSuperHealthSubtract[i] = 0;
 	}
 	
@@ -1396,7 +1393,6 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	//StartSoundSystem(client, MUSIC_NONE);
 	
-	g_iSuperHealth[client] = 0;
 	g_iSuperHealthSubtract[client] = 0;
 	g_bHitOnce[client] = false;
 	g_iHitBonusCombo[client] = 0;
@@ -1433,32 +1429,32 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 					iHealth = GetConVarInt(cvarTankHealthMin);
 				if(iHealth > GetConVarInt(cvarTankHealthMax))
 					iHealth = GetConVarInt(cvarTankHealthMax);
-				g_iSuperHealth[client] = iHealth;
 				
 				int iSubtract = 0;
 				if(GetConVarFloat(cvarTankTime) > 0.0)
 				{
 					iSubtract = RoundFloat(float(iHealth) / GetConVarFloat(cvarTankTime));
-					if(iSubtract < 3) iSubtract = 3;
+					if(iSubtract < 3)
+						iSubtract = 3;
 				}
 				g_iSuperHealthSubtract[client] = iSubtract;
 				TF2_AddCondition(client, TFCond_Kritzkrieged, -1.0);
-				SetEntityHealth(client, 450);
+				SetEntityHealth(client, iHealth);
 				
 				SetEntityRenderMode(client, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(client, 0, 255, 0, 255);
 				PerformFastRespawn2(client);
-				
-				//SetEntityGravity(client, 10.0);
+
+				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
+				weapon = SpawnWeapon(client, "tf_weapon_fists", 331, 101, 14, "107 ; 1.15 ; 252 ; 0.5 ; 329 ; 0.5");
+				SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
+
+				TF2Attrib_SetByDefIndex(weapon, 26, 300.0+float(iHealth));
 				
 				MusicHandleAll();
 				
-				for(int i = 1; i <= MaxClients; i++)
-				{
-					if(validClient(i)) CPrintToChat(i, "{olive}[SZF]{default} %t", "Tank");
-				}
+				CPrintToChatAll("{olive}[SZF]{default} %t", "Tank");
 			}
-			
 		}
 	}
 	
@@ -1738,24 +1734,17 @@ public Action timer_main(Handle timer) // 1Hz
 		{
 			if(validLivingZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
 			{
-				if(g_iSuperHealth[i] > 0)
+				int iHealth = GetClientHealth(i);
+				if(iHealth > 1)
 				{
-					g_iSuperHealth[i] -= g_iSuperHealthSubtract[i];
+					iHealth -= g_iSuperHealthSubtract[i];
+					if(iHealth < 1)
+						iHealth = 1;
+					SetEntityHealth(i, iHealth);
 				}
 				else
 				{
-					int iHealth = GetClientHealth(i);
-					if(iHealth > 1)
-					{
-						iHealth -= g_iSuperHealthSubtract[i];
-						if(iHealth < 1)
-							iHealth = 1;
-						SetEntityHealth(i, iHealth);
-					}
-					else
-					{
-						ForcePlayerSuicide(i);
-					}
+					ForcePlayerSuicide(i);
 				}
 			}
 		}
