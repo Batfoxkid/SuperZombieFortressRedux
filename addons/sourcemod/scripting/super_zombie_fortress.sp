@@ -52,7 +52,7 @@
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
 #endif
 
-#define BUILD_NUMBER "42"
+#define BUILD_NUMBER "48"
 
 #define debugmode false
 
@@ -140,23 +140,6 @@ int g_AdditionalTime = 0;
 // Sound system
 Handle g_hMusicArray = INVALID_HANDLE;
 Handle g_hFastRespawnArray = INVALID_HANDLE;
-
-Handle hWeaponSandman = INVALID_HANDLE;
-Handle hWeaponWatch = INVALID_HANDLE;
-Handle hWeaponStickyLauncher = INVALID_HANDLE;
-Handle hWeaponRocketLauncher = INVALID_HANDLE;
-Handle hWeaponSword = INVALID_HANDLE;
-Handle hWeaponShovel = INVALID_HANDLE;
-Handle hWeaponFists = INVALID_HANDLE;
-Handle hWeaponSteelFists = INVALID_HANDLE;
-Handle hWeaponSyringe = INVALID_HANDLE;
-Handle hWeaponBonesaw = INVALID_HANDLE;
-Handle hWeaponLochNLoad = INVALID_HANDLE;
-Handle hWeaponFlareGun = INVALID_HANDLE;
-Handle hWeaponShotgunPyro = INVALID_HANDLE;
-Handle hWeaponShotgunSoldier = INVALID_HANDLE;
-Handle hWeaponBison = INVALID_HANDLE;
-Handle hWeaponTarge = INVALID_HANDLE;
 
 bool g_bBackstabbed[MAXPLAYERS+1] = false;
 Handle g_hBonus[MAXPLAYERS+1] = INVALID_HANDLE;
@@ -387,7 +370,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_broadcast_audio", OnBroadcast, EventHookMode_Pre);
 	HookEvent("player_spawn", OnPlayerSpawn);	
 	HookEvent("player_death", OnPlayerDeath);
-	HookEvent("post_inventory_application", OnPlayerInventory);
+	//HookEvent("post_inventory_application", OnPlayerInventory);
 	
 	//HookEvent("player_builtobject", OnPlayerBuiltObject); 
 	HookEvent("teamplay_point_captured", OnCPCapture); 
@@ -416,25 +399,7 @@ public void OnPluginStart()
 	
 	CreateTimer(10.0, SpookySound, 0, TIMER_REPEAT);
 	
-	SetupWeapons();
 	CheckStartWeapons();
-
-	GameConfig = LoadGameConfigFile("szf_gamedata");
-	
-	if(!GameConfig)
-	{
-		LogError("Failed to find szf_gamedata.txt gamedata!");
-	}
-
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(GameConfig, SDKConf_Virtual, "EquipWearable");
-	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	WearableEquip = EndPrepSDKCall();
-	
-	if(!WearableEquip)
-	{
-		LogError("Failed to prepare the SDKCall for giving cosmetics. Try updating gamedata or restarting your server.");
-	}
 
 	#if defined _steamtools_included
 	steamtools = LibraryExists("SteamTools");
@@ -570,18 +535,18 @@ public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &
 
 	if(iVictim != iAttacker)
 	{
-		if(validSur(iAttacker) && validZom(iVictim))
+		/*if(validSur(iAttacker) && validZom(iVictim))
 		{
 			if(RedAlivePlayers==1)
 			{
-				fDamage *= view_as<float>((BlueAlivePlayers+BlueDeadPlayers+4)/8);
+				fDamage *= (BlueAlivePlayers+BlueDeadPlayers+4)/8.0;
 			}
 			else
 			{
-				fDamage *= view_as<float>((BlueAlivePlayers+BlueDeadPlayers+4)/(RedAlivePlayers+6));
+				fDamage *= (BlueAlivePlayers+BlueDeadPlayers+4)/(RedAlivePlayers+6);
 			}
 			return Plugin_Changed;
-		}
+		}*/
 		if(validZom(iAttacker) && validSur(iVictim) && fDamage > 0.0)
 		{
 			int iDamage = RoundFloat(fDamage);
@@ -615,7 +580,7 @@ public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &
 
 public Action Timer_CheckAlivePlayers(Handle timer)
 {
-	if(CheckRoundState()==2)
+	if(roundState()!=RoundActive)
 		return Plugin_Continue;
 
 	RedAlivePlayers=0;
@@ -644,7 +609,6 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 				if(GetClientTeam(client)==OtherTeam)
 				{
 					RedDeadPlayers++;
-					LastMann=client;
 				}
 				else if(GetClientTeam(client)==ZomTeam)
 				{
@@ -663,7 +627,7 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 		CPrintToChat(LastMann, "{olive}[SZF]{default} %t", "Last Mann", LastMann);
 		MusicHandleClient(LastMann);
 		TF2_AddCondition(LastMann, TFCond_Buffed, TFCondDuration_Infinite);
-		SetClientGlow(client, 3600.0);
+		SetClientGlow(LastMann, 3600.0);
 		LastMan=false;
 	}
 	else if(RedAlivePlayers<5)
@@ -674,8 +638,8 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 			{
 				if(GetClientTeam(client)==OtherTeam)
 				{
-					SetClientGlow(client, (120.0/RedAlivePlayers));
-					TF2_AddCondition(LastMann, TFCond_SpawnOutline, TFCondDuration_Infinite);
+					SetClientGlow(client, 20.0, (120.0/RedAlivePlayers));
+					TF2_AddCondition(client, TFCond_SpawnOutline, TFCondDuration_Infinite);
 				}
 			}
 		}
@@ -733,7 +697,7 @@ public Action command_zfSwapTeams(int client, int args)
 ////////////////////////////////////////////////////////////
 public Action OnJoinTeam(int client, const char[] command, int args)
 {	
-	if(!Enabled || CheckRoundState()==-1)
+	if(!Enabled || roundState()==RoundActive || roundState()==RoundPost)
 	{
 		return Plugin_Continue;
 	}
@@ -1372,6 +1336,11 @@ public Action OnRoundEnd(Handle event, const char[] name, bool dontBroadcast)
 	MusicGetPath((GetEventInt(event, "team")==zomTeam()) ? MUSIC_ROUNDLOSE : MUSIC_ROUNDWIN, 0, strPath, sizeof(strPath));
 	EmitSoundToAll(strPath);
 
+	for(int client=1; client<=MaxClients; client++)
+	{
+		SetClientGlow(client, -3600.0, 0.0);
+	}
+
 	SetGlow();
 	UpdateZombieDamageScale();
 	g_bRoundActive = false;
@@ -1401,6 +1370,10 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	
 	DropCarryingItem(client, false);
 	
+	if(roundState()==RoundActive)
+	{
+		CreateTimer(0.1, Timer_CheckAlivePlayers, _, TIMER_FLAG_NO_MAPCHANGE);
+	}
 	
 	SetEntityRenderColor(client, 255, 255, 255, 255);
 	SetEntityRenderMode(client, RENDER_NORMAL);
@@ -1508,7 +1481,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue; 
 }
 
-public Action OnPlayerInventory(Handle event, const char[] name, bool dontBroadcast)
+/*public Action OnPlayerInventory(Handle event, const char[] name, bool dontBroadcast)
 {
 	if(!Enabled)
 		return Plugin_Continue;
@@ -1516,11 +1489,8 @@ public Action OnPlayerInventory(Handle event, const char[] name, bool dontBroadc
 	int userid = GetEventInt(event, "userid");
 	int client = GetClientOfUserId(userid);
 
-	if(isZom(client))
-		CreateTimer(2.0, Timer_GiveVoodoo, userid, TIMER_FLAG_NO_MAPCHANGE);
-
 	return Plugin_Continue;
-}
+}*/
 
 //
 // Player Death Event
@@ -1537,7 +1507,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 
 	ClientCommand(victim, "r_screenoverlay\"\"");
 
-	if(CheckRoundState() == 1)
+	if(roundState()==RoundActive)
 	{
 		CreateTimer(0.1, Timer_CheckAlivePlayers, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -1623,83 +1593,6 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 
 ////////////////////////////////////////////////////////////
 //
-// Add Cosmetics
-//
-////////////////////////////////////////////////////////////
-public Action Timer_GiveVoodoo(Handle timer, any data)
-{
-	int client = GetClientOfUserId(data);
-
-	if(!IsValidClient(client))
-		return;
-
-	int index;
-	switch(TF2_GetPlayerClass(client))
-	{
-		case TFClass_Scout:
-			index=5617;
-
-		case TFClass_Soldier:
-			index=5618;
-
-		case TFClass_Pyro:
-			index=5624;
-
-		case TFClass_DemoMan:
-			index=5620;
-
-		case TFClass_Heavy:
-			index=5619;
-
-		case TFClass_Engineer:
-			index=5621;
-
-		case TFClass_Medic:
-			index=5622;
-
-		case TFClass_Sniper:
-			index=5625;
-
-		default:
-			index=5623;
-	}
-	CreateHat(client, index, 13, 1);
-}
-
-bool CreateHat(int client, int itemindex, int quality=13, int level=0)
-{
-	if(!IsValidClient(client))
-		return false;
-
-	int hat = CreateEntityByName("tf_wearable");
-
-	if(!IsValidEntity(hat))
-		return false;
-
-	PrintToChat(client, "Index: %i", itemindex);
-
-	char entclass[64];
-	GetEntityNetClass(hat, entclass, sizeof(entclass));
-	SetEntData(hat, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);
-	SetEntData(hat, FindSendPropInfo(entclass, "m_bInitialized"), 1);
-	SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityQuality"), quality);
-
-	if(level)
-	{
-		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
-	}
-	else
-	{
-		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomInt(1, 100));
-	}
-
-	DispatchSpawn(hat);
-	SDKCall(WearableEquip, client, hat);
-	return true;
-}
-
-////////////////////////////////////////////////////////////
-//
 // Periodic Timer Callbacks
 //
 ////////////////////////////////////////////////////////////
@@ -1765,7 +1658,7 @@ public Action timer_mainSlow(Handle timer) // 4 min
 
 public Action timer_mainFast(Handle timer)
 { 
-	if(!Enabled || CheckRoundState()==2)
+	if(!Enabled || roundState()!=RoundActive)
 		return Plugin_Continue;	
 
 	for(int client; client<=MaxClients; client++)
@@ -1881,7 +1774,7 @@ public Action timer_postSpawn(Handle timer, any client)
 		{
 			HandleClientInventory(client);
 		}
-		else if(isZom(client))
+		/*else if(isZom(client))
 		{
 			int entity=-1;
 			while((entity=FindEntityByClassname2(entity, "tf_wear*"))!=-1)
@@ -1910,7 +1803,7 @@ public Action timer_postSpawn(Handle timer, any client)
 				if(isZom(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")))
 					TF2_RemoveWearable(client, entity);
 			}
-		}
+		}*/
 		CreateTimer(0.15, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
@@ -4020,95 +3913,7 @@ void HandleClientInventory(int iClient)
 		RemoveSecondaryWearable(iClient);
 	}
 	
-	int iEntity;
-	/*if(TF2_GetPlayerClass(iClient) == TFClass_Scout && hWeaponSandman != INVALID_HANDLE)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, 2);
-		if(iEntity > 0 && IsValidEdict(iEntity))
-			TF2_RemoveWeaponSlot(iClient, 2);
-		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSandman);
-		EquipPlayerWeapon(iClient, iEntity);
-	}*/
-	if(TF2_GetPlayerClass(iClient) == TFClass_Heavy)
-	{
-		if(g_iSpecialInfected[iClient] == INFECTED_TANK && hWeaponSteelFists != INVALID_HANDLE)
-		{
-			iEntity = GetPlayerWeaponSlot(iClient, 2);
-			if(iEntity > 0 && IsValidEdict(iEntity))
-				TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponSteelFists);
-			EquipPlayerWeapon(iClient, iEntity);
-		}
-		/*else if(hWeaponFists != INVALID_HANDLE)
-		{
-			iEntity = GetPlayerWeaponSlot(iClient, 2);
-			if(iEntity > 0 && IsValidEdict(iEntity))
-				TF2_RemoveWeaponSlot(iClient, 2);
-			iEntity = TF2Items_GiveNamedItem(iClient, hWeaponFists);
-			EquipPlayerWeapon(iClient, iEntity);
-		}*/
-	}
-
-	/*iEntity = GetPlayerWeaponSlot(iClient, 4);
-	if(iEntity > 0 && IsValidEdict(iEntity) && hWeaponWatch != INVALID_HANDLE && TF2_GetPlayerClass(iClient) == TFClass_Spy)
-	{
-		TF2_RemoveWeaponSlot(iClient, 4);
-		iEntity = TF2Items_GiveNamedItem(iClient, hWeaponWatch);
-		EquipPlayerWeapon(iClient, iEntity);
-	}*/
-	
-	SetValidSlot(iClient);
 	CheckStartWeapons();
-}
-
-void SetValidSlot(int iClient)
-{
-	int iOld = GetEntProp(iClient, Prop_Send, "m_hActiveWeapon");
-	if(iOld > 0)
-		return;
-
-	int iEntity;
-	for(int iSlot = 0; iSlot <= 5; iSlot++)
-	{
-		iEntity = GetPlayerWeaponSlot(iClient, iSlot);
-		if(iEntity > 0 && IsValidEdict(iEntity))
-		{
-			SetEntPropEnt(iClient, Prop_Send, "m_hActiveWeapon", iEntity);
-			return;
-		}
-	}
-}
-
-void SetupWeapons()
-{
-	// Scout's Special Stun Bat
-	hWeaponSandman = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponSandman, "tf_weapon_bat_wood");
-	TF2Items_SetItemIndex(hWeaponSandman, 44);
-	TF2Items_SetQuality(hWeaponSandman, 6);
-	TF2Items_SetAttribute(hWeaponSandman, 0, 38, 1.0);
-	TF2Items_SetNumAttributes(hWeaponSandman, 1);
-
-	// Fists
-	hWeaponFists = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponFists, "tf_weapon_fists");
-	TF2Items_SetItemIndex(hWeaponFists, 5);
-	TF2Items_SetQuality(hWeaponFists, 0);
-	TF2Items_SetNumAttributes(hWeaponFists, 0);
-
-	// Fists of Steel
-	hWeaponSteelFists = TF2Items_CreateItem(OVERRIDE_ALL);
-	TF2Items_SetClassname(hWeaponSteelFists, "tf_weapon_fists");
-	TF2Items_SetItemIndex(hWeaponSteelFists, 331);
-	TF2Items_SetQuality(hWeaponSteelFists, 6);
-	TF2Items_SetNumAttributes(hWeaponSteelFists, 0);
-
-	// Stock Watch
-	hWeaponWatch = TF2Items_CreateItem(OVERRIDE_ALL|FORCE_GENERATION);
-	TF2Items_SetClassname(hWeaponWatch, "tf_weapon_invis");
-	TF2Items_SetItemIndex(hWeaponWatch, 30);
-	TF2Items_SetQuality(hWeaponWatch, 0);
-	TF2Items_SetNumAttributes(hWeaponWatch, 0);
 }
 
 void SpitterGoo(int iClient, int iAttacker = 0)
@@ -4583,6 +4388,7 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 {
 	if(validZom(client))
 	{
+
 	}
 	else if(kvWeaponMods != null)
 	{
@@ -5408,6 +5214,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 			}
 		}
 		SetEntityHealth(client, RoundToFloor(SetHealth+Health));
+		TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
 
 		// Good Stuff
 
@@ -5593,6 +5400,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 		if(NoCloak && class==TFClass_Spy)
 		{
 			TF2_RemoveWeaponSlot(client, 4);
+			TF2_RemoveCondition(client, TFCond_RestrictToMelee);
 			Format(string, sizeof(string), "Wearer cannot cloak");
 			DrawPanelText(panel, string);
 		}
@@ -5620,10 +5428,8 @@ public Action Timer_CheckItems(Handle timer, int client)
 		DrawPanelItem(panel, string);
 		SendPanelToClient(panel, client, panel_HandleClass, 20);
 		CloseHandle(panel);
-		TF2Attrib_SetByDefIndex(weapon, 448, 1.0);
-		TF2Attrib_SetByDefIndex(weapon, 450, 1.0);
-		TF2Attrib_SetByDefIndex(weapon, 57, 4.0);
-		TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
+		TF2Attrib_SetByDefIndex(weapon, 1006, 1.0);
+		TF2Attrib_SetByDefIndex(weapon, 57, 6.0);
 	}
 	else
 	{
@@ -6882,32 +6688,6 @@ public Action OnPickup(int entity, int client)  //Thanks friagram!
 		}
 	}
 	return Plugin_Continue;
-}
-
-public int CheckRoundState()
-{
-	switch(GameRules_GetRoundState())
-	{
-		case RoundState_Pregame, RoundState_Init:
-		{
-			return -1;
-		}
-		case RoundState_StartGame, RoundState_Preround:
-		{
-			return 0;
-		}
-		case RoundState_RoundRunning, RoundState_Stalemate:  //Oh Valve.
-		{
-			return 1;
-		}
-		default:
-		{
-			return 2;
-		}
-	}
-	#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
-	return -1;  //Compiler bug-doesn't recognize 'default' as a valid catch-all
-	#endif
 }
 
 void SetClientGlow(int client, float time1, float time2=-1.0)
