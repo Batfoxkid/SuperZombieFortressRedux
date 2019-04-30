@@ -621,7 +621,7 @@ public Action Timer_CheckAlivePlayers(Handle timer)
 	{
 		ForceTeamWin(ZomTeam);
 	}
-	else if(RedAlivePlayers==1 && BlueAlivePlayers && isSur(LastMann) && LastMan)
+	else if(RedAlivePlayers==1 && BlueAlivePlayers && GetClientTeam(LastMann)==OtherTeam && LastMan)
 	{
 		SetEntityHealth(LastMann, 255);
 		CPrintToChat(LastMann, "{olive}[SZF]{default} %t", "Last Mann", LastMann);
@@ -742,7 +742,7 @@ public Action OnChangeClass(int client, const char[] command, int args)
 
 	GetCmdArg(1, cmd1, sizeof(cmd1));
 	
-	if(isZom(client))	 
+	if(GetClientTeam(client) == ZomTeam)	 
 	{
 		// If an invalid zombie class is selected, print a message and
 		// accept joinclass command. ZF spawn logic will correct this
@@ -753,7 +753,7 @@ public Action OnChangeClass(int client, const char[] command, int args)
 		}
 	}
 
-	else if(isSur(client))
+	else if(GetClientTeam(client) == OtherTeam)
 	{
 		// Prevent survivors from switching classes during the round.
 		if(roundState() == RoundActive)
@@ -796,7 +796,7 @@ public Action OnCallMedic(int client, const char[] command, int argc)
 	// Rage recharges after 30 seconds.
 	if(StrEqual(cmd1, "0") && StrEqual(cmd2, "0") && IsPlayerAlive(client))
 	{
-		if(isZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
+		if(GetClientTeam(client)==ZomTeam && g_iSpecialInfected[client] == INFECTED_NONE)
 		{		
 			int curH = GetClientHealth(client);
 			int maxH = GetEntProp(client, Prop_Data, "m_iMaxHealth");			 
@@ -818,7 +818,7 @@ public Action OnCallMedic(int client, const char[] command, int argc)
 					
 			return Plugin_Handled;
 		}
-		else if(isSur(client))
+		else if(GetClientTeam(client) == OtherTeam)
 		{
 			if(AttemptCarryItem(client))
 				return Plugin_Handled;
@@ -902,7 +902,7 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] weaponname
 	// Handle crit bonuses.
 	// + Survivors: Crit result is combination of bonus and standard crit calulations.
 	// + Zombies: Crit result is based solely on bonus calculation. 
-	if(isSur(client))
+	if(GetClientTeam(client)==OtherTeam)
 	{
 		if(GetRandomInt(0, 1))
 		{
@@ -1441,7 +1441,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	// 1. Prevent players spawning on survivors if round has started.
 	//		Prevent players spawning on survivors as an invalid class.
 	//		Prevent players spawning on zombies as an invalid class.
-	if(isSur(client))
+	if(GetClientTeam(client)==OtherTeam)
 	{
 		if(roundState() == RoundActive)
 		{
@@ -1454,7 +1454,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 			return Plugin_Continue;
 		}			
 	}
-	else if(isZom(client))
+	else if(GetClientTeam(client)==ZomTeam)
 	{
 		if(!validZombie(clientClass))
 		{
@@ -1735,7 +1735,7 @@ public Action timer_graceStartPost(Handle timer)
 	MusicGetPath(MUSIC_PREPARE, iRandom, strPath, sizeof(strPath));
 	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && !isZom(i) && ShouldHearEventSounds(i))
+		if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(client)==OtherTeam && ShouldHearEventSounds(i))
 		{
 			EmitSoundToClient(i, strPath);
 		}
@@ -1770,16 +1770,16 @@ public Action timer_postSpawn(Handle timer, any client)
 {
 	if(validClient(client) && IsPlayerAlive(client))
 	{
-		if(isSur(client))
+		if(GetClientTeam(client) == OtherTeam)
 		{
 			HandleClientInventory(client);
 		}
-		/*else if(isZom(client))
+		/*else if(GetClientTeam(client) == ZomTeam)
 		{
 			int entity=-1;
 			while((entity=FindEntityByClassname2(entity, "tf_wear*"))!=-1)
 			{
-				if(isZom(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")))
+				if(GetClientTeam(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")) == ZomTeam)
 				{
 					switch(GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex"))
 					{
@@ -1800,7 +1800,7 @@ public Action timer_postSpawn(Handle timer, any client)
 			entity=-1;
 			while((entity=FindEntityByClassname2(entity, "tf_powerup_bottle"))!=-1)
 			{
-				if(isZom(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")))
+				if(GetClientTeam((GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")) == ZomTeam)
 					TF2_RemoveWearable(client, entity);
 			}
 		}*/
@@ -1835,7 +1835,7 @@ void handle_winCondition()
 	bool anySurvivorAlive = false;
 	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isSur(i))
+		if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i)==OtherTeam)
 		{
 			anySurvivorAlive = true;
 			break;
@@ -1857,7 +1857,7 @@ void handle_zombieAbilities()
 	
 	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i) && g_iSpecialInfected[i] != INFECTED_TANK)
+		if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i)==ZomTeam && g_iSpecialInfected[i] != INFECTED_TANK)
 		{	 
 			/*clientClass = TF2_GetPlayerClass(i);
 			curH = GetClientHealth(i);
@@ -1939,7 +1939,7 @@ void handle_hoardeBonus()
 	playerCount = 0;
 	for(int i=1; i<=MaxClients; i++)
 	{	
-		if(IsClientInGame(i) && IsPlayerAlive(i) && isZom(i))
+		if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i)==ZomTeam)
 		{							
 			player[playerCount] = i;
 			playerHoardeId[playerCount] = -1;
@@ -2751,10 +2751,10 @@ void SetGlow()
 		if(IsClientInGame(i) && IsPlayerAlive(i))
 		{
 			iGlow2 = iGlow;
-			if(!isSur(i))
-				iGlow2 = 0;
-			if(isZom(i) && g_iSpecialInfected[i] == INFECTED_TANK)
+			if(GetClientTeam(i) == ZomTeam && g_iSpecialInfected[i] == INFECTED_TANK)
 				iGlow2 = 1;
+			else if(GetClientTeam(i) == ZomTeam)
+				iGlow2 = 0;
 			SetEntProp(i, Prop_Send, "m_bGlowEnabled", iGlow2);
 		}
 	}
@@ -3449,11 +3449,11 @@ void ZombieRage(bool bBeginning = false)
 				{
 					EmitSoundToClient(i, strPath, _, SNDLEVEL_AIRCRAFT);
 				}
-				if(isZom(i))
+				if(GetClientTeam(i)==ZomTeam)
 				{
 					CPrintToChat(i, "{olive}[SZF]{default} %t", "Frenzy");
 				}
-				if(isZom(i) && !IsPlayerAlive(i))
+				if(GetClientTeam(i)==ZomTeam && !IsPlayerAlive(i))
 				{
 					TF2_RespawnPlayer(i);
 					CreateTimer(0.1, timer_postSpawn, i, TIMER_FLAG_NO_MAPCHANGE);
@@ -3472,7 +3472,7 @@ public Action StopZombieRage(Handle hTimer)
 	{
 		for(int i = 1; i <= MaxClients; i++)
 		{
-			if(IsClientInGame(i) && isZom(i))
+			if(IsClientInGame(i) && GetClientTeam(i)==ZomTeam)
 			{
 				CPrintToChat(i, "{olive}[SZF]{default} %t", "Rest");
 			}
@@ -3502,7 +3502,8 @@ public Action SpookySound(Handle hTimer)
 	{
 		for(int i = 1; i <= MaxClients; i++)
 		{
-			if(IsClientInGame(i) && ShouldHearEventSounds(i) && i != iTarget && !isZom(i)) EmitSoundToClient(i, strPath, iTarget);
+			if(IsClientInGame(i) && ShouldHearEventSounds(i) && i != iTarget && GetClientTeam(client)==OtherTeam)
+				EmitSoundToClient(i, strPath, iTarget);
 		}
 	}
 }
@@ -3521,7 +3522,7 @@ float GetZombieNumber(int iClient)
 	float fZombieNumber = 0.0;
 	for(int z=1; z<=MaxClients; z++)
 	{
-		if(IsClientInGame(z) && IsPlayerAlive(z) && isZom(z))
+		if(IsClientInGame(z) && IsPlayerAlive(z) && GetClientTeam(z)==ZomTeam)
 		{
 			GetClientEyePosition(z, fPosZombie);
 			fDistance = GetVectorDistance(fPosClient, fPosZombie);
@@ -3612,7 +3613,7 @@ void MusicHandleClient(int iClient)
 		*/
 		
 		int iMusic = MUSIC_NONE;
-		if(isSur(iClient))
+		if(GetClientTeam(iClient) == OtherTeam)
 		{
 			if(g_bRoundActive)
 			{
@@ -4104,7 +4105,7 @@ public Action BallStartTouch(int iEntity, int iOther)
 	if(!Enabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
 	
-	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
+	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && GetClientTeam(iOther)==OtherTeam)
 	{
 		int iOwner = GetEntPropEnt(iEntity, Prop_Data, "m_hOwnerEntity");
 		SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
@@ -4122,7 +4123,7 @@ public Action BallTouch(int iEntity, int iOther)
 	if(!Enabled || !IsClassname(iEntity, "tf_projectile_stun_ball"))
 		return Plugin_Continue;
 	
-	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && isSur(iOther))
+	if(iOther > 0 && iOther <= MaxClients && IsClientInGame(iOther) && IsPlayerAlive(iOther) && GetClientTeam(iOther)==OtherTeam)
 	{
 		SDKUnhook(iEntity, SDKHook_StartTouch, BallStartTouch);
 		SDKUnhook(iEntity, SDKHook_Touch, BallTouch);
@@ -6678,7 +6679,7 @@ public void OnItemSpawned(int entity)
 
 public Action OnPickup(int entity, int client)  //Thanks friagram!
 {
-	if(isZom(client) && Enabled)
+	if(GetClientTeam(client)==ZomTeam && Enabled)
 	{
 		char classname[32];
 		GetEntityClassname(entity, classname, sizeof(classname));
