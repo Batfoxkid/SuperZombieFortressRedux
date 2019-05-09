@@ -42,17 +42,17 @@
 //
 // Plugin Information
 //
-#define MAJOR_REVISION "2"
+#define MAJOR_REVISION "Alpha"
 #define MINOR_REVISION "0"
 #define STABLE_REVISION "0"
 #define DEV_REVISION "Build"
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
-	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
+	#define PLUGIN_VERSION MAJOR_REVISION..." "...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
 #endif
 
-#define BUILD_NUMBER "48"
+#define BUILD_NUMBER MINOR_REVISION...STABLE_REVISION..."49"
 
 #define debugmode false
 
@@ -117,6 +117,7 @@ Handle szf_tDataCollect;// Cvar Handles
 Handle kvWeaponMods=INVALID_HANDLE;
 Handle GameConfig;
 Handle WearableEquip;
+
 ConVar cvarForceOn;
 ConVar cvarRatio;
 ConVar cvarAllowTeamPref;
@@ -400,6 +401,23 @@ public void OnPluginStart()
 	CreateTimer(10.0, SpookySound, 0, TIMER_REPEAT);
 	
 	CheckStartWeapons();
+
+	GameConfig = LoadGameConfigFile("szf_gamedata");
+
+	if(!GameConfig)
+	{
+		LogError("Failed to find szf_gamedata.txt gamedata!");
+	}
+
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(GameConfig, SDKConf_Virtual, "EquipWearable");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
+	WearableEquip = EndPrepSDKCall();
+
+	if(!WearableEquip)
+	{
+		LogError("Failed to prepare the SDKCall for giving cosmetics. Try updating gamedata or restarting your server.");
+	}
 
 	#if defined _steamtools_included
 	steamtools = LibraryExists("SteamTools");
@@ -1513,6 +1531,7 @@ public Action OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	}
 	
 	DropCarryingItem(victim);
+	SetClientGlow(victim, -3600.0, 0.0);
 	
 	// handle bonuses
 	if(validZom(killers[0]) && killers[0]!=victim)
@@ -1774,7 +1793,7 @@ public Action timer_postSpawn(Handle timer, any client)
 		{
 			HandleClientInventory(client);
 		}
-		/*else if(GetClientTeam(client) == ZomTeam)
+		else if(GetClientTeam(client) == ZomTeam)
 		{
 			int entity=-1;
 			while((entity=FindEntityByClassname2(entity, "tf_wear*"))!=-1)
@@ -1803,7 +1822,7 @@ public Action timer_postSpawn(Handle timer, any client)
 				if(GetClientTeam((GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")) == ZomTeam)
 					TF2_RemoveWearable(client, entity);
 			}
-		}*/
+		}
 		CreateTimer(0.15, Timer_CheckItems, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 
@@ -5430,6 +5449,8 @@ public Action Timer_CheckItems(Handle timer, int client)
 		SendPanelToClient(panel, client, panel_HandleClass, 20);
 		CloseHandle(panel);
 		TF2Attrib_SetByDefIndex(weapon, 1006, 1.0);
+		TF2Attrib_SetByDefIndex(weapon, 448, 1.0);
+		TF2Attrib_SetByDefIndex(weapon, 450, 1.0);
 		TF2Attrib_SetByDefIndex(weapon, 57, 6.0);
 	}
 	else
@@ -5667,6 +5688,65 @@ stock int GetIndexOfWeaponSlot(int client, int slot)
 {
 	int weapon=GetPlayerWeaponSlot(client, slot);
 	return (weapon>MaxClients && IsValidEntity(weapon) ? GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex") : -1);
+}
+public Action DelayZombify(Handle timer, any userid)
+{
+	int client = GetClientOfUserId(userid);
+
+	if(!IsValidClient(client))
+		return;
+
+	int index;
+	switch(TF2_GetPlayerClass(client))
+	{
+		case TFClass_Scout:
+			index=5617;
+
+		case TFClass_Soldier:
+			index=5618;
+
+		case TFClass_Pyro:
+			index=5624;
+
+		case TFClass_DemoMan:
+			index=5620;
+
+		case TFClass_Heavy:
+			index=5619;
+
+		case TFClass_Engineer:
+			index=5621;
+
+		case TFClass_Medic:
+			index=5622;
+
+		case TFClass_Sniper:
+			index=5625;
+
+		default:
+			index=5623;
+	}
+	CreateVoodoo(client, index);
+}
+
+bool CreateVoodoo(int client, int index)
+{
+	int voodoo = CreateEntityByName("tf_wearable");
+
+	if(!IsValidEntity(voodoo))
+		return false;
+
+	char entclass[64];
+	GetEntityNetClass(voodoo, entclass, sizeof(entclass));
+	SetEntData(voodoo, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), index);
+	SetEntData(voodoo, FindSendPropInfo(entclass, "m_bInitialized"), 1);
+	SetEntData(voodoo, FindSendPropInfo(entclass, "m_iEntityQuality"), 13);
+	SetEntData(voodoo, FindSendPropInfo(entclass, "m_iEntityLevel"), 1);
+
+	DispatchSpawn(voodoo);
+	SDKCall(g_hWearableEquip, client, voodoo);
+
+	return true;
 }
 
 stock bool IsValidClient(int client, bool replaycheck = true)
