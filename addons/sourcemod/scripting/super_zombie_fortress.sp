@@ -4900,54 +4900,56 @@ public Action Timer_CheckItems(Handle timer, int client)
 	int[] civilianCheck = new int[MaxClients+1];
 	int weapon = -1;
 	TFClassType class = TF2_GetPlayerClass(client);
-	char classname[64]="tf_weapon_shovel";
+	char classname[64];
 
 	if(validZom(client) && g_iSpecialInfected[client] == INFECTED_NONE)
 	{
 		int SetHealth=125;
 
-		float FireRate=1.0,	// 5 / 6	Any
-		Jump=1.0,		// 443		Any
-		Bleed=0.0,		// 149		Any
-		Damage=1.0,		// 1 / 2	Any
-		Speed=1.0,		// 442		Any
-		SlowBy40=0.0,		// 182		Any
-		DamageVsPlayers=1.0,	// 138		Any
-		DamageVsBurning=1.0,	// 795		Any
-		SlowChance=0.0,		// 32		Any
-		RandomCrits=1.0,	// 15 / 28	Any
-		Health=0.0,		// 125 / 26	Any
-		HealthOnKill=0.0,	// 220		Any
-		HealthOnHit=0.0,	// 16		Any
-		CloakOnHit=0.0,		// 166		Spy
-		CloakOnKill=100.0,	// 158		Spy
-		SubDamage=1.0;		// Custom	Spy
+		float FireRate = 1.0,	// 5 / 6	Any
+		Jump = 1.0,		// 443		Any
+		Bleed = 0.0,		// 149		Any
+		Damage = 1.0,		// 1 / 2	Any
+		Speed = 1.0,		// 442		Any
+		SlowBy40 = 0.0,		// 182		Any
+		DamageVsPlayers = 1.0,	// 138		Any
+		DamageVsBurning = 1.0,	// 795		Any
+		SlowChance = 0.0,	// 32		Any
+		RandomCrits = 1.0,	// 15 / 28	Any
+		Health = 0.0,		// 125 / 26	Any
+		HealthOnKill = 0.0,	// 220		Any
+		HealthOnHit = 0.0,	// 16		Any
+		CloakOnHit = 0.0,	// 166		Spy
+		CloakOnKill = 100.0,	// 158		Spy
+		SubDamage = 1.0;	// Custom	Spy
 
-		bool Knockback=false,	// 216		Any
-		CritsAreMini=false,	// 869		Any
-		CritsOnBack=false,	// 362		Any
-		NoDisguises=true,	// 155		Spy
-		NoCloak=false,		// Custom	Spy
-		SilentCloak=false;	// 160		Spy
+		bool Knockback = false,	// 216		Any
+		CritsAreMini = false,	// 869		Any
+		CritsOnBack = false,	// 362		Any
+		Ignite = false,		// 208		Any
+		AllowMelee = false,	// Custom	Any
+		NoDisguises = true,	// 155		Spy
+		NoCloak = false,	// Custom	Spy
+		SilentCloak = false;	// 160		Spy
 
 		Handle panel = CreatePanel();
 		char string[256];
 		SetGlobalTransTarget(client);
 		Format(string, sizeof(string), "%t\n", "Left 4 Dead");
 		SetPanelTitle(panel, string);
-		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+		weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 		if(IsValidEntity(weapon))
 		{
-			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			index = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
 			switch(index)
 			{
 				// Scout
 				case 45, 1078:  // Force-A-Nature
 				{
-					Knockback=true;
-					SlowChance=1.0;
-					FireRate=1.1;
+					Knockback = true;
+					SlowChance = 1.0;
+					FireRate = 1.1;
 				}
 				case 220:  // Shortstop
 				{
@@ -4957,7 +4959,11 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 448:  // Soda Popper
 				{
-					//SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 818 ; 1");
+					SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 818 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Soda Popper!\n");
+					DrawPanelText(panel, string);
+					SetEntPropFloat(client, Prop_Send, "m_flHypeMeter", 100.0);
+					AllowMelee = true;
 				}
 				case 772:  // Baby Face's Blaster
 				{
@@ -4965,60 +4971,104 @@ public Action Timer_CheckItems(Handle timer, int client)
 					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
 					Format(string, sizeof(string), "Gained a Passive Baby Face's Blaster!\n");
 					DrawPanelText(panel, string);
+					SetEntPropFloat(client, Prop_Send, "m_flHypeMeter", 50.0);
 				}
 				case 1103:  // Back Scatter
 				{
-					FireRate=1.1;
-					CritsOnBack=true;
-					CritsAreMini=true;
-					RandomCrits=0.0;
+					FireRate = 1.1;
+					CritsOnBack = true;
+					CritsAreMini = true;
+					RandomCrits = 0.0;
+				}
+				// Soldier
+				case 127:  // Direct Hit
+				{
+					FireRate = 1.3;
+					Damage = 1.25;
+				}
+				case 228, 1085:  // Black Box
+				{
+					HealthOnHit = 20;
+					FireRate = 1.2;
+				}
+				case 237:  // Rocket Jumper
+				{
+					Speed = 1.35;
+					Damage = 0.5;
+				}
+				case 414:  // Liberty Launcher
+				{
+					Speed = 1.15;
+					Damage = 0.75;
+					FireRate = 0.85;
+				}
+				case 441:  // Cow Mangler 5000
+				{
+					strcopy(classname, sizeof(classname), "tf_weapon_fireaxe"); // Work around to Ignition
+					DamageVsPlayers = 0.75;
+					FireRate = 1.25;
+					Ignite = true;
+				}
+				case 730:  // Beggar's Bazooka
+				{
+					Speed = 1.15;
+					Damage = 0.75;
+					FireRate = 0.85;
+				}
+				case 1104:  // Air Strike
+				{
+					Speed = 1.05;
+					Damage = 0.4;
+					FireRate = 0.35;
 				}
 				// Heavy
 				case 41:  // Natascha
 				{
-					FireRate=1.25;
-					DamageVsPlayers=0.75;
-					Health=30.0;
-					SlowBy40=5.0;
+					FireRate = 1.25;
+					DamageVsPlayers = 0.75;
+					Health = 30.0;
+					SlowBy40 = 5.0;
 				}
 				case 312:  // Brass Beast
 				{
-					FireRate=1.3;
-					Damage=1.25;
-					Health=30.0;
-					Speed=0.85;
+					FireRate = 1.3;
+					Damage = 1.25;
+					Health = 30.0;
+					Speed = 0.85;
 				}
 				case 424:  // Tomislav
 				{
-					FireRate=1.1;
-					Speed=1.05;
+					FireRate = 1.1;
+					Speed = 1.05;
 				}
 				case 811, 832:  // Huo-Long Heater
 				{
-					//DamageVsBurning=1.2;
-					//DamageVsPlayers=0.75;
+					strcopy(classname, sizeof(classname), "tf_weapon_fireaxe");
+					DamageVsBurning = 1.2;
+					DamageVsPlayers = 0.75;
+					Ignite = true;
 				}
 				// Spy
 				case 61, 1006:  // Ambassador
 				{
-					FireRate=1.2;
-					Damage=0.85;
-					DamageVsPlayers=1.25;
+					FireRate = 1.2;
+					Damage = 0.85;
+					DamageVsPlayers = 1.25;
 				}
 				case 224:  // L'Etranger
 				{
-					CloakOnHit=30.0;
-					DamageVsPlayers=0.9;
+					CloakOnHit = 30.0;
+					DamageVsPlayers = 0.9;
 				}
 				case 460:  // Enforcer
 				{
-					NoDisguises=false;
-					NoCloak=true;
+					NoDisguises = false;
+					NoCloak = true;
 				}
 				case 525:  // Diamondback
 				{
-					Damage=0.85;
-					DamageVsPlayers=1.2;
+					Damage = 0.85;
+					DamageVsPlayers = 1.2;
 				}
 			}
 		}
@@ -5032,7 +5082,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 				// Scout
 				case 46, 1145:  // Bonk! Atomic Punch
 				{
-					Health-=100.0;
+					Health -= 100.0;
 					TF2_AddCondition(client, TFCond_DodgeChance, TFCondDuration_Infinite);
 				}
 				case 163:  // Crit-a-Cola
@@ -5042,22 +5092,68 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 222, 1121:  // Mad Milk
 				{
-					//DamageVsPlayers-=0.5;
+					//DamageVsPlayers -= 0.5;
 				}
 				case 449:  // Winger
 				{
-					FireRate*=0.9;
-					Jump*=1.15;
+					FireRate *= 0.9;
+					Jump *= 1.15;
 				}
 				case 773:  // Pretty Boy's Pocket Pistol
 				{
-					FireRate*=1.1;
-					HealthOnHit+=6.0;
+					FireRate *= 1.1;
+					HealthOnHit += 6.0;
 				}
 				case 812, 833:  // Flying Guillotine
 				{
-					FireRate*=1.15;
-					Bleed+=1.0;
+					FireRate *= 1.2;
+					Bleed += 1.0;
+				}
+				// Soldier
+				case 129:  // Buff Banner
+				{
+					Damage *= 0.85;
+					DamageVsPlayers *= 0.65;
+					SpawnWeapon(client, "tf_weapon_buff_item", 129, 5, 13, "129 ; 1 ; 357 ; 20 ; 773 ; 8");
+					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+					Format(string, sizeof(string), "Gained a Passive Buff Banner!\n");
+					DrawPanelText(panel, string);
+					AllowMelee = true;
+				}
+				case 133:  // Gunboats
+				{
+					ExplosiveResist *= 0.6;
+					Health -= 50;
+				}
+				case 226:  // Battalion's Backup
+				{
+					Health -= 90;
+					SpawnWeapon(client, "tf_weapon_buff_item", 226, 5, 13, "129 ; 2 ; 357 ; 20 ; 773 ; 8");
+					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+					Format(string, sizeof(string), "Gained a Passive Battalion's Backup!\n");
+					DrawPanelText(panel, string);
+					AllowMelee = true;
+				}
+				case 354:  // Concheror
+				{
+					Speed *= 0.6;
+					Health -= 50;
+					SpawnWeapon(client, "tf_weapon_buff_item", 354, 5, 13, "129 ; 3 ; 357 ; 20 ; 773 ; 8");
+					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+					Format(string, sizeof(string), "Gained a Passive Concheror!\n");
+					DrawPanelText(panel, string);
+					AllowMelee = true;
+				}
+				case 442:  // Righteous Bison
+				{
+					SpawnWeapon(client, "tf_weapon_handgun_raygun", 220, 5, 13, "281 ; 1 ; 283 ; 1 ; 284 ; 1 ; 285 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
+					Format(string, sizeof(string), "Gained a Passive Righteous Bison!\n");
+					DrawPanelText(panel, string);
+					AllowMelee = true;
+				}
+				case 444:  // Mantreads
+				{
+					KnockbackResist *= 0.25;
 				}
 				// Heavy
 				case 42, 863, 1002:  // Sandvich
@@ -5104,12 +5200,14 @@ public Action Timer_CheckItems(Handle timer, int client)
 			}
 		}
 		char attributes[64];
-		index=5; // Fail safe
-		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
+		index = 5; // Fail safe
+		weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
 		if(IsValidEntity(weapon))
 		{
-			GetEntityClassname(weapon, classname, sizeof(classname));
-			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			if(!strlen(classname))
+				GetEntityClassname(weapon, classname, sizeof(classname));
+
+			index = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
 			switch(index)
 			{
@@ -5154,7 +5252,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 				// Spy
 				case 225, 574:  // Your Eternal Reward
 				{
-					SilentCloak=false;
+					SilentCloak=true;
 					Format(attributes, sizeof(attributes), "34 ; 1.33");
 				}
 				case 356:  // Conniver's Kunai
@@ -5170,6 +5268,9 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 			}
 		}
+
+		if(!strlen(classname))	// Fail Safe
+			strcopy(classname, sizeof(classname), "tf_weapon_shovel");
 
 		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
 		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes);
@@ -5234,7 +5335,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 			}
 		}
 		SetEntityHealth(client, RoundToFloor(SetHealth+Health));
-		TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
+		HealthOnHit *= FireRate; // Balancing
 
 		// Good Stuff
 
@@ -5439,6 +5540,10 @@ public Action Timer_CheckItems(Handle timer, int client)
 			TF2Attrib_SetByDefIndex(weapon, 869, 1.0);
 			Format(string, sizeof(string), "Minicrits whenever it would normally crit");
 			DrawPanelText(panel, string);
+		}
+		if(!AllowMelee)
+		{
+			TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
 		}
 		Format(string, sizeof(string), " ");
 		DrawPanelText(panel, string);
