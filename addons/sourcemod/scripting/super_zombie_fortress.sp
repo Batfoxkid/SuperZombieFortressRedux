@@ -82,7 +82,6 @@ public Plugin myinfo =
 
 #define SOUND_BONUS	"ui/trade_ready.wav"
 
-
 int OtherTeam=2;
 int ZomTeam=3;
 int Enabled;
@@ -4927,7 +4926,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 		CritsAreMini = false,	// 869		Any
 		CritsOnBack = false,	// 362		Any
 		Ignite = false,		// 208		Any
-		AllowMelee = false,	// Custom	Any
+		OnlyMelee = true,	// Custom	Any
 		NoDisguises = true,	// 155		Spy
 		NoCloak = false,	// Custom	Spy
 		SilentCloak = false;	// 160		Spy
@@ -4948,8 +4947,8 @@ public Action Timer_CheckItems(Handle timer, int client)
 				case 45, 1078:  // Force-A-Nature
 				{
 					Knockback = true;
-					SlowChance = 1.0;
-					FireRate = 1.1;
+					SlowBy40 = 1.0;
+					FireRate = 1.2;
 				}
 				case 220:  // Shortstop
 				{
@@ -4963,7 +4962,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 					Format(string, sizeof(string), "Gained a Passive Soda Popper!\n");
 					DrawPanelText(panel, string);
 					SetEntPropFloat(client, Prop_Send, "m_flHypeMeter", 100.0);
-					AllowMelee = true;
+					OnlyMelee = false;
 				}
 				case 772:  // Baby Face's Blaster
 				{
@@ -5011,15 +5010,65 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 730:  // Beggar's Bazooka
 				{
-					Speed = 1.15;
-					Damage = 0.75;
-					FireRate = 0.85;
+					Speed = 0.9;
+					Damage = 1.2;
 				}
 				case 1104:  // Air Strike
 				{
 					Speed = 1.05;
 					Damage = 0.4;
 					FireRate = 0.35;
+				}
+				// Pyro
+				case 40, 1146:  // Backburner
+				{
+					FireRate = 1.25;
+					CritsOnBack = true;
+				}
+				case 215:  // Degreaser
+				{
+					DamageVsPlayers = 0.5;
+					FireRate = 0.65;
+					Speed = 1.1;
+				}
+				case 594:  // Phlogistinator
+				{
+					FireRate = 2.0;
+					TF2_AddCondition(client, TFCond_HalloweenCritCandy, TFCondDuration_Infinite);
+					FakeClientCommand(client, "taunt");
+				}
+				case 741:  // Rainblower
+				{
+					PyroLand = true;
+				}
+				case 1178:  // Dragon's Fury
+				{
+					DamageVsPlayers = 0.75;
+					FireRate = 0.85;
+				}
+				// Demoman
+				case 308:  // Loch-n-Load
+				{
+					FireRate = 1.25;
+					Speed = 1.1;
+				}
+				case 405, 608:  // Ali Baba's Wee Booties, Bootlegger
+				{
+					Damage = 0.7;
+					Health = 25.0;
+					Speed = 1.1;
+				}
+				case 996:  // Loose Cannon
+				{
+					Knockback = true;
+					SlowBy40 = 1.0;
+					FireRate = 1.3;
+				}
+				case 1151:  // Iron Bomber
+				{
+					Speed = 1.1;
+					Jump = 1.1;
+					FireRate = 1.3;
 				}
 				// Heavy
 				case 41:  // Natascha
@@ -5110,7 +5159,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 					Bleed += 1.0;
 				}
 				// Soldier
-				case 129:  // Buff Banner
+				case 129, 1001:  // Buff Banner
 				{
 					Damage *= 0.85;
 					DamageVsPlayers *= 0.65;
@@ -5118,84 +5167,90 @@ public Action Timer_CheckItems(Handle timer, int client)
 					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
 					Format(string, sizeof(string), "Gained a Passive Buff Banner!\n");
 					DrawPanelText(panel, string);
-					AllowMelee = true;
+					OnlyMelee = false;
 				}
 				case 133:  // Gunboats
 				{
 					ExplosiveResist *= 0.6;
-					Health -= 50;
+					Health -= 50.0;
 				}
 				case 226:  // Battalion's Backup
 				{
-					Health -= 90;
+					Health -= 90.0;
 					SpawnWeapon(client, "tf_weapon_buff_item", 226, 5, 13, "129 ; 2 ; 357 ; 20 ; 773 ; 8");
 					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
 					Format(string, sizeof(string), "Gained a Passive Battalion's Backup!\n");
 					DrawPanelText(panel, string);
-					AllowMelee = true;
+					OnlyMelee = false;
 				}
 				case 354:  // Concheror
 				{
 					Speed *= 0.6;
-					Health -= 50;
+					Health -= 50.0;
 					SpawnWeapon(client, "tf_weapon_buff_item", 354, 5, 13, "129 ; 3 ; 357 ; 20 ; 773 ; 8");
 					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
 					Format(string, sizeof(string), "Gained a Passive Concheror!\n");
 					DrawPanelText(panel, string);
-					AllowMelee = true;
+					OnlyMelee = false;
 				}
 				case 442:  // Righteous Bison
 				{
 					SpawnWeapon(client, "tf_weapon_handgun_raygun", 220, 5, 13, "281 ; 1 ; 283 ; 1 ; 284 ; 1 ; 285 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
 					Format(string, sizeof(string), "Gained a Passive Righteous Bison!\n");
 					DrawPanelText(panel, string);
-					AllowMelee = true;
+					OnlyMelee = false;
 				}
 				case 444:  // Mantreads
 				{
 					KnockbackResist *= 0.25;
+					Speed *= 0.9;
+				}
+				case 1101:  // B.A.S.E. Jumper
+				{
+					Parachute = true;
+					Speed *= 0.95;
 				}
 				// Heavy
 				case 42, 863, 1002:  // Sandvich
 				{
-					Health+=150.0;
-					Speed*=0.8;
+					Health += 150.0;
+					Speed *= 0.8;
 				}
 				case 159, 433:  // Dalokohs Bar
 				{
-					Health+=50.0;
-					Speed*=0.95;
+					Health += 50.0;
+					Speed *= 0.95;
 				}
 				case 311:  // Buffalo Steak Sandvich
 				{
-					TF2_AddCondition(client, TFCond_SpeedBuffAlly, TFCondDuration_Infinite);
+					Speed *= 1.2;
 					TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
 					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
 				}
 				case 425:  // Family Business
 				{
-					FireRate*=0.85;
-					Speed*=0.95;
+					FireRate *= 0.85;
+					Speed *= 0.9;
 				}
 				case 1153:  // Panic Attack
 				{
-					Health-=100;
-					Speed*=1.5;
-					Jump*=1.15;
-					DamageVsPlayers*=0.9;
-					FireRate*=1.1;
+					Health -= 100;
+					Speed *= 1.5;
+					Jump *= 1.15;
+					DamageVsPlayers *= 0.9;
+					FireRate *= 1.1;
 				}
 				case 1190:  // Second Banana
 				{
-					Health+=100.0;
-					Speed*=0.875;
+					Health += 100.0;
+					Speed *= 0.875;
 				}
 				// Spy
 				case 810, 831:  // Red-Tape Recorder
 				{
-					FireRate*=1.35;
-					Speed*=1.25;
-					DamageVsPlayers*=0.65;
+					FireRate *= 1.35;
+					Speed *= 1.25;
+					DamageVsPlayers *= 0.65;
 				}
 			}
 		}
@@ -5541,7 +5596,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 			Format(string, sizeof(string), "Minicrits whenever it would normally crit");
 			DrawPanelText(panel, string);
 		}
-		if(!AllowMelee)
+		if(OnlyMelee)
 		{
 			TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
 		}
