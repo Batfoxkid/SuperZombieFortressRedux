@@ -49,12 +49,12 @@
 #if !defined DEV_REVISION
 	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION
 #else
-	#define PLUGIN_VERSION MAJOR_REVISION..." "...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..."-"...BUILD_NUMBER
+	#define PLUGIN_VERSION DEV_REVISION..."-"...BUILD_NUMBER
 #endif
 
-#define BUILD_NUMBER MINOR_REVISION...STABLE_REVISION..."49"
+#define BUILD_NUMBER MINOR_REVISION...STABLE_REVISION..."049"
 
-#define debugmode false
+#define debugmode true
 
 #if defined _steamtools_included
 bool steamtools = false;
@@ -532,7 +532,7 @@ public void OnPreThinkPost(int client)
 #define DMGTYPE_MELEE_CRIT	135270528
 
 public Action OnTakeDamage(int iVictim, int &iAttacker, int &iInflicter, float &fDamage, int &iDamagetype, int &iWeapon, float fForce[3], float fForcePos[3], int damagecustom)
-{  
+{
 	if(!Enabled)
 		return Plugin_Continue;
 
@@ -4918,6 +4918,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 		Health = 0.0,		// 125 / 26	Any
 		HealthOnKill = 0.0,	// 220		Any
 		HealthOnHit = 0.0,	// 16		Any
+		AfterburnDamage = 0.5,	// 71 / 72	Any
 		CloakOnHit = 0.0,	// 166		Spy
 		CloakOnKill = 100.0,	// 158		Spy
 		SubDamage = 1.0;	// Custom	Spy
@@ -5003,7 +5004,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 441:  // Cow Mangler 5000
 				{
-					strcopy(classname, sizeof(classname), "tf_weapon_fireaxe"); // Work around to Ignition
+					strcopy(classname, sizeof(classname), "tf_weapon_fireaxe");	// Work around to Ignition
 					DamageVsPlayers = 0.75;
 					FireRate = 1.25;
 					Ignite = true;
@@ -5035,7 +5036,7 @@ public Action Timer_CheckItems(Handle timer, int client)
 				{
 					FireRate = 2.0;
 					TF2_AddCondition(client, TFCond_HalloweenCritCandy, TFCondDuration_Infinite);
-					FakeClientCommand(client, "taunt");
+					TF2_StunPlayer(client, 3.0, 0.0, TF_STUNFLAGS_NORMALBONK|TF_STUNFLAG_NOSOUNDOREFFECT, client);
 				}
 				case 741:  // Rainblower
 				{
@@ -5210,6 +5211,38 @@ public Action Timer_CheckItems(Handle timer, int client)
 					Parachute = true;
 					Speed *= 0.95;
 				}
+				// Pyro
+				case 39, 1081:  // Flaregun
+				{
+					DamageVsBurning *= 2.0;
+					AfterburnDamage *= 0.25;
+				}
+				case 351:  // Detonator
+				{
+					DamageVsBurning *= 2.0;
+					AfterburnDamage *= 0.25;
+					Jump *= 1.25;
+					Health -= 25.0;
+				}
+				case 415:  // Reserve Shooter
+				{
+					Jump *= 1.25;
+					Health -= 25.0;
+				}
+				case 595:  // Manmelter
+				{
+					CritsAreMini = true;
+					SpawnWeapon(client, "tf_weapon_flaregun_revenge", 220, 5, 13, "281 ; 1 ; 348 ; 1.2 ; 350 ; 1 ; 367 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
+					Format(string, sizeof(string), "Gained a Passive Manmelter!\n");
+					DrawPanelText(panel, string);
+					OnlyMelee = false;
+				}
+				case 740:  // Scorch Shot
+				{
+					CritsAreMini = true;
+					CritsVsBurning = true;
+					AfterburnDamage *= 0.19;
+				}
 				// Heavy
 				case 42, 863, 1002:  // Sandvich
 				{
@@ -5269,57 +5302,92 @@ public Action Timer_CheckItems(Handle timer, int client)
 				// Scout
 				case 44:  // Sandman
 				{
-					Health-=15.0;
+					Health -= 15.0;
 					Format(attributes, sizeof(attributes), "38 ; 1 ; 278 ; 99");
 				}
 				case 317:  // Candy Cane
 				{
-					Health-=25.0;
-					HealthOnHit+=20.0;
+					Health -= 25.0;
+					HealthOnHit += 20.0;
 				}
 				case 325, 452:  // Boston Basher, Three-Rune Blade
 				{
-					Bleed+=2.0;
+					Bleed += 2.0;
 					Format(attributes, sizeof(attributes), "204 ; 1 ; 207 ; 1.75");
 				}
 				case 648:  // Wrap Assassin
 				{
 					Format(attributes, sizeof(attributes), "278 ; 99 ; 346 ; 1");
 				}
+				// Soldier
+				case 128:  // Equalizer
+				{
+					Format(attributes, sizeof(attributes), "115 ; 1 ; 129 ; -3");
+				}
+				case 154:  // Pain Train
+				{
+				}
+				case 357:  // Half-Zatoichi
+				{
+					FireRate *= 1.25;
+					RandomCrits = 0.0;
+					Format(attributes, sizeof(attributes), "219 ; 1 ; 220 ; 50 ; 781 ; 72");
+				}
+				case 416:  // Market Gardener
+				{
+					FireRate *= 1.2;
+					RandomCrits = 0.0;
+					Format(attributes, sizeof(attributes), "366 ; 2");
+				}
+				case 447:  // Disciplinary Action
+				{
+					Damage *= 0.75;
+					Format(attributes, sizeof(attributes), "251 ; 1");	// No extra melee range btw
+				}
+				case 775:  // Escape Plan
+				{
+					Health -= 50.0;
+					Format(attributes, sizeof(attributes), "235 ; 2 ; 129 ; -3");
+				}
 				// Heavy
 				case 43:  // Killing Gloves of Boxing
 				{
-					FireRate*=1.2;
+					FireRate *= 1.2;
 					Format(attributes, sizeof(attributes), "613 ; 5");
 				}
 				case 239, 1084, 1100:  // Gloves of Running Urgently
 				{
-					Health-=100.0;
-					Speed*=1.3;
+					Health -= 100.0;
+					Speed *= 1.3;
 				}
 				case 426:  // Eviction Notice
 				{
-					Health-=50.0;
-					Speed*=1.15;
-					Damage*=0.4;
-					Speed*=0.45;
+					Health -= 50.0;
+					Speed *= 1.15;
+					Damage *= 0.4;
+					Speed *= 0.45;
 				}
 				// Spy
 				case 225, 574:  // Your Eternal Reward
 				{
-					SilentCloak=true;
+					SilentCloak = true;
 					Format(attributes, sizeof(attributes), "34 ; 1.33");
 				}
 				case 356:  // Conniver's Kunai
 				{
-					Health-=70.0;
-					HealthOnHit+=35;
+					Health -= 70.0;
+					HealthOnHit += 35;
 				}
 				case 461:  // Conniver's Kunai
 				{
-					Health-=25.0;
-					CloakOnHit+=30.0;
+					Health -= 25.0;
+					CloakOnHit += 30.0;
 					Format(attributes, sizeof(attributes), "737 ; 1.5");
+				}
+				// All Class
+				case 169, 423, 1071:  // Golden-based Weapons
+				{
+					Format(attributes, sizeof(attributes), "150 ; 1");
 				}
 			}
 		}
