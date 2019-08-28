@@ -28,10 +28,9 @@
 #include <tf2items>
 #include <tf2attributes>
 //#include <super_zombie_fortress>
+#tryinclude <tf2idb>
 #if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
-#undef REQUIRE_EXTENSIONS
 #tryinclude <steamtools>
-#define REQUIRE_EXTENSIONS
 #endif
 
 #include "szf_util_base.inc"
@@ -4405,9 +4404,52 @@ public void CacheWeapons()
 
 public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDefinitionIndex, Handle &item)
 {
-	if(validZom(client))
+	if(GetClientTeam(client) == ZomTeam)
 	{
+		#if defined _tf2idb_included
+		if(TF2IDB_GetItemSlot(iItemDefinitionIndex) == 6)
+		{
+			switch(TF2_GetPlayerClass(client))
+			{
+				case TFClass_Scout:
+					iItemDefinitionIndex = 5617;
 
+				case TFClass_Soldier:
+					iItemDefinitionIndex = 5618;
+
+				case TFClass_Pyro:
+					iItemDefinitionIndex = 5624;
+
+				case TFClass_DemoMan:
+					iItemDefinitionIndex = 5620;
+
+				case TFClass_Heavy:
+					iItemDefinitionIndex = 5619;
+
+				case TFClass_Engineer:
+					iItemDefinitionIndex = 5621;
+
+				case TFClass_Medic:
+					iItemDefinitionIndex = 5622;
+
+				case TFClass_Sniper:
+					iItemDefinitionIndex = 5625;
+
+				case TFClass_Spy:
+					iItemDefinitionIndex = 5625;
+
+				default:
+					return Plugin_Continue;
+			}
+
+			Handle itemOverride = PrepareItemHandle(item, _, iItemDefinitionIndex, "448 ; 1; 450 ; 1");
+			if(itemOverride != INVALID_HANDLE)
+			{
+				item = itemOverride;
+				return Plugin_Changed;
+			}
+		}
+		#endif
 	}
 	else if(kvWeaponMods != null)
 	{
@@ -4921,13 +4963,15 @@ public Action Timer_CheckItems(Handle timer, int client)
 		AfterburnDamage = 0.5,	// 71 / 72	Any
 		CloakOnHit = 0.0,	// 166		Spy
 		CloakOnKill = 100.0,	// 158		Spy
-		SubDamage = 1.0;	// Custom	Spy
+		SubDamage = 1.0,	// Custom	Spy
+		MaxMetal = 0.0,		// 81 / 80	Engineer
+		MetalRegen = 0.0;	// 113		Engineer
 
 		bool Knockback = false,	// 216		Any
 		CritsAreMini = false,	// 869		Any
 		CritsOnBack = false,	// 362		Any
 		Ignite = false,		// 208		Any
-		OnlyMelee = true,	// Custom	Any
+		JarateBackstab = true,	// 341		Any
 		NoDisguises = true,	// 155		Spy
 		NoCloak = false,	// Custom	Spy
 		SilentCloak = false;	// 160		Spy
@@ -4953,22 +4997,21 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 				case 220:  // Shortstop
 				{
-					SpawnWeapon(client, "tf_weapon_handgun_scout_primary", 220, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
+					SpawnWeapon(client, "tf_weapon_handgun_scout_primary", 220, 101, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 535 ; 1.4 ; 536 ; 1 ; 818 ; 1");
 					Format(string, sizeof(string), "Gained a Passive Shortstop!\n");
 					DrawPanelText(panel, string);
 				}
 				case 448:  // Soda Popper
 				{
-					SpawnWeapon(client, "tf_weapon_soda_popper", 448, 5, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 818 ; 1");
+					SpawnWeapon(client, "tf_weapon_soda_popper", 448, 101, 13, "3 ; 0 ; 37 ; 0 ; 476 ; 0 ; 818 ; 1");
 					Format(string, sizeof(string), "Gained a Passive Soda Popper!\n");
 					DrawPanelText(panel, string);
 					SetEntPropFloat(client, Prop_Send, "m_flHypeMeter", 100.0);
-					OnlyMelee = false;
 				}
 				case 772:  // Baby Face's Blaster
 				{
-					Speed*=0.9;
-					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 5, 13, "3 ; 0 ; 37 ; 0 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
+					Speed *= 0.9;
+					SpawnWeapon(client, "tf_weapon_pep_brawler_blaster", 772, 101, 13, "3 ; 0 ; 37 ; 0 ; 418 ; 0.25 ; 419 ; 20 ; 476 ; 0 ; 733 ; 1");
 					Format(string, sizeof(string), "Gained a Passive Baby Face's Blaster!\n");
 					DrawPanelText(panel, string);
 					SetEntPropFloat(client, Prop_Send, "m_flHypeMeter", 50.0);
@@ -5098,6 +5141,97 @@ public Action Timer_CheckItems(Handle timer, int client)
 					DamageVsPlayers = 0.75;
 					Ignite = true;
 				}
+				// Engineer
+				case 141, 1004:  // Frontier Justice
+				{
+					FireRate = 1.5;
+					RandomCrits = 2.25;
+				}
+				case 527:  // The Widowmaker
+				{
+					MaxMetal = -70;
+					MetalRegen = 10.0;
+				}
+				case 588:  // Pomson 6000
+				{
+					SpawnWeapon(client, "tf_weapon_drg_pomson", 588, 101, 13, "1 ; 0.28 ; 28 ; 0.25 ; 281 ; 1 ; 284 ; 1 ; 285 ; 1 ; 337 ; 5 ; 338 ; 10 ; 396 ; 1001 ; 818 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Pomson 6000!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				case 997:  // Rescue Ranger
+				{
+					SpawnWeapon(client, "tf_weapon_shotgun_building_rescue", 220, 101, 13, "1 ; 0.28 ; 3 ; 0.66 ; 28 ; 0.25 ; 77 ; 0.5 ; 396 ; 1001 ; 469 ; 100 ; 472 ; 1 ; 474 ; 60 ; 818 ; 1 ; 880 ; 4");
+					Format(string, sizeof(string), "Gained a Passive Rescue Ranger!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				// Medic
+				case 36:  // Blutsauger
+				{
+					HealthRegen = 1.5;
+					HealthOnHit = 30.0;
+				}
+				case 305:  // Crusader's Crossbow
+				{
+					SpawnWeapon(client, "tf_weapon_crossbow", 305, 101, 13, "1 ; 0.28 ; 28 ; 0.35 ; 42 ; 1 ; 112 ; 0.1 ; 396 ; 1001 ; 818 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Crusader's Crossbow!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				case 412:  // Overdose
+				{
+					Damage = 0.8;
+					Speed = 1.1;
+				}
+				case 1079:  // Festive Crusader's Crossbow
+				{
+					SpawnWeapon(client, "tf_weapon_crossbow", 1079, 101, 13, "1 ; 0.28 ; 28 ; 0.35 ; 42 ; 1 ; 112 ; 0.1 ; 396 ; 1001 ; 818 ; 1 ; 280 ; 23");
+					Format(string, sizeof(string), "Gained a Passive Crusader's Crossbow!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				// Sniper
+				case 56, 1092:  // Huntsman, Fortified Compound
+				{
+					SpawnWeapon(client, "tf_weapon_compound_bow", index, 101, 13, "1 ; 0.31 ; 112 ; 0.04 ; 396 ; 1001 ; 818 ; 1");
+					Format(string, sizeof(string), "Gained a Passive Crusader's Crossbow!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				case 230:  // Sydney Sleeper
+				{
+					JarateBackstab = true;
+					FireRate = 0.9;
+					Damage = 0.8;
+				}
+				case 402:  // Bazaar Bargain
+				{
+					Speed = 0.85;
+					Damage = 1.2;
+				}
+				case 526, 30665:  // Machina, Shooting Star
+				{
+					FireRate = 0.8;
+					Damage = 1.2;
+				}
+				case 752:  // Hitman's Heatmaker
+				{
+					FireRate = 0.9;
+					Damage = 0.9;
+				}
+				case 1005:  // Festive Huntsman
+				{
+					SpawnWeapon(client, "tf_weapon_compound_bow", 1005, 101, 13, "1 ; 0.31 ; 112 ; 0.04 ; 396 ; 1001 ; 818 ; 1 ; 280 ; 19");
+					Format(string, sizeof(string), "Gained a Passive Crusader's Crossbow!\n");
+					DrawPanelText(panel, string);
+					WeaponOnly = 1;
+				}
+				case 1098:  // Classic
+				{
+					Speed = 1.1;
+					Damage = 0.85;
+				}
 				// Spy
 				case 61, 1006:  // Ambassador
 				{
@@ -5127,163 +5261,163 @@ public Action Timer_CheckItems(Handle timer, int client)
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-			switch(index)
+			if(OnlyWeapons)
 			{
-				// Scout
-				case 46, 1145:  // Bonk! Atomic Punch
+				switch(index)
 				{
-					Health -= 100.0;
-					TF2_AddCondition(client, TFCond_DodgeChance, TFCondDuration_Infinite);
-				}
-				case 163:  // Crit-a-Cola
-				{
-					TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
-				}
-				case 222, 1121:  // Mad Milk
-				{
-					//DamageVsPlayers -= 0.5;
-				}
-				case 449:  // Winger
-				{
-					FireRate *= 0.9;
-					Jump *= 1.15;
-				}
-				case 773:  // Pretty Boy's Pocket Pistol
-				{
-					FireRate *= 1.1;
-					HealthOnHit += 6.0;
-				}
-				case 812, 833:  // Flying Guillotine
-				{
-					FireRate *= 1.2;
-					Bleed += 1.0;
-				}
-				// Soldier
-				case 129, 1001:  // Buff Banner
-				{
-					Damage *= 0.85;
-					DamageVsPlayers *= 0.65;
-					SpawnWeapon(client, "tf_weapon_buff_item", 129, 5, 13, "129 ; 1 ; 357 ; 20 ; 773 ; 8");
-					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
-					Format(string, sizeof(string), "Gained a Passive Buff Banner!\n");
-					DrawPanelText(panel, string);
-					OnlyMelee = false;
-				}
-				case 133:  // Gunboats
-				{
-					ExplosiveResist *= 0.6;
-					Health -= 50.0;
-				}
-				case 226:  // Battalion's Backup
-				{
-					Health -= 90.0;
-					SpawnWeapon(client, "tf_weapon_buff_item", 226, 5, 13, "129 ; 2 ; 357 ; 20 ; 773 ; 8");
-					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
-					Format(string, sizeof(string), "Gained a Passive Battalion's Backup!\n");
-					DrawPanelText(panel, string);
-					OnlyMelee = false;
-				}
-				case 354:  // Concheror
-				{
-					Speed *= 0.6;
-					Health -= 50.0;
-					SpawnWeapon(client, "tf_weapon_buff_item", 354, 5, 13, "129 ; 3 ; 357 ; 20 ; 773 ; 8");
-					SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
-					Format(string, sizeof(string), "Gained a Passive Concheror!\n");
-					DrawPanelText(panel, string);
-					OnlyMelee = false;
-				}
-				case 442:  // Righteous Bison
-				{
-					SpawnWeapon(client, "tf_weapon_handgun_raygun", 220, 5, 13, "281 ; 1 ; 283 ; 1 ; 284 ; 1 ; 285 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
-					Format(string, sizeof(string), "Gained a Passive Righteous Bison!\n");
-					DrawPanelText(panel, string);
-					OnlyMelee = false;
-				}
-				case 444:  // Mantreads
-				{
-					KnockbackResist *= 0.25;
-					Speed *= 0.9;
-				}
-				case 1101:  // B.A.S.E. Jumper
-				{
-					Parachute = true;
-					Speed *= 0.95;
-				}
-				// Pyro
-				case 39, 1081:  // Flaregun
-				{
-					DamageVsBurning *= 2.0;
-					AfterburnDamage *= 0.25;
-				}
-				case 351:  // Detonator
-				{
-					DamageVsBurning *= 2.0;
-					AfterburnDamage *= 0.25;
-					Jump *= 1.25;
-					Health -= 25.0;
-				}
-				case 415:  // Reserve Shooter
-				{
-					Jump *= 1.25;
-					Health -= 25.0;
-				}
-				case 595:  // Manmelter
-				{
-					CritsAreMini = true;
-					SpawnWeapon(client, "tf_weapon_flaregun_revenge", 220, 5, 13, "281 ; 1 ; 348 ; 1.2 ; 350 ; 1 ; 367 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
-					Format(string, sizeof(string), "Gained a Passive Manmelter!\n");
-					DrawPanelText(panel, string);
-					OnlyMelee = false;
-				}
-				case 740:  // Scorch Shot
-				{
-					CritsAreMini = true;
-					CritsVsBurning = true;
-					AfterburnDamage *= 0.19;
-				}
-				// Heavy
-				case 42, 863, 1002:  // Sandvich
-				{
-					Health += 150.0;
-					Speed *= 0.8;
-				}
-				case 159, 433:  // Dalokohs Bar
-				{
-					Health += 50.0;
-					Speed *= 0.95;
-				}
-				case 311:  // Buffalo Steak Sandvich
-				{
-					Speed *= 1.2;
-					TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
-					TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
-				}
-				case 425:  // Family Business
-				{
-					FireRate *= 0.85;
-					Speed *= 0.9;
-				}
-				case 1153:  // Panic Attack
-				{
-					Health -= 100;
-					Speed *= 1.5;
-					Jump *= 1.15;
-					DamageVsPlayers *= 0.9;
-					FireRate *= 1.1;
-				}
-				case 1190:  // Second Banana
-				{
-					Health += 100.0;
-					Speed *= 0.875;
-				}
-				// Spy
-				case 810, 831:  // Red-Tape Recorder
-				{
-					FireRate *= 1.35;
-					Speed *= 1.25;
-					DamageVsPlayers *= 0.65;
+					// Scout
+					case 46, 1145:  // Bonk! Atomic Punch
+					{
+						Health -= 100.0;
+						TF2_AddCondition(client, TFCond_DodgeChance, TFCondDuration_Infinite);
+					}
+					case 163:  // Crit-a-Cola
+					{
+						TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
+						TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
+					}
+					case 222, 1121:  // Mad Milk
+					{
+						//DamageVsPlayers -= 0.5;
+					}
+					case 449:  // Winger
+					{
+						FireRate *= 0.9;
+						Jump *= 1.15;
+					}
+					case 773:  // Pretty Boy's Pocket Pistol
+					{
+						FireRate *= 1.1;
+						HealthOnHit += 6.0;
+					}
+					case 812, 833:  // Flying Guillotine
+					{
+						FireRate *= 1.2;
+						Bleed += 1.0;
+					}
+					// Soldier
+					case 129, 1001:  // Buff Banner
+					{
+						Damage *= 0.85;
+						DamageVsPlayers *= 0.65;
+						SpawnWeapon(client, "tf_weapon_buff_item", index, 101, 13, "129 ; 1 ; 357 ; 20 ; 773 ; 8");
+						SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+						Format(string, sizeof(string), "Gained a Passive Buff Banner!\n");
+						DrawPanelText(panel, string);
+					}
+					case 133:  // Gunboats
+					{
+						ExplosiveResist *= 0.6;
+						Health -= 50.0;
+					}
+					case 226:  // Battalion's Backup
+					{
+						Health -= 90.0;
+						SpawnWeapon(client, "tf_weapon_buff_item", 226, 101, 13, "129 ; 2 ; 357 ; 20 ; 773 ; 8");
+						SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+						Format(string, sizeof(string), "Gained a Passive Battalion's Backup!\n");
+						DrawPanelText(panel, string);
+					}
+					case 354:  // Concheror
+					{
+						Speed *= 0.6;
+						Health -= 50.0;
+						SpawnWeapon(client, "tf_weapon_buff_item", 354, 101, 13, "129 ; 3 ; 357 ; 20 ; 773 ; 8");
+						SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+						Format(string, sizeof(string), "Gained a Passive Concheror!\n");
+						DrawPanelText(panel, string);
+					}
+					case 442:  // Righteous Bison
+					{
+						SpawnWeapon(client, "tf_weapon_handgun_raygun", 442, 101, 13, "281 ; 1 ; 283 ; 1 ; 284 ; 1 ; 285 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
+						Format(string, sizeof(string), "Gained a Passive Righteous Bison!\n");
+						DrawPanelText(panel, string);
+						OnlyWeapons = 2;
+					}
+					case 444:  // Mantreads
+					{
+						KnockbackResist *= 0.25;
+						Speed *= 0.9;
+					}
+					case 1101:  // B.A.S.E. Jumper
+					{
+						Parachute = true;
+						Speed *= 0.95;
+					}
+					// Pyro
+					case 39, 1081:  // Flaregun
+					{
+						DamageVsBurning *= 2.0;
+						AfterburnDamage *= 0.25;
+					}
+					case 351:  // Detonator
+					{
+						DamageVsBurning *= 2.0;
+						AfterburnDamage *= 0.25;
+						Jump *= 1.25;
+						Health -= 25.0;
+					}
+					case 415:  // Reserve Shooter
+					{
+						Jump *= 1.25;
+						Health -= 25.0;
+					}
+					case 595:  // Manmelter
+					{
+						CritsAreMini = true;
+						SpawnWeapon(client, "tf_weapon_flaregun_revenge", 595, 101, 13, "281 ; 1 ; 348 ; 1.2 ; 350 ; 1 ; 367 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
+						Format(string, sizeof(string), "Gained a Passive Manmelter!\n");
+						DrawPanelText(panel, string);
+						OnlyWeapons = 2;
+					}
+					case 740:  // Scorch Shot
+					{
+						CritsAreMini = true;
+						CritsVsBurning = true;
+						AfterburnDamage *= 0.19;
+					}
+					// Heavy
+					case 42, 863, 1002:  // Sandvich
+					{
+						Health += 150.0;
+						Speed *= 0.8;
+					}
+					case 159, 433:  // Dalokohs Bar
+					{
+						Health += 50.0;
+						Speed *= 0.95;
+					}
+					case 311:  // Buffalo Steak Sandvich
+					{
+						Speed *= 1.2;
+						TF2_AddCondition(client, TFCond_Buffed, TFCondDuration_Infinite);
+						TF2_AddCondition(client, TFCond_MarkedForDeathSilent, TFCondDuration_Infinite);
+					}
+					case 425:  // Family Business
+					{
+						FireRate *= 0.85;
+						Speed *= 0.9;
+					}
+					case 1153:  // Panic Attack
+					{
+						Health -= 100;
+						Speed *= 1.5;
+						Jump *= 1.15;
+						DamageVsPlayers *= 0.9;
+						FireRate *= 1.1;
+					}
+					case 1190:  // Second Banana
+					{
+						Health += 100.0;
+						Speed *= 0.875;
+					}
+					// Spy
+					case 810, 831:  // Red-Tape Recorder
+					{
+						FireRate *= 1.35;
+						Speed *= 1.25;
+						DamageVsPlayers *= 0.65;
+					}
 				}
 			}
 		}
@@ -5297,377 +5431,432 @@ public Action Timer_CheckItems(Handle timer, int client)
 
 			index = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-			switch(index)
+			if(OnlyWeapons)
 			{
-				// Scout
-				case 44:  // Sandman
+				switch(index)
 				{
-					Health -= 15.0;
-					Format(attributes, sizeof(attributes), "38 ; 1 ; 278 ; 99");
-				}
-				case 317:  // Candy Cane
-				{
-					Health -= 25.0;
-					HealthOnHit += 20.0;
-				}
-				case 325, 452:  // Boston Basher, Three-Rune Blade
-				{
-					Bleed += 2.0;
-					Format(attributes, sizeof(attributes), "204 ; 1 ; 207 ; 1.75");
-				}
-				case 648:  // Wrap Assassin
-				{
-					Format(attributes, sizeof(attributes), "278 ; 99 ; 346 ; 1");
-				}
-				// Soldier
-				case 128:  // Equalizer
-				{
-					Format(attributes, sizeof(attributes), "115 ; 1 ; 129 ; -3");
-				}
-				case 154:  // Pain Train
-				{
-				}
-				case 357:  // Half-Zatoichi
-				{
-					FireRate *= 1.25;
-					RandomCrits = 0.0;
-					Format(attributes, sizeof(attributes), "219 ; 1 ; 220 ; 50 ; 781 ; 72");
-				}
-				case 416:  // Market Gardener
-				{
-					FireRate *= 1.2;
-					RandomCrits = 0.0;
-					Format(attributes, sizeof(attributes), "366 ; 2");
-				}
-				case 447:  // Disciplinary Action
-				{
-					Damage *= 0.75;
-					Format(attributes, sizeof(attributes), "251 ; 1");	// No extra melee range btw
-				}
-				case 775:  // Escape Plan
-				{
-					Health -= 50.0;
-					Format(attributes, sizeof(attributes), "235 ; 2 ; 129 ; -3");
-				}
-				// Heavy
-				case 43:  // Killing Gloves of Boxing
-				{
-					FireRate *= 1.2;
-					Format(attributes, sizeof(attributes), "613 ; 5");
-				}
-				case 239, 1084, 1100:  // Gloves of Running Urgently
-				{
-					Health -= 100.0;
-					Speed *= 1.3;
-				}
-				case 426:  // Eviction Notice
-				{
-					Health -= 50.0;
-					Speed *= 1.15;
-					Damage *= 0.4;
-					Speed *= 0.45;
-				}
-				// Spy
-				case 225, 574:  // Your Eternal Reward
-				{
-					SilentCloak = true;
-					Format(attributes, sizeof(attributes), "34 ; 1.33");
-				}
-				case 356:  // Conniver's Kunai
-				{
-					Health -= 70.0;
-					HealthOnHit += 35;
-				}
-				case 461:  // Conniver's Kunai
-				{
-					Health -= 25.0;
-					CloakOnHit += 30.0;
-					Format(attributes, sizeof(attributes), "737 ; 1.5");
-				}
-				// All Class
-				case 169, 423, 1071:  // Golden-based Weapons
-				{
-					Format(attributes, sizeof(attributes), "150 ; 1");
+					// Scout
+					case 44:  // Sandman
+					{
+						Health -= 15.0;
+						Format(attributes, sizeof(attributes), "38 ; 1 ; 278 ; 99");
+					}
+					case 317:  // Candy Cane
+					{
+						Health -= 25.0;
+						HealthOnHit += 20.0;
+					}
+					case 325, 452:  // Boston Basher, Three-Rune Blade
+					{
+						Bleed += 2.0;
+						Format(attributes, sizeof(attributes), "204 ; 1 ; 207 ; 1.75");
+					}
+					case 648:  // Wrap Assassin
+					{
+						Damage *= 0.35;
+						Format(attributes, sizeof(attributes), "278 ; 99 ; 346 ; 1");
+					}
+					// Soldier
+					case 128:  // Equalizer
+					{
+						Format(attributes, sizeof(attributes), "115 ; 1 ; 129 ; -3");
+					}
+					case 357:  // Half-Zatoichi
+					{
+						FireRate *= 1.25;
+						RandomCrits = 0.0;
+						Format(attributes, sizeof(attributes), "219 ; 1 ; 220 ; 50 ; 781 ; 72");
+					}
+					case 416:  // Market Gardener
+					{
+						FireRate *= 1.2;
+						RandomCrits = 0.0;
+						Format(attributes, sizeof(attributes), "366 ; 2");
+					}
+					case 447:  // Disciplinary Action
+					{
+						Damage *= 0.75;
+						Format(attributes, sizeof(attributes), "251 ; 1");	// No extra melee range btw
+					}
+					case 775:  // Escape Plan
+					{
+						Health -= 50.0;
+						Format(attributes, sizeof(attributes), "235 ; 2 ; 129 ; -3");
+					}
+					// Heavy
+					case 43:  // Killing Gloves of Boxing
+					{
+						FireRate *= 1.2;
+						Format(attributes, sizeof(attributes), "613 ; 5");
+					}
+					case 239, 1084, 1100:  // Gloves of Running Urgently
+					{
+						Health -= 100.0;
+						Speed *= 1.3;
+					}
+					case 426:  // Eviction Notice
+					{
+						Health -= 50.0;
+						Speed *= 1.15;
+						Damage *= 0.4;
+						Speed *= 0.45;
+					}
+					// Spy
+					case 225, 574:  // Your Eternal Reward
+					{
+						SilentCloak = true;
+						Format(attributes, sizeof(attributes), "34 ; 1.33");
+					}
+					case 356:  // Conniver's Kunai
+					{
+						Health -= 70.0;
+						HealthOnHit += 70;
+					}
+					case 461:  // Conniver's Kunai
+					{
+						Health -= 25.0;
+						CloakOnHit += 30.0;
+						Format(attributes, sizeof(attributes), "737 ; 1.5");
+					}
+					// Multi-Class
+					case 154:  // Pain Train
+					{
+					}
+					case 169, 423, 1071:  // Golden-based Weapons
+					{
+						Format(attributes, sizeof(attributes), "150 ; 1");
+					}
 				}
 			}
 		}
 
-		if(!strlen(classname))	// Fail Safe
-			strcopy(classname, sizeof(classname), "tf_weapon_shovel");
-
-		TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-		weapon = SpawnWeapon(client, classname, index, 101, 13, attributes);
-		SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
-
-		switch(class)
+		if(!WeaponOnly)
 		{
-			case TFClass_Scout:
-			{
-				SetHealth=125;
-				Damage*=0.29;	// 10
-				RandomCrits*=0.35;
-			}
-			case TFClass_Soldier:
-			{
-				SetHealth=200;
-				Damage*=0.46;	// 30
-				RandomCrits*=0.25;
-			}
-			case TFClass_Pyro:
-			{
-				SetHealth=175;
-				Damage*=0.34;	// 22
-				RandomCrits*=0.3;
-			}
-			case TFClass_DemoMan:
-			{
-				SetHealth=175;
-				Damage*=0.38;	// 25
-				RandomCrits*=0.3;
-			}
-			case TFClass_Heavy:
-			{
-				SetHealth=300;
-				Damage*=0.54;	// 35
-				RandomCrits*=0.35;
-			}
-			case TFClass_Engineer:
-			{
-				SetHealth=125;
-				Damage*=0.28;	// 18
-				RandomCrits*=0.25;
-			}
-			case TFClass_Medic:
-			{
-				SetHealth=150;
-				Damage*=0.28;	// 18
-				RandomCrits*=0.35;
-			}
-			case TFClass_Sniper:
-			{
-				SetHealth=125;
-				Damage*=0.31;	// 20
-				RandomCrits*=0.4;
-			}
-			case TFClass_Spy:
-			{
-				SetHealth=125;
-				Damage*=2.5;
-				DamageVsPlayers*=0.12;
-				SubDamage = Damage*DamageVsPlayers;	// 12
-			}
+			if(!strlen(classname))	// Fail Safe
+				strcopy(classname, sizeof(classname), "tf_weapon_shovel");
+
+			weapon = SpawnWeapon(client, classname, index, 101, 13, attributes);
+			SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 		}
-		SetEntityHealth(client, RoundToFloor(SetHealth+Health));
-		HealthOnHit *= FireRate; // Balancing
 
-		// Good Stuff
-
-		if(Damage > 1)
+		switch(WeaponOnly)
 		{
-			TF2Attrib_SetByDefIndex(weapon, 2, Damage);
-			if(class!=TFClass_Spy)
+			case 1:
 			{
-				Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((Damage-1.0)*100.0));
+				switch(class)
+				{
+					case TFClass_Engineer:
+					{
+						Damage = 0.28;
+						RandomCrits = 0.25;
+					}
+					case TFClass_Medic:
+					{
+						Damage = 0.28;
+						RandomCrits = 0.35;
+					}
+					case TFClass_Sniper:
+					{
+						Damage = 0.31;
+						RandomCrits = 0.0;
+					}
+				}
+			}
+			case 2:
+			{
+				switch(class)
+				{
+					case TFClass_Engineer:
+					{
+						Damage = 0.28;
+						RandomCrits = 0.25;
+					}
+					case TFClass_Medic:
+					{
+						Damage = 0.28;
+						RandomCrits = 0.35;
+					}
+					case TFClass_Sniper:
+					{
+						Damage = 0.31;
+						RandomCrits = 0.0;
+					}
+				}
+			}
+			default:
+			{
+				switch(class)
+				{
+					case TFClass_Scout:
+					{
+						SetHealth = 125;
+						Damage *= 0.29;	// 10
+						RandomCrits *= 0.35;
+					}
+					case TFClass_Soldier:
+					{
+						SetHealth = 200;
+						Damage *= 0.46;	// 30
+						RandomCrits *= 0.25;
+					}
+					case TFClass_Pyro:
+					{
+						SetHealth = 175;
+						Damage *= 0.34;	// 22
+						RandomCrits *= 0.3;
+					}
+					case TFClass_DemoMan:
+					{
+						SetHealth = 175;
+						Damage *= 0.38;	// 25
+						RandomCrits *= 0.3;
+					}
+					case TFClass_Heavy:
+					{
+						SetHealth = 300;
+						Damage *= 0.54;	// 35
+						RandomCrits *= 0.35;
+					}
+					case TFClass_Engineer:
+					{
+						SetHealth = 125;
+						Damage *= 0.28;	// 18
+						RandomCrits *= 0.25;
+					}
+					case TFClass_Medic:
+					{
+						SetHealth = 150;
+						Damage *= 0.28;	// 18
+						RandomCrits*=0.35;
+					}
+					case TFClass_Sniper:
+					{
+						SetHealth = 125;
+						Damage *= 0.31;	// 20
+						RandomCrits *= 0.4;
+					}
+					case TFClass_Spy:
+					{
+						SetHealth = 125;
+						Damage *= 2.5;
+						DamageVsPlayers *= 0.12;
+						SubDamage = Damage*DamageVsPlayers;	// 12
+					}
+					default:
+					{
+						SetHealth = 150;
+						Damage *= 0.31;	// 20
+						RandomCrits *= 0.3;
+					}
+				}
+				SetEntityHealth(client, RoundFloat(SetHealth+Health));
+				HealthOnHit *= FireRate; // Balancing
+
+				if(Damage > 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 2, Damage);
+					if(class!=TFClass_Spy)
+					{
+						Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((Damage-1.0)*100.0));
+						DrawPanelText(panel, string);
+					}
+				}
+				if(class==TFClass_Spy)
+				{
+					if(SubDamage > 1)
+					{
+						Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((SubDamage-1.0)*100.0));
+						DrawPanelText(panel, string);
+					}
+				}
+				if(FireRate < 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 6, FireRate);
+					Format(string, sizeof(string), "+%i%% faster firing speed", RoundToFloor((1.0-FireRate)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(Health > 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 26, Health);
+					Format(string, sizeof(string), "+%i max health on wearer", RoundToFloor(Health));
+					DrawPanelText(panel, string);
+				}
+				if(RandomCrits > 1 && class!=TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
+					Format(string, sizeof(string), "+%i%% random critical hit chance", RoundToFloor((RandomCrits-1.0)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(SlowChance > 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 32, SlowChance);
+					Format(string, sizeof(string), "On Hit: %i%% chance to slow target", RoundToFloor((SlowChance-1.0)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(Speed > 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 107, Speed);
+					Format(string, sizeof(string), "+%i%% faster move speed on wearer", RoundToFloor((Speed-1.0)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(Bleed > 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 149, Bleed);
+					Format(string, sizeof(string), "On Hit: Bleed for %i%% seconds", RoundToFloor(Bleed));
+					DrawPanelText(panel, string);
+				}
+				if(CloakOnKill > 0 && class==TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 158, CloakOnHit);
+					Format(string, sizeof(string), "+%i%% cloak on kill", RoundToFloor(CloakOnKill));
+					DrawPanelText(panel, string);
+				}
+				if(SilentCloak && class==TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 160, 1.0);
+					Format(string, sizeof(string), "Reduced decloak sound volume");
+					DrawPanelText(panel, string);
+				}
+				if(CloakOnHit > 0 && class==TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 166, CloakOnHit);
+					Format(string, sizeof(string), "+%i%% cloak on hit", RoundToFloor(CloakOnHit));
+					DrawPanelText(panel, string);
+				}
+				if(SlowBy40 > 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 182, SlowBy40);
+					Format(string, sizeof(string), "On Hit: Slow target movement by 40% for %is", RoundToFloor(SlowBy40));
+					DrawPanelText(panel, string);
+				}
+				if(Knockback)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 216, 1.0);
+					Format(string, sizeof(string), "Attrib_Knockback");
+					DrawPanelText(panel, string);
+				}
+				if(HealthOnKill > 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 220, HealthOnKill);
+					Format(string, sizeof(string), "Gain %i%% of base health on kill", RoundToFloor(HealthOnKill));
+					DrawPanelText(panel, string);
+				}
+				if(CritsOnBack && class!=TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 362, 1.0);
+					Format(string, sizeof(string), "Always critical hit from behind");
+					DrawPanelText(panel, string);
+				}
+				if(DamageVsBurning != 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 795, DamageVsBurning);
+					Format(string, sizeof(string), "%i%% damage bonus vs burning players", RoundToFloor((DamageVsBurning-1.0)*100.0));
+					DrawPanelText(panel, string);
+				}
+
+				Format(string, sizeof(string), " ");
 				DrawPanelText(panel, string);
-			}
-		}
-		if(class==TFClass_Spy)
-		{
-			if(SubDamage > 1)
-			{
-				Format(string, sizeof(string), "+%i%% damage bonus", RoundToFloor((SubDamage-1.0)*100.0));
+
+				// Bad Stuff
+
+				if(Damage < 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 1, Damage);
+					if(class!=TFClass_Spy)
+					{
+						Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-Damage)*100.0));
+						DrawPanelText(panel, string);
+					}
+				}
+				if(class==TFClass_Spy)
+				{
+					if(SubDamage < 1)
+					{
+						Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-SubDamage)*100.0));
+						DrawPanelText(panel, string);
+					}
+				}
+				if(FireRate > 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 5, FireRate);
+					Format(string, sizeof(string), "%i%% slower firing speed", RoundToFloor((FireRate-1.0)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(RandomCrits <= 0 && class!=TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 15, 0.0);
+					Format(string, sizeof(string), "No random critical hits");
+					DrawPanelText(panel, string);
+				}
+				else if(RandomCrits < 1 && class!=TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
+					Format(string, sizeof(string), "-%i%% random critical hit chance", RoundToFloor((1.0-RandomCrits)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(Speed < 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 54, Speed);
+					Format(string, sizeof(string), "%i%% slower move speed on wearer", RoundToFloor((1.0-Speed)*100.0));
+					DrawPanelText(panel, string);
+				}
+				int vuln = GetRandomInt(1, 99);
+				float total = (vuln/100.0)+1.0;
+				TF2Attrib_SetByDefIndex(weapon, 61, total);
+				Format(string, sizeof(string), "%i%% fire damage vulnerability on wearer", vuln);
 				DrawPanelText(panel, string);
+				if(Health < 0)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 125, Health);
+					Format(string, sizeof(string), "%i max health on wearer", RoundToFloor(Health));
+					DrawPanelText(panel, string);
+				}
+				if(DamageVsPlayers < 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 138, DamageVsPlayers);
+					if(class==TFClass_Spy)
+					{
+						Format(string, sizeof(string), "-%i%% backstab damage", RoundToFloor((1.0-DamageVsPlayers)*100.0));
+					}
+					else
+					{
+						Format(string, sizeof(string), "-%i%% damage vs players", RoundToFloor((1.0-DamageVsPlayers)*100.0));
+					}
+					DrawPanelText(panel, string);
+				}
+				if(NoDisguises && class==TFClass_Spy)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 155, 1.0);
+					TF2_RemovePlayerDisguise(client);
+					Format(string, sizeof(string), "Wearer cannot disguise");
+					DrawPanelText(panel, string);
+				}
+				if(NoCloak && class==TFClass_Spy)
+				{
+					TF2_RemoveWeaponSlot(client, 4);
+					TF2_RemoveCondition(client, TFCond_RestrictToMelee);
+					Format(string, sizeof(string), "Wearer cannot cloak");
+					DrawPanelText(panel, string);
+				}
+				total = ((100-vuln)/100.0)+1.0;
+				TF2Attrib_SetByDefIndex(weapon, 206, total);
+				Format(string, sizeof(string), "+%i%% damage from melee sources", 100-vuln);
+				DrawPanelText(panel, string);
+				if(Jump < 1)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 443, Jump);
+					Format(string, sizeof(string), "%i%% smaller jump height", RoundToFloor((1.0-Jump)*100.0));
+					DrawPanelText(panel, string);
+				}
+				if(CritsAreMini)
+				{
+					TF2Attrib_SetByDefIndex(weapon, 869, 1.0);
+					Format(string, sizeof(string), "Minicrits whenever it would normally crit");
+					DrawPanelText(panel, string);
+				}
 			}
-		}
-		if(FireRate < 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 6, FireRate);
-			Format(string, sizeof(string), "+%i%% faster firing speed", RoundToFloor((1.0-FireRate)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(Health > 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 26, Health);
-			Format(string, sizeof(string), "+%i max health on wearer", RoundToFloor(Health));
-			DrawPanelText(panel, string);
-		}
-		if(RandomCrits > 1 && class!=TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
-			Format(string, sizeof(string), "+%i%% random critical hit chance", RoundToFloor((RandomCrits-1.0)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(SlowChance > 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 32, SlowChance);
-			Format(string, sizeof(string), "On Hit: %i%% chance to slow target", RoundToFloor((SlowChance-1.0)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(Speed > 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 107, Speed);
-			Format(string, sizeof(string), "+%i%% faster move speed on wearer", RoundToFloor((Speed-1.0)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(Bleed > 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 149, Bleed);
-			Format(string, sizeof(string), "On Hit: Bleed for %i%% seconds", RoundToFloor(Bleed));
-			DrawPanelText(panel, string);
-		}
-		if(CloakOnKill > 0 && class==TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 158, CloakOnHit);
-			Format(string, sizeof(string), "+%i%% cloak on kill", RoundToFloor(CloakOnKill));
-			DrawPanelText(panel, string);
-		}
-		if(SilentCloak && class==TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 160, 1.0);
-			Format(string, sizeof(string), "Reduced decloak sound volume");
-			DrawPanelText(panel, string);
-		}
-		if(CloakOnHit > 0 && class==TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 166, CloakOnHit);
-			Format(string, sizeof(string), "+%i%% cloak on hit", RoundToFloor(CloakOnHit));
-			DrawPanelText(panel, string);
-		}
-		if(SlowBy40 > 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 182, SlowBy40);
-			Format(string, sizeof(string), "On Hit: Slow target movement by 40% for %is", RoundToFloor(SlowBy40));
-			DrawPanelText(panel, string);
-		}
-		if(Knockback)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 216, 1.0);
-			Format(string, sizeof(string), "Attrib_Knockback");
-			DrawPanelText(panel, string);
-		}
-		if(HealthOnKill > 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 220, HealthOnKill);
-			Format(string, sizeof(string), "Gain %i%% of base health on kill", RoundToFloor(HealthOnKill));
-			DrawPanelText(panel, string);
-		}
-		if(CritsOnBack && class!=TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 362, 1.0);
-			Format(string, sizeof(string), "Always critical hit from behind");
-			DrawPanelText(panel, string);
-		}
-		if(DamageVsBurning != 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 795, DamageVsBurning);
-			Format(string, sizeof(string), "%i%% damage bonus vs burning players", RoundToFloor((DamageVsBurning-1.0)*100.0));
-			DrawPanelText(panel, string);
 		}
 
-		Format(string, sizeof(string), " ");
-		DrawPanelText(panel, string);
-
-		// Bad Stuff
-
-		if(Damage < 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 1, Damage);
-			if(class!=TFClass_Spy)
-			{
-				Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-Damage)*100.0));
-				DrawPanelText(panel, string);
-			}
-		}
-		if(class==TFClass_Spy)
-		{
-			if(SubDamage < 1)
-			{
-				Format(string, sizeof(string), "-%i%% damage penalty", RoundToFloor((1.0-SubDamage)*100.0));
-				DrawPanelText(panel, string);
-			}
-		}
-		if(FireRate > 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 5, FireRate);
-			Format(string, sizeof(string), "%i%% slower firing speed", RoundToFloor((FireRate-1.0)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(RandomCrits <= 0 && class!=TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 15, 0.0);
-			Format(string, sizeof(string), "No random critical hits");
-			DrawPanelText(panel, string);
-		}
-		else if(RandomCrits < 1 && class!=TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 28, RandomCrits);
-			Format(string, sizeof(string), "-%i%% random critical hit chance", RoundToFloor((1.0-RandomCrits)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(Speed < 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 54, Speed);
-			Format(string, sizeof(string), "%i%% slower move speed on wearer", RoundToFloor((1.0-Speed)*100.0));
-			DrawPanelText(panel, string);
-		}
-		int vuln = GetRandomInt(1, 99);
-		float total = (vuln/100.0)+1.0;
-		TF2Attrib_SetByDefIndex(weapon, 61, total);
-		Format(string, sizeof(string), "%i%% fire damage vulnerability on wearer", vuln);
-		DrawPanelText(panel, string);
-		if(Health < 0)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 125, Health);
-			Format(string, sizeof(string), "%i max health on wearer", RoundToFloor(Health));
-			DrawPanelText(panel, string);
-		}
-		if(DamageVsPlayers < 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 138, DamageVsPlayers);
-			if(class==TFClass_Spy)
-			{
-				Format(string, sizeof(string), "-%i%% backstab damage", RoundToFloor((1.0-DamageVsPlayers)*100.0));
-			}
-			else
-			{
-				Format(string, sizeof(string), "-%i%% damage vs players", RoundToFloor((1.0-DamageVsPlayers)*100.0));
-			}
-			DrawPanelText(panel, string);
-		}
-		if(NoDisguises && class==TFClass_Spy)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 155, 1.0);
-			TF2_RemovePlayerDisguise(client);
-			Format(string, sizeof(string), "Wearer cannot disguise");
-			DrawPanelText(panel, string);
-		}
-		if(NoCloak && class==TFClass_Spy)
-		{
-			TF2_RemoveWeaponSlot(client, 4);
-			TF2_RemoveCondition(client, TFCond_RestrictToMelee);
-			Format(string, sizeof(string), "Wearer cannot cloak");
-			DrawPanelText(panel, string);
-		}
-		total = ((100-vuln)/100.0)+1.0;
-		TF2Attrib_SetByDefIndex(weapon, 206, total);
-		Format(string, sizeof(string), "+%i%% damage from melee sources", 100-vuln);
-		DrawPanelText(panel, string);
-		if(Jump < 1)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 443, Jump);
-			Format(string, sizeof(string), "%i%% smaller jump height", RoundToFloor((1.0-Jump)*100.0));
-			DrawPanelText(panel, string);
-		}
-		if(CritsAreMini)
-		{
-			TF2Attrib_SetByDefIndex(weapon, 869, 1.0);
-			Format(string, sizeof(string), "Minicrits whenever it would normally crit");
-			DrawPanelText(panel, string);
-		}
-		if(OnlyMelee)
-		{
-			TF2_AddCondition(client, TFCond_RestrictToMelee, TFCondDuration_Infinite);
-		}
 		Format(string, sizeof(string), " ");
 		DrawPanelText(panel, string);
 		Format(string, sizeof(string), "%t", "SZF Help");
@@ -5679,7 +5868,6 @@ public Action Timer_CheckItems(Handle timer, int client)
 		TF2Attrib_SetByDefIndex(weapon, 1006, 1.0);
 		TF2Attrib_SetByDefIndex(weapon, 448, 1.0);
 		TF2Attrib_SetByDefIndex(weapon, 450, 1.0);
-		TF2Attrib_SetByDefIndex(weapon, 57, 6.0);
 	}
 	else
 	{
