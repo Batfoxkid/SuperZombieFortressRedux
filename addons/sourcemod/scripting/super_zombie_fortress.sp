@@ -400,7 +400,7 @@ public void OnPluginStart()
 	
 	CheckStartWeapons();
 
-	GameConfig = LoadGameConfigFile("szf_gamedata");
+	/*GameConfig = LoadGameConfigFile("szf_gamedata");
 
 	if(!GameConfig)
 	{
@@ -415,7 +415,7 @@ public void OnPluginStart()
 	if(!WearableEquip)
 	{
 		LogError("Failed to prepare the SDKCall for giving cosmetics. Try updating gamedata or restarting your server.");
-	}
+	}*/
 
 	#if defined _steamtools_included
 	steamtools = LibraryExists("SteamTools");
@@ -6305,7 +6305,7 @@ public Action DelayZombify(Handle timer, any userid)
 	CreateVoodoo(client, index);
 }
 
-bool CreateVoodoo(int client, int index)
+/*bool CreateVoodoo(int client, int index)
 {
 	int voodoo = CreateEntityByName("tf_wearable");
 
@@ -6323,7 +6323,7 @@ bool CreateVoodoo(int client, int index)
 	SDKCall(g_hWearableEquip, client, voodoo);
 
 	return true;
-}
+}*/
 
 stock bool IsValidClient(int client, bool replaycheck = true)
 {
