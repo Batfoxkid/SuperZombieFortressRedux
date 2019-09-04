@@ -4442,7 +4442,7 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 					return Plugin_Continue;
 			}
 
-			Handle itemOverride = PrepareItemHandle(item, _, iItemDefinitionIndex, "448 ; 1; 450 ; 1");
+			Handle itemOverride = PrepareItemHandle(item, _, iItemDefinitionIndex, "448 ; 1 ; 450 ; 1");
 			if(itemOverride != INVALID_HANDLE)
 			{
 				item = itemOverride;
@@ -4589,6 +4589,17 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 					return Plugin_Changed;
 				}
 			}
+			case 224:	// L'Etranger
+			{
+				Handle itemOverride=PrepareItemHandle(item, _, _, "166 ; 5 ; 224 ; 0.8");
+				// 166:	+5% cloak on hit
+				// 224:	+20% cloak duration
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
 			case 226:	// Battalion's Backup
 			{
 				Handle itemOverride=PrepareItemHandle(item, _, _, "26 ; 0 ; 140 ; 10 ; 319 ; 0.6");
@@ -4684,6 +4695,16 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 					return Plugin_Changed;
 				}
 			}
+			case 525:	// Diamondback
+			{
+				Handle itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
+				// 869:	Minicrits whenever it would normally crit
+				if(itemOverride!=INVALID_HANDLE)
+				{
+					item=itemOverride;
+					return Plugin_Changed;
+				}
+			}
 			case 642:	// Cozy Camper
 			{
 				Handle itemOverride=PrepareItemHandle(item, _, _, "57 ; 2");
@@ -4694,235 +4715,353 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 				}
 			}
 		}
-		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
+
+		switch(TF2_GetPlayerClass(client))
 		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
-			// 59:	-50% self damage force
-			// 77:	-25% max primary ammo on wearer
-			// 135:	-50% blast damage from rocket jumps
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Scout:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_jar_milk") || !StrContains(classname, "tf_weapon_cleaver") || !StrContains(classname, "tf_weapon_lunchbox_drink"))	// Bonk! Atomic Punch, Crit-a-Cola, Mad Milk, Festive Bonk!
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
+					// 249:	-60% increase in charge recharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_bat_wood"))	// Sandman
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "278 ; 2.0");
+					// 278:	-100% increase in recharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_bat_giftwrap"))	// Wrap Assassin
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "278 ; 1.5");
+					// 278:	-50% increase in recharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
-			// 5:	-35% slower fire rate
-			// 59:	-50% self damage force
-			// 72:	-50% afterburn damage penalty
-			// 77:	-25% max primary ammo on wearer
-			// 96:	+50% slower reload time
-			// 135:	-50% blast damage from rocket jumps
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Soldier:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_rocketlauncher"))	// Soldier Rocket Launchers
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.5 ; 77 ; 0.75 ; 135 ; 0.5");
+					// 59:	-50% self damage force
+					// 77:	-25% max primary ammo on wearer
+					// 135:	-50% blast damage from rocket jumps
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_particle_cannon"))	// Cow Mangler 5000
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.35 ; 59 ; 0.5 ; 72 ; 0.5 ; 77 ; 0.75 ; 96 ; 1.5 ; 135 ; 0.5");
+					// 5:	-35% slower fire rate
+					// 59:	-50% self damage force
+					// 72:	-50% afterburn damage penalty
+					// 77:	-25% max primary ammo on wearer
+					// 96:	+50% slower reload time
+					// 135:	-50% blast damage from rocket jumps
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
+					// 5:	-25% slower fire rate
+					// 96:	+35% slower reload time
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+					// 58:	+50% self damage force
+					// 135:	+30% blast damage from rocket jumps
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
+					// 220:	Gain 15% of base health on kill
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Soldier && !StrContains(classname, "tf_weapon_raygun"))	// Righteous Bison
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.25 ; 96 ; 1.35");
-			// 5:	-25% slower fire rate
-			// 96:	+35% slower reload time
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Pyro:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_flamethrower") || !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Flamethrowers
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
+					// 77:	-50% max primary ammo on wearer
+					// 869:	Minicrits whenever it would normally crit
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
+					// 2059:
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
-			// 58:	+50% self damage force
-			// 135:	+30% blast damage from rocket jumps
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_DemoMan:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+					// 77:	-25% max primary ammo on wearer
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5");
+					// 59:	-75% self damage force
+					// 79:	-25% max secondary ammo on wearer
+					// 135:	-50% blast damage from rocket jumps
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
+					// 249:	-50% increase in charge recharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.05", true);
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_parachute"))	// B.A.S.E. Jumper
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5 ; 135 ; 1.3");
+					// 58:	+50% self damage force
+					// 135:	+30% blast damage from rocket jumps
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
+					// 220:	Gain 15% of base health on kill
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(!StrContains(classname, "tf_weapon_katana"))	// Half-Zatoichi
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "220 ; 15");
-			// 220:	Gain 15% of base health on kill
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Heavy:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_minigun"))	// Miniguns
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
+					// 77:	-50% max primary ammo on wearer
+					// 869:	Minicrits whenever it would normally crit
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_lunchbox"))	// Sandvich, Dalokohs Bar, Fishcake, Robo-Sandvich, Festive Sandvich
+				{
+					if(iItemDefinitionIndex == 331)	// Buffalo Steak Sandvich
+					{
+						Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.67");
+						// 249:	-33% increase in charge recharge rate
+						if(itemOverride!=INVALID_HANDLE)
+						{
+							item=itemOverride;
+							return Plugin_Changed;
+						}
+					}
+
+					if(iItemDefinitionIndex == 1190)	// Second Banana
+					{
+						Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.75 ; 876 ; 0.34");
+						// 249:	-25% increase in charge recharge rate
+						// 876:	-66% healing effect
+						if(itemOverride!=INVALID_HANDLE)
+						{
+							item=itemOverride;
+							return Plugin_Changed;
+						}
+					}
+	
+					Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5 ; 876 ; 0.5");
+					// 249:	-50% increase in charge recharge rate
+					// 876:	-50% healing effect
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_flamethrower"))	// Flamethrowers
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.5 ; 869 ; 1");
-			// 77:	-50% max primary ammo on wearer
-			// 869:	Minicrits whenever it would normally crit
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Engineer:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
+					// 869:	Minicrits whenever it would normally crit
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
+					// 5:	-20% slower fire rate
+					// 96:	+35% slower reload time
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
+					// 77:	-25% max primary ammo on wearer
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
+					// 79:	-76% max secondary ammo on wearer
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
+					// 20:	100% critical hit vs burning players
+					// 408:	100% critical hit vs non-burning players
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
+					// 286:	-50% max building health
+					// 287:	-35% Sentry Gun damage bonus
+					// 464: Sentry build speed increased by -50%
+					// 465: Increases teleporter build speed by -50%
+					// 790: +900% metal cost when constructing or upgrading teleporters
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_rocketlauncher_fireball"))	// Dragon's Fury
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "795 ; 0.6 ; 869 ; 1");
-			// 795:	-40% damage bonus vs burning players
-			// 869:	Minicrits whenever it would normally crit
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Medic:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
+					// 2:	+200% damage bonus
+					// 77:	-80% max primary ammo on wearer
+					// 138:	-67% damage vs players
+					// 775:	-67% damage penalty vs buildings
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
+				if(!StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
+					// 9:	-80% ÜberCharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Pyro && !StrContains(classname, "tf_weapon_jar_gas"))	// Gas Passer
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "2059 ; 3000");
-			// 2059:	
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Sniper:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_jar"))	// Jarate
+				{
+					Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
+					// 249:	-60% increase in charge recharge rate
+					if(itemOverride!=INVALID_HANDLE)
+					{
+						item=itemOverride;
+						return Plugin_Changed;
+					}
+				}
 			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_grenadelauncher") || !StrContains(classname, "tf_weapon_cannon"))	// Grenade Launchers & Loose Cannon
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
-			// 77:	-25% max primary ammo on wearer
-			if(itemOverride!=INVALID_HANDLE)
+			case TFClass_Spy:
 			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_weapon_pipebomblauncher"))	// Stickybomb Launchers
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "59 ; 0.25 ; 79 ; 0.75 ; 135 ; 0.5");
-			// 59:	-75% self damage force
-			// 79:	-25% max secondary ammo on wearer
-			// 135:	-50% blast damage from rocket jumps
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_demoshield"))	// Chargin' Targe, Splendid Screen, Tide Turner, Festive Targe
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.5");
-			// 249:	-50% increase in charge recharge rate
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_DemoMan && !StrContains(classname, "tf_wearable_stickbomb"))	// Ullapool Caber
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.05", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_revenge"))	// Frontier Justice
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "869 ; 1");
-			// 869:	Minicrits whenever it would normally crit
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_drg_pomson"))	// Pomson 6000
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "5 ; 1.2 ; 96 ; 1.35");
-			// 5:	-20% slower fire rate
-			// 96:	+35% slower reload time
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_shotgun_building_rescue"))	// Rescue Ranger
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.75");
-			// 77:	-25% max primary ammo on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pistol"))	// Engineer Pistols
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "79 ; 0.24");
-			// 79:	-76% max secondary ammo on wearer
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_mechanical_arm"))	// Short Circuit
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "20 ; 1 ; 408 ; 1");
-			// 20:	100% critical hit vs burning players
-			// 408:	100% critical hit vs non-burning players
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Engineer && !StrContains(classname, "tf_weapon_pda_engineer_build"))	// Engineer Build PDAs
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "286 ; 0.5 ; 287 ; 0.65 ; 464 ; 0.5 ; 465 ; 0.5 ; 790 ; 10");
-			// 286:	-50% max building health
-			// 287:	-35% Sentry Gun damage bonus
-			// 464: Sentry build speed increased by -50%
-			// 465: Increases teleporter build speed by -50%
-			// 790: +900% metal cost when constructing or upgrading teleporters
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_crossbow"))	// Crusader's Crossbow
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "2 ; 3 ; 77 ; 0.2 ; 138 ; 0.333 ; 775 ; 0.333");
-			// 2:	+200% damage bonus
-			// 77:	-80% max primary ammo on wearer
-			// 138:	-67% damage vs players
-			// 775:	-67% damage penalty vs buildings
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Medic && !StrContains(classname, "tf_weapon_medigun"))	// Medi Guns
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "9 ; 0.2");
-			// 9:	-80% ÜberCharge rate
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		if(TF2_GetPlayerClass(client)==TFClass_Sniper && !StrContains(classname, "tf_weapon_jar"))	// Jarate
-		{
-			Handle itemOverride=PrepareItemHandle(item, _, _, "249 ; 0.4");
-			// 249:	-60% increase in charge recharge rate
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
+				if(!StrContains(classname, "tf_weapon_builder") || !StrContains(classname, "tf_weapon_sapper"))	// Sappers
+					return Plugin_Stop;
 			}
 		}
 	}
