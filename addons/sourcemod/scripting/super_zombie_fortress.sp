@@ -5071,9 +5071,7 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 public Action Timer_CheckItems(Handle timer, int client)
 {
 	if(!IsValidClient(client) || !IsPlayerAlive(client))
-	{
 		return Plugin_Continue;
-	}
 
 	SetEntityRenderColor(client, 255, 255, 255, 255);
 	int index = -1;
@@ -5395,10 +5393,10 @@ public Action Timer_CheckItems(Handle timer, int client)
 				}
 			}
 		}
-		weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+		weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
 		if(IsValidEntity(weapon))
 		{
-			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+			index = GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 			TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
 			if(OnlyWeapons)
 			{
@@ -5444,11 +5442,11 @@ public Action Timer_CheckItems(Handle timer, int client)
 						Format(string, sizeof(string), "Gained a Passive Buff Banner!\n");
 						DrawPanelText(panel, string);
 					}
-					case 133:  // Gunboats
+					/*case 133:  // Gunboats
 					{
 						ExplosiveResist *= 0.6;
 						Health -= 50.0;
-					}
+					}*/
 					case 226:  // Battalion's Backup
 					{
 						Health -= 90.0;
@@ -5471,18 +5469,13 @@ public Action Timer_CheckItems(Handle timer, int client)
 						SpawnWeapon(client, "tf_weapon_handgun_raygun", 442, 101, 13, "281 ; 1 ; 283 ; 1 ; 284 ; 1 ; 285 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
 						Format(string, sizeof(string), "Gained a Passive Righteous Bison!\n");
 						DrawPanelText(panel, string);
-						OnlyWeapons = 2;
+						WeaponOnly = 2;
 					}
-					case 444:  // Mantreads
+					/*case 444:  // Mantreads
 					{
-						KnockbackResist *= 0.25;
+						Knockback *= 0.25;
 						Speed *= 0.9;
-					}
-					case 1101:  // B.A.S.E. Jumper
-					{
-						Parachute = true;
-						Speed *= 0.95;
-					}
+					}*/
 					// Pyro
 					case 39, 1081:  // Flaregun
 					{
@@ -5507,13 +5500,20 @@ public Action Timer_CheckItems(Handle timer, int client)
 						SpawnWeapon(client, "tf_weapon_flaregun_revenge", 595, 101, 13, "281 ; 1 ; 348 ; 1.2 ; 350 ; 1 ; 367 ; 1 ; 396 ; 1001 ; 394 ; %.2f ; 476 ; %.2f ; 818 ; 1", FireRate, Damage);
 						Format(string, sizeof(string), "Gained a Passive Manmelter!\n");
 						DrawPanelText(panel, string);
-						OnlyWeapons = 2;
+						WeaponOnly = 2;
 					}
 					case 740:  // Scorch Shot
 					{
 						CritsAreMini = true;
 						CritsVsBurning = true;
 						AfterburnDamage *= 0.19;
+					}
+					case 1179:  // Thermal Thruster
+					{
+						Speed *= 0.75;
+						SpawnWeapon(client, "tf_weapon_rocketpack", 1179, 101, 13, "801 ; 30 ; 840 ; 0.8 ; 870 ; 1 ; 873 ; 1");
+						Format(string, sizeof(string), "Gained a Thermal Thruster!\n");
+						DrawPanelText(panel, string);
 					}
 					case 1180:  // Gas Passer
 					{
@@ -5531,10 +5531,28 @@ public Action Timer_CheckItems(Handle timer, int client)
 							temp = 0.5;
 						}
 
-						SpawnWeapon(client, "tf_weapon_jar_gas", 1180, 101, 13, "138 ; %.2f ; 396 ; 1001 ; 801 ; %.2f ; 818 ; 1 ; 845 ; 1 ; 856 ; 3 ; 2059 ; %.0f", temp, FireRate*20.0, CritsOnBack ? 500 : 750);
+						SpawnWeapon(client, "tf_weapon_jar_gas", 1180, 101, 13, "138 ; %.2f ; 396 ; 1001 ; 801 ; %.2f ; 818 ; 1 ; 845 ; 1 ; 856 ; 3 ; 2059 ; %d", temp, FireRate*20.0, CritsOnBack ? 500 : 750);
 						Format(string, sizeof(string), "Gained a Passive Gas Passer!\n");
 						DrawPanelText(panel, string);
-						OnlyWeapons = 2;
+						WeaponOnly = 2;
+					}
+					// Demoman
+					case 130:  // Scottish Resistance
+					{
+						Knockback *= 0.5;
+						Speed *= 0.9;
+						FireRate *= 0.85;
+					}
+					case 265:  // Sticky Jumper
+					{
+						Speed *= 1.25;
+						DamageVsPlayers *= 0.65;
+					}
+					case 1150:  // Quickiebomb Launcher
+					{
+						Knockback *= 1.5;
+						Speed *= 1.1;
+						FireRate *= 1.15;
 					}
 					// Heavy
 					case 42, 863, 1002:  // Sandvich
@@ -5571,12 +5589,25 @@ public Action Timer_CheckItems(Handle timer, int client)
 						Health += 100.0;
 						Speed *= 0.875;
 					}
+					case 140, 1086:  // Wrangler
+					{
+						SpawnWeapon(client, "tf_weapon_laser_pointer", index, 101, 13, "138 ; %.2f ; 396 ; 1001 ; 801 ; %.2f ; 818 ; 1 ; 845 ; 1 ; 856 ; 3 ; 2059 ; %d", temp, FireRate*20.0, CritsOnBack ? 500 : 750);
+						Format(string, sizeof(string), "Gained a Passive Wrangler!\n");
+						DrawPanelText(panel, string);
+						WeaponOnly = 2;
+					}
 					// Spy
 					case 810, 831:  // Red-Tape Recorder
 					{
 						FireRate *= 1.35;
 						Speed *= 1.25;
 						DamageVsPlayers *= 0.65;
+					}
+					// Multi
+					case 1101:  // B.A.S.E. Jumper
+					{
+						Parachute = true;
+						Speed *= 0.95;
 					}
 				}
 			}
