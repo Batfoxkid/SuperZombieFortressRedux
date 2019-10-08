@@ -1,5 +1,6 @@
 # Ｓｕｐｅｒ　Ｚｏｍｂｉｅ　Ｆｏｒｔｒｅｓｓ　Ｒｅｄｕｘ
-## Another remake of the Zombie Fortress series. This is a upcoming project!
+
+This was an project to improve Super Zombie Fortress from it's current state, I personally have been lacking development for quite some time and it was remain private until it was a working state. This is a now archived project and I recommend seeing [Red Sun Over Paradise](https://github.com/redsunservers/SuperZombieFortress) for their variation.
 
 ### Credits:
 Mecha the Slag for the Super Zombie Fortress plugin                                                      
